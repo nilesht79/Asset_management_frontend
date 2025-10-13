@@ -1,0 +1,351 @@
+import React, { useEffect } from 'react'
+import { Modal, Form, Input, Select, Row, Col, message } from 'antd'
+import { useDispatch, useSelector } from 'react-redux'
+import PropTypes from 'prop-types'
+import { createProduct, updateProduct, fetchOEMs, fetchProductCategories, fetchProductSubCategories, fetchProductSeries } from '../../../../store/slices/masterSlice'
+
+const { TextArea } = Input
+const { Option } = Select
+
+const ProductModelForm = ({ open, mode, product, onClose, onSuccess }) => {
+  const dispatch = useDispatch()
+  const [form] = Form.useForm()
+  const { 
+    products, 
+    oems, 
+    productCategories, 
+    productSubCategories, 
+    productSeries 
+  } = useSelector(state => state.master)
+  
+  const loading = products?.loading || false
+  const oemsList = Array.isArray(oems?.data) ? oems.data : []
+  const categories = Array.isArray(productCategories?.data) ? productCategories.data : []
+  const subCategories = Array.isArray(productSubCategories?.data) ? productSubCategories.data : []
+  const series = Array.isArray(productSeries?.data) ? productSeries.data : []
+
+
+  useEffect(() => {
+    if (open) {
+      dispatch(fetchOEMs({ page: 1, limit: 100 }))
+      dispatch(fetchProductCategories({ page: 1, limit: 100 }))
+      dispatch(fetchProductSubCategories({ page: 1, limit: 100 }))
+      dispatch(fetchProductSeries({ page: 1, limit: 100 }))
+    }
+  }, [open, dispatch])
+
+  useEffect(() => {
+    if (open && product && mode === 'edit') {
+      form.setFieldsValue({
+        name: product.name || '',
+        model: product.model || '',
+        description: product.description || '',
+        oem_id: product.oem?.id || product.oem_id,
+        category_id: product.category?.id || product.category_id,
+        subcategory_id: product.subcategory?.id || product.subcategory_id,
+        series_id: product.series?.id || product.series_id,
+        specifications: product.specifications?.description || (typeof product.specifications === 'string' ? product.specifications : ''),
+        warranty_period: product.warranty_period || 12,
+        is_active: product.is_active !== undefined ? product.is_active : true
+      })
+    } else if (open && mode === 'create') {
+      form.resetFields()
+      form.setFieldsValue({ 
+        is_active: true,
+        warranty_period: 12
+      })
+    }
+  }, [form, open, product, mode])
+
+  const handleSubmit = async (values) => {
+    try {
+      // Convert specifications string to object format
+      const formattedValues = {
+        ...values,
+        specifications: values.specifications ? { description: values.specifications } : null
+      }
+      
+      if (mode === 'create') {
+        await dispatch(createProduct(formattedValues)).unwrap()
+        message.success('Product model created successfully')
+      } else if (mode === 'edit') {
+        await dispatch(updateProduct({ id: product.id, data: formattedValues })).unwrap()
+        message.success('Product model updated successfully')
+      }
+      
+      form.resetFields()
+      onSuccess()
+    } catch (error) {
+      message.error(error.message || `Failed to ${mode} product model`)
+    }
+  }
+
+  const handleCancel = () => {
+    form.resetFields()
+    onClose()
+  }
+
+  const getTitle = () => {
+    return mode === 'create' ? 'Add New Product Model' : 'Edit Product Model'
+  }
+
+  const handleCategoryChange = () => {
+    form.setFieldsValue({ 
+      subcategory_id: undefined,
+      series_id: undefined
+    })
+  }
+
+  const handleSubCategoryChange = () => {
+    form.setFieldsValue({ series_id: undefined })
+  }
+
+  // Get the currently selected category and subcategory IDs
+  const selectedCategoryId = Form.useWatch('category_id', form)
+  const selectedSubCategoryId = Form.useWatch('subcategory_id', form)
+
+  // Filter subcategories based on the selected category
+  const filteredSubCategories = subCategories.filter(
+    subCat => subCat.parent_category_id === selectedCategoryId
+  )
+
+  // Filter series based on the selected category and subcategory
+  const filteredSeries = series.filter(s => {
+    return s.category?.id === selectedCategoryId && 
+           (!selectedSubCategoryId || s.subCategory?.id === selectedSubCategoryId)
+  })
+
+  return (
+    <Modal
+      title={getTitle()}
+      open={open}
+      onOk={form.submit}
+      onCancel={handleCancel}
+      width={800}
+      okText={mode === 'create' ? 'Add Product Model' : 'Update Product Model'}
+      cancelText="Cancel"
+      maskClosable={false}
+      confirmLoading={loading}
+    >
+      <Form
+        form={form}
+        layout="vertical"
+        onFinish={handleSubmit}
+        className="mt-4"
+      >
+        <Row gutter={16}>
+          <Col span={12}>
+            <Form.Item
+              label="Product Model Name"
+              name="name"
+              rules={[
+                { required: true, message: 'Product model name is required' },
+                { min: 2, message: 'Product model name must be at least 2 characters' },
+                { max: 100, message: 'Product model name must not exceed 100 characters' }
+              ]}
+            >
+              <Input placeholder="Enter product model name (e.g., ThinkPad T14 Gen 3)" />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item
+              label="Model Number"
+              name="model"
+              rules={[
+                { required: true, message: 'Model number is required' },
+                { min: 2, message: 'Model number must be at least 2 characters' },
+                { max: 50, message: 'Model number must not exceed 50 characters' }
+              ]}
+            >
+              <Input placeholder="Enter model number (e.g., 21A3CTO1WW)" />
+            </Form.Item>
+          </Col>
+        </Row>
+
+        <Row gutter={16}>
+          <Col span={12}>
+            <Form.Item
+              label="OEM Manufacturer"
+              name="oem_id"
+              rules={[
+                { required: true, message: 'OEM is required' }
+              ]}
+            >
+              <Select 
+                placeholder="Select OEM manufacturer"
+                allowClear
+                showSearch
+                optionFilterProp="children"
+                filterOption={(input, option) =>
+                  option?.children?.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                }
+              >
+                {oemsList.map(oem => (
+                  <Option key={oem.id} value={oem.id}>
+                    {oem.name}
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item
+              label="Product Category"
+              name="category_id"
+              rules={[
+                { required: true, message: 'Product category is required' }
+              ]}
+            >
+              <Select 
+                placeholder="Select product category"
+                allowClear
+                showSearch
+                optionFilterProp="children"
+                filterOption={(input, option) =>
+                  option?.children?.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                }
+                onChange={handleCategoryChange}
+              >
+                {categories.map(category => (
+                  <Option key={category.id} value={category.id}>
+                    {category.name}
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
+          </Col>
+        </Row>
+
+        <Row gutter={16}>
+          <Col span={12}>
+            <Form.Item
+              label="Product Sub Category"
+              name="subcategory_id"
+              rules={[
+                { required: true, message: 'Product sub category is required' }
+              ]}
+            >
+              <Select 
+                placeholder="Select product sub category"
+                allowClear
+                showSearch
+                optionFilterProp="children"
+                filterOption={(input, option) =>
+                  option?.children?.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                }
+                onChange={handleSubCategoryChange}
+                disabled={!selectedCategoryId}
+              >
+                {filteredSubCategories.map(subCategory => (
+                  <Option key={subCategory.id} value={subCategory.id}>
+                    {subCategory.name}
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item
+              label="Product Series"
+              name="series_id"
+              rules={[
+                { required: true, message: 'Product series is required' }
+              ]}
+            >
+              <Select 
+                placeholder="Select product series"
+                allowClear
+                showSearch
+                optionFilterProp="children"
+                filterOption={(input, option) =>
+                  option?.children?.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                }
+                disabled={!form.getFieldValue('subcategory_id')}
+              >
+                {filteredSeries.map(seriesItem => (
+                  <Option key={seriesItem.id} value={seriesItem.id}>
+                    {seriesItem.name}
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
+          </Col>
+        </Row>
+
+        <Row gutter={16}>
+          <Col span={12}>
+            <Form.Item
+              label="Warranty Period (Months)"
+              name="warranty_period"
+              rules={[
+                { required: true, message: 'Warranty period is required' },
+                { type: 'number', min: 0, max: 120, message: 'Warranty period must be between 0 and 120 months' }
+              ]}
+            >
+              <Input 
+                type="number" 
+                placeholder="Enter warranty period in months"
+                min={0}
+                max={120}
+              />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item
+              label="Status"
+              name="is_active"
+              rules={[
+                { required: true, message: 'Status is required' }
+              ]}
+            >
+              <Select placeholder="Select status">
+                <Option value={true}>Active</Option>
+                <Option value={false}>Inactive</Option>
+              </Select>
+            </Form.Item>
+          </Col>
+        </Row>
+
+        <Form.Item
+          label="Technical Specifications"
+          name="specifications"
+          rules={[
+            { max: 2000, message: 'Specifications must not exceed 2000 characters' }
+          ]}
+        >
+          <TextArea
+            rows={4}
+            placeholder="Enter technical specifications (e.g., Processor: Intel Core i7-1265U, RAM: 16GB DDR4, Storage: 512GB SSD, Display: 14&quot; FHD IPS)"
+            maxLength={2000}
+            showCount
+          />
+        </Form.Item>
+
+        <Form.Item
+          label="Description"
+          name="description"
+          rules={[
+            { max: 1000, message: 'Description must not exceed 1000 characters' }
+          ]}
+        >
+          <TextArea
+            rows={3}
+            placeholder="Enter product model description (optional)"
+            maxLength={1000}
+            showCount
+          />
+        </Form.Item>
+      </Form>
+    </Modal>
+  )
+}
+
+ProductModelForm.propTypes = {
+  open: PropTypes.bool.isRequired,
+  mode: PropTypes.oneOf(['create', 'edit']).isRequired,
+  product: PropTypes.object,
+  onClose: PropTypes.func.isRequired,
+  onSuccess: PropTypes.func.isRequired
+}
+
+export default ProductModelForm

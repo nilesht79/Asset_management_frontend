@@ -1,0 +1,575 @@
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+/* Import Inter font */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+/* Base styles */
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  margin: 0;
+  padding: 0;
+  background-color: #f1f5f9;
+  color: #1e293b;
+  line-height: 1.6;
+}
+
+/* Remove default styles */
+h1, h2, h3, h4, h5, h6 {
+  margin: 0;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+p {
+  margin: 0 0 1rem 0;
+}
+
+ul, ol {
+  margin: 0;
+  padding: 0;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: none;
+}
+
+button {
+  font-family: inherit;
+}
+
+/* Utility classes */
+.container {
+  @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+}
+
+.card {
+  @apply bg-white rounded-xl shadow-card border border-gray-200;
+  background: linear-gradient(145deg, #ffffff, #f8fafc) !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+}
+
+.card-header {
+  @apply px-6 py-4 border-b border-gray-200;
+}
+
+.card-body {
+  @apply px-6 py-4;
+}
+
+.card-footer {
+  @apply px-6 py-4 border-t border-gray-200 bg-gray-50 rounded-b-xl;
+}
+
+.btn {
+  @apply inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm transition-all duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2;
+}
+
+.btn-primary {
+  @apply bg-primary-500 text-white hover:bg-primary-600 focus:ring-primary-500;
+}
+
+.btn-secondary {
+  @apply bg-secondary-100 text-secondary-700 hover:bg-secondary-200 focus:ring-secondary-500;
+}
+
+.btn-success {
+  @apply bg-success-500 text-white hover:bg-success-600 focus:ring-success-500;
+}
+
+.btn-warning {
+  @apply bg-warning-500 text-white hover:bg-warning-600 focus:ring-warning-500;
+}
+
+.btn-danger {
+  @apply bg-danger-500 text-white hover:bg-danger-600 focus:ring-danger-500;
+}
+
+.btn-outline {
+  @apply bg-transparent border-current text-current hover:bg-current hover:text-white;
+}
+
+.btn-sm {
+  @apply px-3 py-1.5 text-xs;
+}
+
+.btn-lg {
+  @apply px-6 py-3 text-base;
+}
+
+.form-input {
+  @apply w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200;
+}
+
+.form-input:invalid {
+  @apply border-danger-300 focus:ring-danger-500;
+}
+
+.form-label {
+  @apply block text-sm font-medium text-gray-700 mb-1;
+}
+
+.form-error {
+  @apply text-danger-600 text-sm mt-1;
+}
+
+.form-help {
+  @apply text-gray-500 text-sm mt-1;
+}
+
+/* Status badges */
+.badge {
+  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+}
+
+.badge-success {
+  @apply bg-success-100 text-success-800;
+}
+
+.badge-warning {
+  @apply bg-warning-100 text-warning-800;
+}
+
+.badge-danger {
+  @apply bg-danger-100 text-danger-800;
+}
+
+.badge-info {
+  @apply bg-primary-100 text-primary-800;
+}
+
+.badge-secondary {
+  @apply bg-gray-100 text-gray-800;
+}
+
+/* Loading states */
+.loading-skeleton {
+  @apply bg-gray-200 animate-pulse rounded;
+}
+
+.loading-spinner {
+  @apply inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin;
+}
+
+/* Layout classes */
+.layout-content {
+  @apply min-h-screen;
+  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%) !important;
+}
+
+.layout-header {
+  @apply shadow-sm border-b border-gray-200 px-6 py-4 flex items-center justify-between;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%) !important;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06) !important;
+}
+
+.layout-sidebar {
+  @apply w-64 shadow-sm border-r border-gray-200 min-h-screen;
+  background: linear-gradient(180deg, #1e293b 0%, #334155 100%) !important;
+}
+
+.layout-main {
+  @apply flex-1 p-6;
+  background: transparent !important;
+}
+
+/* Table styles */
+.table-container {
+  @apply bg-white rounded-xl shadow-card border border-gray-200 overflow-hidden;
+}
+
+.table-header {
+  @apply bg-gray-50 px-6 py-4 border-b border-gray-200;
+}
+
+.table-actions {
+  @apply flex items-center space-x-3;
+}
+
+/* Custom scrollbar */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f1f5f9;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Dark theme support */
+.dark {
+  @apply bg-gray-900 text-white;
+}
+
+.dark .card {
+  @apply bg-gray-800 border-gray-700;
+}
+
+.dark .form-input {
+  @apply bg-gray-800 border-gray-600 text-white;
+}
+
+.dark .badge-secondary {
+  @apply bg-gray-700 text-gray-300;
+}
+
+/* Ant Design customizations */
+.ant-layout {
+  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%) !important;
+}
+
+.ant-layout-header {
+  padding: 0 !important;
+  height: auto !important;
+  line-height: normal !important;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 250, 252, 0.9) 100%) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+}
+
+.ant-layout-content {
+  background: transparent !important;
+}
+
+/* Only apply transparent background to non-themed sidebars */
+.ant-layout-sider:not([style*="background"]) {
+  background: transparent !important;
+}
+
+/* Only apply transparent background to non-themed menus */
+.ant-menu-dark:not(.sidebar-menu) {
+  background: transparent !important;
+}
+
+/* Dynamic Sidebar Menu Theming - Using Figma Design System Principles */
+.sidebar-menu {
+  background: transparent !important;
+}
+
+.sidebar-menu .ant-menu-item,
+.sidebar-menu .ant-menu-submenu-title {
+  color: rgba(255, 255, 255, 0.85) !important;
+  margin: 4px 12px !important;
+  border-radius: 8px !important;
+  padding: 12px 16px !important;
+  height: auto !important;
+  line-height: 1.4 !important;
+  transition: all 0.2s ease-out !important;
+  border: 1px solid transparent !important;
+  background: transparent !important;
+  position: relative !important;
+}
+
+/* Figma-style hover: Use screen blend mode effect */
+.sidebar-menu .ant-menu-item:hover,
+.sidebar-menu .ant-menu-submenu-title:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: #ffffff !important;
+  transform: translateX(2px) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+/* Active/Selected state with proper emphasis */
+.sidebar-menu .ant-menu-item-selected {
+  background: rgba(255, 255, 255, 0.15) !important;
+  color: #ffffff !important;
+  font-weight: 500 !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+.sidebar-menu .ant-menu-item-selected::after {
+  display: none !important;
+}
+
+.sidebar-menu .ant-menu-submenu {
+  background: transparent !important;
+}
+
+.sidebar-menu .ant-menu-submenu-open > .ant-menu-submenu-title {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  color: #ffffff !important;
+}
+
+.sidebar-menu .ant-menu-submenu-arrow {
+  color: rgba(255, 255, 255, 0.7) !important;
+  transition: color 0.2s ease !important;
+}
+
+.sidebar-menu .ant-menu-item-icon,
+.sidebar-menu .ant-menu-submenu-title .ant-menu-item-icon {
+  color: rgba(255, 255, 255, 0.7) !important;
+  font-size: 16px !important;
+  margin-right: 12px !important;
+  transition: color 0.2s ease !important;
+}
+
+.sidebar-menu .ant-menu-item:hover .ant-menu-item-icon,
+.sidebar-menu .ant-menu-submenu-title:hover .ant-menu-item-icon {
+  color: #ffffff !important;
+}
+
+/* Clean submenu styling */
+.sidebar-menu .ant-menu-sub {
+  background: rgba(0, 0, 0, 0.15) !important;
+  border-radius: 6px !important;
+  margin: 4px 12px !important;
+  padding: 4px 0 !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+.sidebar-menu .ant-menu-sub .ant-menu-item {
+  margin: 1px 8px !important;
+  padding: 8px 16px 8px 40px !important;
+  font-size: 13px !important;
+  background: transparent !important;
+  border-radius: 4px !important;
+  color: rgba(255, 255, 255, 0.75) !important;
+}
+
+.sidebar-menu .ant-menu-sub .ant-menu-item:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #ffffff !important;
+}
+
+.sidebar-menu .ant-menu-sub .ant-menu-item-selected {
+  background: rgba(255, 255, 255, 0.12) !important;
+  color: #ffffff !important;
+  font-weight: 500 !important;
+}
+
+/* Collapsed sidebar adjustments */
+.ant-layout-sider-collapsed .sidebar-menu .ant-menu-item,
+.ant-layout-sider-collapsed .sidebar-menu .ant-menu-submenu-title {
+  margin: 4px 8px !important;
+  padding: 12px 8px !important;
+  text-align: center !important;
+}
+
+.ant-layout-sider-collapsed .sidebar-menu .ant-menu-item-icon,
+.ant-layout-sider-collapsed .sidebar-menu .ant-menu-submenu-title .ant-menu-item-icon {
+  margin-right: 0 !important;
+  font-size: 18px !important;
+}
+
+/* Restore clean table styling */
+.ant-table-thead > tr > th {
+  background: #fafafa !important;
+  color: rgba(0, 0, 0, 0.85) !important;
+  font-weight: 600 !important;
+}
+
+.ant-table-tbody > tr {
+  background: #ffffff !important;
+}
+
+.ant-table-tbody > tr:hover > td {
+  background: #fafafa !important;
+}
+
+/* Simplified button styling */
+.ant-btn {
+  border-radius: 6px !important;
+}
+
+/* Simplified input and card styling */
+.ant-input, .ant-input-affix-wrapper {
+  border-radius: 6px !important;
+}
+
+.ant-select .ant-select-selector {
+  border-radius: 6px !important;
+}
+
+.ant-card {
+  border-radius: 8px !important;
+}
+
+.ant-modal .ant-modal-content {
+  border-radius: 12px !important;
+}
+
+.ant-tabs .ant-tabs-tab {
+  font-weight: 500 !important;
+}
+
+/* Animation utilities */
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.3s ease-out;
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Override any remaining white backgrounds */
+.ant-layout-content,
+.ant-layout,
+#root,
+body {
+  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%) !important;
+}
+
+/* Force override for all layout components */
+.ant-layout-header,
+.ant-layout-footer,
+.ant-layout-content {
+  background: transparent !important;
+}
+
+/* Only override sider background if it doesn't have custom styling */
+.ant-layout-sider:not([style*="background"]):not([class*="themed"]) {
+  background: transparent !important;
+}
+
+/* Specific container overrides */
+.ant-layout > .ant-layout {
+  background: transparent !important;
+}
+
+.ant-layout-has-sider {
+  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%) !important;
+}
+
+/* Ensure all content areas use the new background */
+.min-h-screen {
+  background: transparent !important;
+}
+
+/* Dashboard specific overrides */
+.dashboard-container,
+.page-container {
+  background: transparent !important;
+}
+
+/* Remove white backgrounds from common elements */
+.ant-spin-container {
+  background: transparent !important;
+}
+
+/* Container and wrapper overrides */
+.ant-layout-wrapper,
+.ant-app,
+.ant-app-container {
+  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%) !important;
+}
+
+/* Improve text contrast on new background */
+.text-gray-600,
+.ant-typography {
+  color: #475569 !important;
+}
+
+.text-gray-800 {
+  color: #1e293b !important;
+}
+
+/* Nuclear option - override ALL white backgrounds */
+div[style*="background-color: rgb(255, 255, 255)"],
+div[style*="background-color: white"],
+div[style*="background: white"],
+div[style*="background: rgb(255, 255, 255)"],
+div[style*="background-color:#ffffff"],
+div[style*="background-color: #ffffff"],
+div[style*="background-color:#fff"],
+div[style*="background-color: #fff"] {
+  background: transparent !important;
+}
+
+/* Override inline styles */
+[style*="background-color: white"] {
+  background-color: transparent !important;
+}
+
+[style*="background: white"] {
+  background: transparent !important;
+}
+
+/* Catch any remaining Ant Design containers */
+.ant-layout-content > div,
+.ant-layout > .ant-layout > div {
+  background: transparent !important;
+}
+
+/* Print styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  .print-break-before {
+    page-break-before: always;
+  }
+
+  .print-break-after {
+    page-break-after: always;
+  }
+}

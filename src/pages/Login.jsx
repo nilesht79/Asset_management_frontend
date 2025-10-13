@@ -1,0 +1,162 @@
+import React, { useState, useEffect } from 'react'
+import { Form, Input, Button, Card, Alert, Typography } from 'antd'
+import { UserOutlined, LockOutlined, ArrowLeftOutlined } from '@ant-design/icons'
+import { useDispatch, useSelector } from 'react-redux'
+import { useNavigate } from 'react-router-dom'
+import { login, clearError } from '../store/slices/authSlice'
+import { Link } from 'react-router-dom'
+
+const { Title, Text } = Typography
+
+const Login = () => {
+  const [form] = Form.useForm()
+  const dispatch = useDispatch()
+  const navigate = useNavigate()
+  const { isLoading, error, isAuthenticated } = useSelector(state => state.auth)
+  const [showError, setShowError] = useState(false)
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/dashboard', { replace: true })
+    }
+  }, [isAuthenticated, navigate])
+
+  useEffect(() => {
+    if (error) {
+      setShowError(true)
+    }
+  }, [error])
+
+  const handleSubmit = async (values) => {
+    try {
+      dispatch(clearError())
+      setShowError(false)
+      
+      await dispatch(login(values)).unwrap()
+    } catch (err) {
+      console.error('Login failed:', err)
+    }
+  }
+
+  const handleErrorClose = () => {
+    setShowError(false)
+    dispatch(clearError())
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+         <Link to="/" className="inline-flex items-center text-red-600 hover:text-red-700 mb-4">
+            <ArrowLeftOutlined className="mr-2" />
+            Back to Home
+          </Link>
+        {/* Logo and Title */}
+        <div className="text-center mb-8">
+          <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <span className="text-white font-bold text-xl">AMS</span>
+          </div>
+          <Title level={2} className="mb-2">
+            Asset Management System
+          </Title>
+          <Text className="text-gray-600">
+            Sign in to access your account
+          </Text>
+        </div>
+
+        {/* Login Form */}
+        <Card className="shadow-lg border-0">
+          {/* {showError && (
+            <Alert
+              message="Login Failed"
+              description={error}
+              type="error"
+              showIcon
+              closable
+              onClose={handleErrorClose}
+              className="mb-4"
+            />
+          )} */}
+
+          <Form
+            form={form}
+            name="login"
+            onFinish={handleSubmit}
+            layout="vertical"
+            size="large"
+            requiredMark={false}
+          >
+            <Form.Item
+              name="email"
+              label="Email Address"
+              rules={[
+                {
+                  required: true,
+                  message: 'Please enter your email address',
+                },
+                {
+                  type: 'email',
+                  message: 'Please enter a valid email address',
+                },
+              ]}
+            >
+              <Input
+                prefix={<UserOutlined className="text-gray-400" />}
+                placeholder="Enter your email"
+                autoComplete="email"
+              />
+            </Form.Item>
+
+            <Form.Item
+              name="password"
+              label="Password"
+              rules={[
+                {
+                  required: true,
+                  message: 'Please enter your password',
+                },
+              ]}
+            >
+              <Input.Password
+                prefix={<LockOutlined className="text-gray-400" />}
+                placeholder="Enter your password"
+                autoComplete="current-password"
+              />
+            </Form.Item>
+
+            <Form.Item className="mb-0">
+              <Button
+                type="primary"
+                htmlType="submit"
+                className="w-full h-12 text-base font-medium"
+                loading={isLoading}
+              >
+                {isLoading ? 'Signing In...' : 'Sign In'}
+              </Button>
+            </Form.Item>
+          </Form>
+
+          {/* Demo Credentials */}
+          <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+            <Text className="text-sm text-gray-600 block mb-2">
+              <strong>Demo Credentials:</strong>
+            </Text>
+            <div className="space-y-1 text-xs text-gray-500">
+              <div>Admin: admin@company.com / Admin123!</div>
+              <div>Manager: manager@company.com / Manager123!</div>
+              <div>Employee: employee@company.com / Employee123!</div>
+            </div>
+          </div>
+        </Card>
+
+        {/* Footer */}
+        <div className="text-center mt-6">
+          <Text className="text-gray-500 text-sm">
+            © 2024 Asset Management System. All rights reserved.
+          </Text>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default Login
