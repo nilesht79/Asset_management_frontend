@@ -16,6 +16,7 @@ import TemplateManager from '../components/modules/masters/componentFieldTemplat
 
 import AssetInventory from "../components/modules/assets/AssetInventory"
 import AssetMovement from "../pages/AssetMovement"
+import TicketDashboard from "../pages/TicketDashboard"
 
 // Permission Control Component
 import SuperAdminPermissions from '../pages/SuperAdminPermissions'
@@ -64,11 +65,8 @@ const AppRouter = () => {
         <Route path="requisitions" element={<div>My Requisitions (To be implemented)</div>} />
 
         {/* Ticket Routes */}
-        <Route path="create-ticket" element={<div>Create Ticket (To be implemented)</div>} />
-        <Route path="tickets/my-tickets" element={<div>My Tickets (To be implemented)</div>} />
-        
-        {['engineer', 'coordinator', 'admin', 'superadmin'].includes(user?.role) && (
-          <Route path="tickets/queue" element={<div>Ticket Queue (To be implemented)</div>} />
+        {['coordinator', 'department_coordinator', 'admin', 'superadmin'].includes(user?.role) && (
+          <Route path="tickets" element={<TicketDashboard />} />
         )}
 
         {/* Reports Routes */}

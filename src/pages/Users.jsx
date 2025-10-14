@@ -94,32 +94,40 @@ const Users = () => {
         page: pagination.current,
         limit: pagination.pageSize
       })
-      
+
       const response = await userService.getUsers(params)
       const userData = response.data.data
-      
+
       setUsers(userData.users || [])
       setPagination(prev => ({
         ...prev,
         total: userData.pagination?.totalItems || 0
       }))
 
-      // Update stats
-      setStats({
-        total: userData.pagination?.totalItems || 0,
-        active: userData.users?.filter(u => u.isActive).length || 0,
-        inactive: userData.users?.filter(u => !u.isActive).length || 0,
-        byRole: userData.users?.reduce((acc, user) => {
-          acc[user.role] = (acc[user.role] || 0) + 1
-          return acc
-        }, {}) || {},
-        pendingApprovals: userData.users?.filter(u => !u.isActive).length || 0
-      })
+      // Fetch actual statistics from the backend
+      fetchStatistics()
     } catch (error) {
       console.error('Failed to fetch users:', error)
       message.error('Failed to load users')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchStatistics = async () => {
+    try {
+      const response = await userService.getUserStatistics()
+      const statsData = response.data.data
+
+      setStats({
+        total: statsData.total || 0,
+        active: statsData.active || 0,
+        inactive: statsData.inactive || 0,
+        byRole: statsData.byRole || {},
+        pendingApprovals: statsData.pendingApprovals || 0
+      })
+    } catch (error) {
+      console.error('Failed to fetch statistics:', error)
     }
   }
 

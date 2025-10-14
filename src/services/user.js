@@ -7,6 +7,10 @@ const userService = {
     return api.get(`/users${queryString ? `?${queryString}` : ''}`)
   },
 
+  getUserStatistics: () => {
+    return api.get('/users/statistics')
+  },
+
   getUser: (id) => {
     return api.get(`/users/${id}`)
   },

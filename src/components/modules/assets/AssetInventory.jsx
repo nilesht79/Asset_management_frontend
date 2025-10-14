@@ -475,33 +475,50 @@ const AssetInventory = () => {
 
   // Location Progress Chart Component
   const LocationProgressChart = ({ data }) => {
+    const [showAll, setShowAll] = useState(false)
     const total = data.reduce((sum, item) => sum + item.count, 0)
+    const maxItemsToShow = 5
+    const displayData = showAll ? data : data.slice(0, maxItemsToShow)
+    const hasMore = data.length > maxItemsToShow
 
     return (
-      <div className="space-y-3">
-        {data.map((item, index) => {
-          const percentage = total > 0 ? ((item.count / total) * 100) : 0
-          return (
-            <div key={index} className="flex items-center justify-between">
-              <div className="flex-1 mr-4">
-                <div className="flex justify-between items-center mb-1">
-                  <Text className="text-sm font-medium">{item.location}</Text>
-                  <Text className="text-xs text-gray-500">{item.count}</Text>
+      <div>
+        <div className="space-y-3" style={{ maxHeight: showAll ? 'none' : '300px', overflowY: showAll ? 'visible' : 'auto' }}>
+          {displayData.map((item, index) => {
+            const percentage = total > 0 ? ((item.count / total) * 100) : 0
+            return (
+              <div key={index} className="flex items-center justify-between">
+                <div className="flex-1 mr-4">
+                  <div className="flex justify-between items-center mb-1">
+                    <Text className="text-sm font-medium">{item.location}</Text>
+                    <Text className="text-xs text-gray-500">{item.count}</Text>
+                  </div>
+                  <Progress
+                    percent={percentage}
+                    showInfo={false}
+                    strokeColor={item.color}
+                    size="small"
+                  />
                 </div>
-                <Progress
-                  percent={percentage}
-                  showInfo={false}
-                  strokeColor={item.color}
-                  size="small"
-                />
               </div>
+            )
+          })}
+          {data.length === 0 && (
+            <div className="text-center text-gray-500 py-8">
+              <InfoCircleOutlined className="text-2xl mb-2" />
+              <div>No location data available</div>
             </div>
-          )
-        })}
-        {data.length === 0 && (
-          <div className="text-center text-gray-500 py-8">
-            <InfoCircleOutlined className="text-2xl mb-2" />
-            <div>No location data available</div>
+          )}
+        </div>
+        {hasMore && (
+          <div className="text-center mt-3">
+            <Button
+              type="link"
+              size="small"
+              onClick={() => setShowAll(!showAll)}
+            >
+              {showAll ? 'Show Less' : `Show ${data.length - maxItemsToShow} More`}
+            </Button>
           </div>
         )}
       </div>

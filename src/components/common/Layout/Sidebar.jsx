@@ -136,31 +136,9 @@ const Sidebar = () => {
         },
         // Ticketing & SLA Module
         {
-          key: 'tickets',
+          key: '/tickets',
           icon: <CustomerServiceOutlined />,
           label: 'Ticket Management',
-          children: [
-            {
-              key: '/tickets/queue',
-              label: 'Ticket Queue',
-            },
-            {
-              key: '/tickets/sla-config',
-              label: 'SLA Configuration',
-            },
-            {
-              key: '/tickets/escalation-matrix',
-              label: 'Escalation Matrix',
-            },
-            {
-              key: '/tickets/communication-log',
-              label: 'Communication Log',
-            },
-            {
-              key: '/tickets/repair-history',
-              label: 'Repair History',
-            },
-          ],
         },
         // Reporting & Analytics Module
         {
@@ -251,7 +229,7 @@ const Sidebar = () => {
     }
 
     // Coordinator items - Asset allocation, movement, ticketing workflows
-    if (['coordinator'].includes(user?.role)) {
+    if (['coordinator', 'department_coordinator'].includes(user?.role)) {
       baseItems.push(
         {
           key: 'assets',
@@ -267,29 +245,19 @@ const Sidebar = () => {
               label: 'Asset Assignment',
             },
             {
-              key: '/assets/requisitions',
-              label: 'Asset Requisitions',
+              key: '/assets/movement',
+              label: 'Asset Movement',
             },
             {
-              key: '/assets/delivery',
-              label: 'Asset Delivery',
+              key: '/assets/requisitions',
+              label: 'Asset Requisitions',
             },
           ],
         },
         {
-          key: 'tickets',
+          key: '/tickets',
           icon: <CustomerServiceOutlined />,
           label: 'Ticket Management',
-          children: [
-            {
-              key: '/tickets/queue',
-              label: 'Ticket Queue',
-            },
-            {
-              key: '/tickets/assignment',
-              label: 'Ticket Assignment',
-            },
-          ],
         }
       )
     }
@@ -424,14 +392,7 @@ const Sidebar = () => {
     if (pathname.startsWith('/assets/view')) return ['/assets/view']
 
     // Ticket Management routes
-    if (pathname.startsWith('/tickets/queue')) return ['/tickets/queue']
-    if (pathname.startsWith('/tickets/sla-config')) return ['/tickets/sla-config']
-    if (pathname.startsWith('/tickets/escalation-matrix')) return ['/tickets/escalation-matrix']
-    if (pathname.startsWith('/tickets/communication-log')) return ['/tickets/communication-log']
-    if (pathname.startsWith('/tickets/repair-history')) return ['/tickets/repair-history']
-    if (pathname.startsWith('/tickets/assignment')) return ['/tickets/assignment']
-    if (pathname.startsWith('/tickets/my-queue')) return ['/tickets/my-queue']
-    if (pathname.startsWith('/tickets/repair')) return ['/tickets/repair']
+    if (pathname.startsWith('/tickets')) return ['/tickets']
 
     // Reports & Analytics routes
     if (pathname.startsWith('/reports/dashboard')) return ['/reports/dashboard']
