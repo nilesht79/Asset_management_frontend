@@ -266,20 +266,21 @@ const userService = {
   // Search and filter utilities
   buildSearchParams: (filters, pagination = {}) => {
     const params = {}
-    
+
     // Add search filters
     if (filters.search) params.search = filters.search
     if (filters.status) params.status = filters.status
     if (filters.role) params.role = filters.role
     if (filters.department_id) params.department_id = filters.department_id
+    if (filters.location_id) params.location_id = filters.location_id
     if (filters.parent_id !== undefined) params.parent_id = filters.parent_id
-    
+
     // Add pagination
     if (pagination.page) params.page = pagination.page
     if (pagination.limit) params.limit = pagination.limit
     if (pagination.sortBy) params.sortBy = pagination.sortBy
     if (pagination.sortOrder) params.sortOrder = pagination.sortOrder
-    
+
     return params
   },
 

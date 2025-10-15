@@ -19,7 +19,9 @@ import {
   message,
   Progress,
   Divider,
-  Avatar
+  Avatar,
+  Collapse,
+  Drawer
 } from 'antd'
 import {
   PlusOutlined,
@@ -41,6 +43,7 @@ import {
   EyeOutlined,
   SettingOutlined
 } from '@ant-design/icons'
+import { Pie } from '@ant-design/plots'
 import { useSelector, useDispatch } from 'react-redux'
 import {
   fetchAssets,
@@ -102,6 +105,8 @@ const AssetInventory = () => {
   const [viewingAsset, setViewingAsset] = useState(null)
   const [bulkAddModalVisible, setBulkAddModalVisible] = useState(false)
   const [legacyImportModalVisible, setLegacyImportModalVisible] = useState(false)
+  const [filterDrawerVisible, setFilterDrawerVisible] = useState(false)
+  const [tempFilters, setTempFilters] = useState({})
 
   // Redux selectors
   const assets = useSelector(selectAssets)
@@ -140,19 +145,26 @@ const AssetInventory = () => {
 
   // Helper function to get status colors
   const getStatusColor = (status) => {
+    const statusLower = status.toLowerCase()
     const colors = {
-      'Free': '#52c41a',
-      'Assigned': '#1890ff',
-      'Under Repair': '#faad14',
-      'Discarded': '#f5222d'
+      'free': '#52c41a',
+      'assigned': '#1890ff',
+      'under_repair': '#faad14',
+      'under repair': '#faad14',
+      'discarded': '#f5222d',
+      'in_use': '#1890ff',
+      'available': '#52c41a',
+      'maintenance': '#faad14'
     }
-    return colors[status] || '#d9d9d9'
+    return colors[statusLower] || '#8c8c8c'
   }
 
   // Generate location distribution from statistics
   const locationDistribution = statistics.data?.locationDistribution ?
     statistics.data.locationDistribution.map((item, index) => ({
       location: item.location_name,
+      building: item.building,
+      floor: item.floor,
       count: item.asset_count || 0,
       color: `hsl(${index * 60}, 70%, 50%)`
     })) : []
@@ -353,6 +365,39 @@ const AssetInventory = () => {
     setEditingAsset(null)
   }
 
+  // Filter drawer handlers
+  const showFilterDrawer = () => {
+    setTempFilters(filters)
+    setFilterDrawerVisible(true)
+  }
+
+  const handleApplyFilters = () => {
+    dispatch(setAssetFilters(tempFilters))
+    dispatch(fetchAssets({ ...tempFilters, page: 1 }))
+    setFilterDrawerVisible(false)
+  }
+
+  const handleClearFilters = () => {
+    const clearedFilters = {
+      search: '',
+      status: '',
+      condition_status: '',
+      location_id: '',
+      assigned_to: '',
+      product_id: '',
+      category_id: '',
+      oem_id: ''
+    }
+    setTempFilters(clearedFilters)
+    dispatch(setAssetFilters(clearedFilters))
+    dispatch(fetchAssets({ page: 1, limit: assets.pagination?.limit || 10 }))
+    setFilterDrawerVisible(false)
+  }
+
+  const handleTempFilterChange = (key, value) => {
+    setTempFilters({ ...tempFilters, [key]: value })
+  }
+
   // Fetch deleted assets
   const fetchDeletedAssets = async () => {
     setDeletedAssetsLoading(true)
@@ -473,54 +518,77 @@ const AssetInventory = () => {
     )
   }
 
-  // Location Progress Chart Component
-  const LocationProgressChart = ({ data }) => {
-    const [showAll, setShowAll] = useState(false)
+  // Location Pie Chart Component
+  const LocationPieChart = ({ data }) => {
+    if (data.length === 0) {
+      return (
+        <div className="text-center text-gray-500 py-8">
+          <InfoCircleOutlined className="text-2xl mb-2" />
+          <div>No location data available</div>
+        </div>
+      )
+    }
+
     const total = data.reduce((sum, item) => sum + item.count, 0)
-    const maxItemsToShow = 5
-    const displayData = showAll ? data : data.slice(0, maxItemsToShow)
-    const hasMore = data.length > maxItemsToShow
+
+    const chartData = data.map(item => ({
+      location: item.location || 'Unknown',
+      building: item.building || null,
+      floor: item.floor || null,
+      value: item.count || 0,
+      color: item.color || '#d9d9d9'
+    })).filter(item => item.value > 0)
+
+    const config = {
+      data: chartData,
+      angleField: 'value',
+      colorField: 'location',
+      radius: 1.2,
+      innerRadius: 0.75,
+      height: 300,
+      label: false,
+      meta: {
+        location: {
+          alias: 'Location',
+        },
+        value: {
+          alias: 'Assets',
+          formatter: (val) => `${val}`,
+        },
+      },
+      interactions: [{ type: 'element-active' }],
+      legend: {
+        position: 'bottom',
+        layout: 'horizontal',
+        itemName: {
+          style: {
+            fontSize: 11,
+          },
+        },
+        maxRow: 3,
+      },
+      statistic: {
+        title: {
+          style: {
+            fontSize: '14px',
+            color: '#999',
+          },
+          content: 'Total Assets',
+        },
+        content: {
+          style: {
+            fontSize: '20px',
+            fontWeight: 'bold',
+          },
+          content: total.toString(),
+        },
+      },
+      color: data.map(item => item.color),
+    }
 
     return (
-      <div>
-        <div className="space-y-3" style={{ maxHeight: showAll ? 'none' : '300px', overflowY: showAll ? 'visible' : 'auto' }}>
-          {displayData.map((item, index) => {
-            const percentage = total > 0 ? ((item.count / total) * 100) : 0
-            return (
-              <div key={index} className="flex items-center justify-between">
-                <div className="flex-1 mr-4">
-                  <div className="flex justify-between items-center mb-1">
-                    <Text className="text-sm font-medium">{item.location}</Text>
-                    <Text className="text-xs text-gray-500">{item.count}</Text>
-                  </div>
-                  <Progress
-                    percent={percentage}
-                    showInfo={false}
-                    strokeColor={item.color}
-                    size="small"
-                  />
-                </div>
-              </div>
-            )
-          })}
-          {data.length === 0 && (
-            <div className="text-center text-gray-500 py-8">
-              <InfoCircleOutlined className="text-2xl mb-2" />
-              <div>No location data available</div>
-            </div>
-          )}
-        </div>
-        {hasMore && (
-          <div className="text-center mt-3">
-            <Button
-              type="link"
-              size="small"
-              onClick={() => setShowAll(!showAll)}
-            >
-              {showAll ? 'Show Less' : `Show ${data.length - maxItemsToShow} More`}
-            </Button>
-          </div>
-        )}
+      <div style={{ height: '300px' }}>
+        <Pie {...config} />
       </div>
     )
   }
@@ -561,103 +629,140 @@ const AssetInventory = () => {
   // Table columns matching the design
   const columns = [
     {
-      title: 'Sr.no',
+      title: <span className="font-semibold text-gray-700">#</span>,
       key: 'srno',
-      width: 70,
-      render: (_, __, index) => (assets.pagination?.page - 1) * assets.pagination?.limit + index + 1
+      width: 60,
+      fixed: 'left',
+      align: 'center',
+      render: (_, __, index) => (
+        <span className="text-gray-600 font-medium">
+          {(assets.pagination?.page - 1) * assets.pagination?.limit + index + 1}
+        </span>
+      )
     },
     {
-      title: 'Name',
+      title: <span className="font-semibold text-gray-700">Product</span>,
       key: 'name',
+      width: 200,
       render: (_, record) => (
-        <div>
-          <div className="font-medium">{record.product_name || 'N/A'}</div>
-          <div className="text-xs text-gray-500">{record.product_model || 'N/A'}</div>
+        <div className="py-1">
+          <div className="font-semibold text-gray-800 text-sm">{record.product_name || 'N/A'}</div>
+          <div className="text-xs text-gray-500 mt-0.5">{record.product_model || 'No model'}</div>
         </div>
       )
     },
     {
-      title: 'Department',
-      dataIndex: 'department',
-      key: 'department',
-      render: (department) => department || <span style={{color: '#999'}}>Unassigned</span>
-    },
-    {
-      title: 'Location',
-      dataIndex: 'location_name',
-      key: 'location'
-    },
-    {
-      title: 'Floor',
-      key: 'floor',
-      render: () => Math.floor(Math.random() * 5) + 1 // Mock data
-    },
-    {
-      title: 'Room No./Address',
-      dataIndex: 'location_address',
-      key: 'address',
-      render: (text) => text || 'N/A'
-    },
-    {
-      title: 'Asset Category',
-      dataIndex: 'category_name',
-      key: 'category'
-    },
-    {
-      title: 'Serial Number',
-      dataIndex: 'serial_number',
-      key: 'serial_number',
-      render: (serial) => serial || <span style={{color: '#999'}}>—</span>
-    },
-    {
-      title: 'Model No',
-      dataIndex: 'product_model',
-      key: 'model'
-    },
-    {
-      title: 'Asset ID',
+      title: <span className="font-semibold text-gray-700">Asset ID</span>,
       dataIndex: 'asset_tag',
-      key: 'asset_id'
+      key: 'asset_id',
+      width: 120,
+      render: (text) => <span className="font-mono text-xs bg-blue-50 px-2 py-1 rounded text-blue-700">{text}</span>
     },
     {
-      title: 'Tag No',
+      title: <span className="font-semibold text-gray-700">Tag No</span>,
       dataIndex: 'tag_no',
       key: 'tag_no',
-      render: (tagNo) => tagNo || <span style={{color: '#999'}}>—</span>
+      width: 100,
+      render: (tagNo) => tagNo ? <span className="font-mono text-xs">{tagNo}</span> : <span className="text-gray-400">—</span>
     },
     {
-      title: 'Assigned To',
+      title: <span className="font-semibold text-gray-700">Serial No</span>,
+      dataIndex: 'serial_number',
+      key: 'serial_number',
+      width: 130,
+      render: (serial) => serial ? <span className="font-mono text-xs text-gray-700">{serial}</span> : <span className="text-gray-400">—</span>
+    },
+    {
+      title: <span className="font-semibold text-gray-700">Category</span>,
+      dataIndex: 'category_name',
+      key: 'category',
+      width: 120,
+      render: (text) => text ? <Tag color="purple" className="text-xs">{text}</Tag> : <span className="text-gray-400">—</span>
+    },
+    {
+      title: <span className="font-semibold text-gray-700">Department</span>,
+      dataIndex: 'department',
+      key: 'department',
+      width: 130,
+      render: (department) => department || <span className="text-gray-400 italic">Unassigned</span>
+    },
+    {
+      title: <span className="font-semibold text-gray-700">Location</span>,
+      dataIndex: 'location_name',
+      key: 'location',
+      width: 150,
+      render: (text) => <span className="text-gray-700">{text}</span>
+    },
+    {
+      title: <span className="font-semibold text-gray-700">Building</span>,
+      dataIndex: 'location_building',
+      key: 'building',
+      width: 100,
+      render: (text) => text || <span className="text-gray-400">—</span>
+    },
+    {
+      title: <span className="font-semibold text-gray-700">Floor</span>,
+      dataIndex: 'location_floor',
+      key: 'floor',
+      width: 80,
+      render: (text) => text || <span className="text-gray-400">—</span>
+    },
+    {
+      title: <span className="font-semibold text-gray-700">Address</span>,
+      dataIndex: 'location_address',
+      key: 'address',
+      width: 150,
+      ellipsis: true,
+      render: (text) => text ? <Tooltip title={text}><span className="text-gray-600 text-xs">{text}</span></Tooltip> : <span className="text-gray-400">—</span>
+    },
+    {
+      title: <span className="font-semibold text-gray-700">Assigned To</span>,
       key: 'assigned_to',
+      width: 180,
       render: (_, record) => {
         if (record.assigned_user_name) {
           return (
-            <div>
-              <div className="font-medium">{record.assigned_user_name}</div>
-              <div className="text-xs text-gray-500">{record.assigned_user_email || ''}</div>
+            <div className="py-1">
+              <div className="font-medium text-gray-800 text-sm flex items-center">
+                <UserOutlined className="mr-1.5 text-blue-500" />
+                {record.assigned_user_name}
+              </div>
+              <div className="text-xs text-gray-500 mt-0.5 ml-5">{record.assigned_user_email || ''}</div>
             </div>
           )
         }
-        return <span style={{color: '#999'}}>Unassigned</span>
+        return (
+          <span className="text-gray-400 italic flex items-center">
+            <UserOutlined className="mr-1.5" />
+            Unassigned
+          </span>
+        )
       }
     },
     {
-      title: 'Status',
+      title: <span className="font-semibold text-gray-700">Status</span>,
       key: 'status',
-      width: 100,
+      width: 110,
+      align: 'center',
       render: (_, record) => {
         const isAssigned = record.assigned_to
         return (
-          <Tag color={isAssigned ? 'blue' : 'green'} className="w-full text-center">
+          <Tag
+            color={isAssigned ? 'blue' : 'green'}
+            className="font-medium"
+            style={{ minWidth: '80px', textAlign: 'center' }}
+          >
             {isAssigned ? 'Assigned' : 'Available'}
           </Tag>
         )
       }
     },
     {
-      title: 'Action',
+      title: <span className="font-semibold text-gray-700">Actions</span>,
       key: 'action',
       fixed: 'right',
-      width: 120,
+      width: 100,
+      align: 'center',
       render: (_, record) => {
         const isAssigned = record.assigned_to
 
@@ -665,6 +770,7 @@ const AssetInventory = () => {
           <div className="flex items-center justify-center">
             <Dropdown
               trigger={['click']}
+              placement="bottomRight"
               menu={{
                 items: [
                   {
@@ -734,148 +840,228 @@ const AssetInventory = () => {
 
   // Asset Location Map Component
   const AssetLocationMap = ({ data }) => {
-    // Create sample floor plan with asset locations
-    const floorPlan = {
-      width: 800,
-      height: 500,
-      rooms: [
-        { id: 1, name: 'Server Room', x: 50, y: 50, width: 150, height: 100, assets: 0 },
-        { id: 2, name: 'IT Asset Warehouse', x: 250, y: 50, width: 200, height: 150, assets: 0 },
-        { id: 3, name: 'Office Area 1', x: 500, y: 50, width: 250, height: 100, assets: 0 },
-        { id: 4, name: 'Office Area 2', x: 50, y: 200, width: 200, height: 120, assets: 0 },
-        { id: 5, name: 'Conference Room', x: 300, y: 250, width: 150, height: 100, assets: 0 },
-        { id: 6, name: 'Storage', x: 500, y: 200, width: 100, height: 80, assets: 0 },
-        { id: 7, name: 'Reception', x: 650, y: 200, width: 100, height: 150, assets: 0 }
-      ]
+    const [searchTerm, setSearchTerm] = useState('')
+    const [expandedBuildings, setExpandedBuildings] = useState([])
+
+    // Group locations by building
+    const buildingGroups = data.reduce((acc, item) => {
+      const building = item.building || 'Unspecified Building'
+      if (!acc[building]) {
+        acc[building] = []
+      }
+      acc[building].push(item)
+      return acc
+    }, {})
+
+    // Filter buildings and locations based on search
+    const filteredBuildingGroups = Object.entries(buildingGroups).reduce((acc, [building, locations]) => {
+      if (searchTerm) {
+        const filteredLocs = locations.filter(loc =>
+          loc.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (loc.building && loc.building.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          (loc.floor && loc.floor.toLowerCase().includes(searchTerm.toLowerCase()))
+        )
+        if (filteredLocs.length > 0) {
+          acc[building] = filteredLocs
+        }
+      } else {
+        acc[building] = locations
+      }
+      return acc
+    }, {})
+
+    const totalAssets = data.reduce((sum, item) => sum + item.count, 0)
+    const filteredTotalAssets = Object.values(filteredBuildingGroups)
+      .flat()
+      .reduce((sum, loc) => sum + loc.count, 0)
+
+    // Auto-expand first 3 buildings or all if search active
+    useEffect(() => {
+      if (searchTerm) {
+        setExpandedBuildings(Object.keys(filteredBuildingGroups))
+      } else {
+        setExpandedBuildings(Object.keys(buildingGroups).slice(0, 3))
+      }
+    }, [searchTerm])
+
+    const toggleBuilding = (building) => {
+      setExpandedBuildings(prev =>
+        prev.includes(building)
+          ? prev.filter(b => b !== building)
+          : [...prev, building]
+      )
     }
 
-    // Map asset counts to rooms based on location names
-    floorPlan.rooms = floorPlan.rooms.map(room => {
-      const locationData = data.find(loc =>
-        loc.location.toLowerCase().includes(room.name.toLowerCase()) ||
-        loc.location.toLowerCase().includes('warehouse')
-      )
-      return {
-        ...room,
-        assets: locationData ? locationData.count : Math.floor(Math.random() * 3) // Random for demo
-      }
-    })
+    const expandAll = () => {
+      setExpandedBuildings(Object.keys(filteredBuildingGroups))
+    }
 
-    const getAssetDensityColor = (assetCount) => {
-      if (assetCount === 0) return '#f3f4f6'
-      if (assetCount <= 2) return '#dbeafe'
-      if (assetCount <= 5) return '#93c5fd'
-      if (assetCount <= 10) return '#3b82f6'
-      return '#1d4ed8'
+    const collapseAll = () => {
+      setExpandedBuildings([])
     }
 
     return (
       <div className="p-4">
-        <div className="mb-4">
-          <h3 className="text-lg font-semibold mb-2">Asset Distribution Floor Plan - 3rd Floor</h3>
-          <div className="flex items-center gap-4 text-sm text-gray-600">
-            <span>Floor: 3rd</span>
-            <span>Building: Pune IT Asset Warehouse</span>
-            <span>Total Assets: {data.reduce((sum, item) => sum + item.count, 0)}</span>
+        <div className="mb-6">
+          <h3 className="text-lg font-semibold mb-3">Asset Distribution by Building & Floor</h3>
+
+          {/* Search and Controls */}
+          <div className="mb-4 space-y-3">
+            <Input.Search
+              placeholder="Search buildings, floors, or locations..."
+              allowClear
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              style={{ maxWidth: 400 }}
+            />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4 text-sm text-gray-600">
+                <span className="flex items-center">
+                  <EnvironmentOutlined className="mr-1" />
+                  {Object.keys(filteredBuildingGroups).length} Building{Object.keys(filteredBuildingGroups).length !== 1 ? 's' : ''}
+                </span>
+                <span className="flex items-center">
+                  <TagOutlined className="mr-1" />
+                  {Object.values(filteredBuildingGroups).flat().length} Location{Object.values(filteredBuildingGroups).flat().length !== 1 ? 's' : ''}
+                </span>
+                <span className="flex items-center font-medium text-blue-600">
+                  {searchTerm ? `${filteredTotalAssets} / ` : ''}{totalAssets} Assets
+                </span>
+              </div>
+              <Space size="small">
+                <Button size="small" type="link" onClick={expandAll}>
+                  Expand All
+                </Button>
+                <Button size="small" type="link" onClick={collapseAll}>
+                  Collapse All
+                </Button>
+              </Space>
+            </div>
           </div>
         </div>
 
-        {/* Floor Plan SVG */}
-        <div className="bg-gray-50 border rounded-lg p-4 mb-4">
-          <svg width={floorPlan.width} height={floorPlan.height} className="border bg-white">
-            {/* Grid background */}
-            <defs>
-              <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
-                <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#e5e7eb" strokeWidth="0.5"/>
-              </pattern>
-            </defs>
-            <rect width="100%" height="100%" fill="url(#grid)" />
+        {/* Building & Floor Hierarchy with Collapse */}
+        {Object.keys(filteredBuildingGroups).length === 0 ? (
+          <div className="text-center py-8 text-gray-400">
+            <EnvironmentOutlined style={{ fontSize: 48, marginBottom: 16 }} />
+            <div>No locations found matching "{searchTerm}"</div>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {Object.entries(filteredBuildingGroups).map(([building, locations]) => {
+              const buildingTotal = locations.reduce((sum, loc) => sum + loc.count, 0)
+              const isExpanded = expandedBuildings.includes(building)
+              const floorGroups = locations.reduce((acc, loc) => {
+                const floor = loc.floor || 'No Floor Info'
+                if (!acc[floor]) acc[floor] = []
+                acc[floor].push(loc)
+                return acc
+              }, {})
 
-            {/* Rooms */}
-            {floorPlan.rooms.map(room => (
-              <g key={room.id}>
-                <rect
-                  x={room.x}
-                  y={room.y}
-                  width={room.width}
-                  height={room.height}
-                  fill={getAssetDensityColor(room.assets)}
-                  stroke="#374151"
-                  strokeWidth="2"
-                  className="cursor-pointer hover:opacity-80 transition-opacity"
-                />
+              return (
+                <div key={building} className="border rounded-lg overflow-hidden">
+                  {/* Building Header - Clickable */}
+                  <div
+                    className="bg-gradient-to-r from-blue-50 to-blue-100 p-3 border-b cursor-pointer hover:from-blue-100 hover:to-blue-200 transition-colors"
+                    onClick={() => toggleBuilding(building)}
+                  >
+                    <div className="flex justify-between items-center">
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-gray-800 flex items-center">
+                          <EnvironmentOutlined className="mr-2 text-blue-600" />
+                          {building}
+                          <span className="ml-2 text-xs font-normal text-gray-500">
+                            ({Object.keys(floorGroups).length} floor{Object.keys(floorGroups).length !== 1 ? 's' : ''}, {locations.length} location{locations.length !== 1 ? 's' : ''})
+                          </span>
+                        </h4>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="text-right">
+                          <div className="text-xl font-bold text-blue-600">{buildingTotal}</div>
+                          <div className="text-xs text-gray-600">assets</div>
+                        </div>
+                        <div className="text-gray-400">
+                          {isExpanded ? '▼' : '▶'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
 
-                {/* Room label */}
-                <text
-                  x={room.x + room.width / 2}
-                  y={room.y + room.height / 2 - 10}
-                  textAnchor="middle"
-                  className="fill-gray-800 text-sm font-medium"
-                  style={{ fontSize: '12px' }}
-                >
-                  {room.name}
-                </text>
-
-                {/* Asset count */}
-                <text
-                  x={room.x + room.width / 2}
-                  y={room.y + room.height / 2 + 10}
-                  textAnchor="middle"
-                  className="fill-gray-600 text-xs"
-                  style={{ fontSize: '11px' }}
-                >
-                  {room.assets} assets
-                </text>
-              </g>
-            ))}
-
-            {/* Legend */}
-            <g transform="translate(20, 420)">
-              <text x="0" y="0" className="fill-gray-800 text-sm font-medium">Asset Density:</text>
-              {[
-                { count: '0', color: '#f3f4f6', label: 'Empty' },
-                { count: '1-2', color: '#dbeafe', label: 'Low' },
-                { count: '3-5', color: '#93c5fd', label: 'Medium' },
-                { count: '6-10', color: '#3b82f6', label: 'High' },
-                { count: '10+', color: '#1d4ed8', label: 'Very High' }
-              ].map((item, index) => (
-                <g key={index} transform={`translate(${index * 120}, 20)`}>
-                  <rect x="0" y="0" width="15" height="15" fill={item.color} stroke="#374151" />
-                  <text x="20" y="12" className="fill-gray-700 text-xs">{item.count}</text>
-                </g>
-              ))}
-            </g>
-          </svg>
-        </div>
-
-        {/* Location Statistics */}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <h4 className="font-medium mb-2">Location Statistics</h4>
-            <div className="space-y-2">
-              {data.map((location, index) => (
-                <div key={index} className="flex justify-between items-center p-2 bg-gray-50 rounded">
-                  <span className="text-sm">{location.location}</span>
-                  <span className="font-medium text-blue-600">{location.count} assets</span>
+                  {/* Collapsible Content */}
+                  {isExpanded && (
+                    <div className="p-3 bg-white">
+                      <Collapse
+                        ghost
+                        defaultActiveKey={Object.keys(floorGroups).slice(0, 2)}
+                        items={Object.entries(floorGroups).map(([floor, floorLocs]) => {
+                          const floorTotal = floorLocs.reduce((sum, loc) => sum + loc.count, 0)
+                          return {
+                            key: floor,
+                            label: (
+                              <div className="flex justify-between items-center">
+                                <span className="font-medium text-gray-700">Floor: {floor}</span>
+                                <span className="text-sm font-semibold text-blue-600 mr-2">
+                                  {floorTotal} asset{floorTotal !== 1 ? 's' : ''}
+                                </span>
+                              </div>
+                            ),
+                            children: (
+                              <div className="space-y-1 pl-4">
+                                {floorLocs.map((loc, idx) => (
+                                  <div
+                                    key={idx}
+                                    className="flex justify-between items-center text-sm p-2 bg-gray-50 rounded hover:bg-blue-50 transition-colors"
+                                  >
+                                    <span className="text-gray-700">{loc.location}</span>
+                                    <Badge
+                                      count={loc.count}
+                                      showZero
+                                      style={{ backgroundColor: loc.count > 0 ? '#1890ff' : '#d9d9d9' }}
+                                    />
+                                  </div>
+                                ))}
+                              </div>
+                            )
+                          }
+                        })}
+                      />
+                    </div>
+                  )}
                 </div>
-              ))}
-            </div>
+              )
+            })}
           </div>
-          <div>
-            <h4 className="font-medium mb-2">Quick Actions</h4>
-            <div className="space-y-2">
-              <Button type="primary" block icon={<PlusOutlined />}>
-                Add New Location
-              </Button>
-              <Button block icon={<ExportOutlined />}>
-                Export Location Report
-              </Button>
-              <Button block icon={<SettingOutlined />}>
-                Configure Floor Plan
-              </Button>
-            </div>
+        )}
+
+        {/* Summary Statistics */}
+        {Object.keys(filteredBuildingGroups).length > 0 && (
+          <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+            <h4 className="font-medium mb-3 text-gray-700">Summary</h4>
+            <Row gutter={16}>
+              <Col span={8}>
+                <Statistic
+                  title="Total Buildings"
+                  value={Object.keys(buildingGroups).length}
+                  prefix={<EnvironmentOutlined />}
+                />
+              </Col>
+              <Col span={8}>
+                <Statistic
+                  title="Total Locations"
+                  value={data.length}
+                  prefix={<TagOutlined />}
+                />
+              </Col>
+              <Col span={8}>
+                <Statistic
+                  title="Total Assets"
+                  value={totalAssets}
+                  valueStyle={{ color: '#1890ff' }}
+                />
+              </Col>
+            </Row>
           </div>
-        </div>
+        )}
       </div>
     )
   }
@@ -980,10 +1166,10 @@ const AssetInventory = () => {
               </Button>
             }
           >
-            <LocationProgressChart data={locationDistribution} />
+            <LocationPieChart data={locationDistribution} />
             <div className="mt-4 text-xs text-gray-500 flex items-center">
-              <WarningOutlined className="mr-1" />
-              Tip: Longer bars indicate locations with more assets - consider load balancing
+              <InfoCircleOutlined className="mr-1" />
+              Click on a slice to view details for that location
             </div>
           </Card>
         </Col>
@@ -1083,13 +1269,7 @@ const AssetInventory = () => {
 
       {/* Asset Inventory Table Section - Exact match to design */}
       <Card className="border-0 shadow-sm">
-        <div className="flex justify-between items-center mb-4">
-          <Title level={4} className="mb-0">Asset Inventory</Title>
-          <Space>
-            <Tag color="blue" className="px-3 py-1">Assigned - 4075</Tag>
-            <Tag color="green" className="px-3 py-1">Free - 626</Tag>
-          </Space>
-        </div>
+       
 
         <div className="flex justify-between items-center mb-4">
           <Space>
@@ -1111,7 +1291,7 @@ const AssetInventory = () => {
             >
               <Button icon={<ExportOutlined />}>Export</Button>
             </Dropdown>
-            <Button icon={<FilterOutlined />}>Filters</Button>
+            <Button icon={<FilterOutlined />} onClick={showFilterDrawer}>Filters</Button>
             <Button
               icon={<DeleteOutlined />}
               onClick={showDeletedAssetsModal}
@@ -1129,18 +1309,23 @@ const AssetInventory = () => {
           loading={assets.loading}
           pagination={{
             current: assets.pagination?.page || 1,
-            pageSize: assets.pagination?.pageSize || 10,
+            pageSize: assets.pagination?.limit || 10,
             total: assets.pagination?.total || 0,
             showSizeChanger: true,
             showQuickJumper: true,
             showTotal: (total, range) => `Showing ${range[0]} to ${range[1]} of ${total} entries`,
-            className: 'mt-4'
+            className: 'mt-4',
+            pageSizeOptions: ['10', '20', '50', '100']
           }}
           onChange={handleTableChange}
-          scroll={{ x: 1400 }}
-          size="small"
-          className="border rounded-lg shadow-sm bg-white"
-          bordered={false}
+          scroll={{ x: 2000, y: 'calc(100vh - 320px)' }}
+          size="middle"
+          className="custom-table"
+          style={{
+            borderRadius: '8px',
+            overflow: 'hidden',
+            boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)'
+          }}
         />
       </Card>
 
@@ -1623,6 +1808,189 @@ const AssetInventory = () => {
           dispatch(fetchAssetStatistics())
         }}
       />
+
+      {/* Filter Drawer */}
+      <Drawer
+        title={
+          <div className="flex items-center justify-between">
+            <span className="text-lg font-semibold">Filter Assets</span>
+            <Badge count={Object.values(tempFilters).filter(v => v && v !== '').length} showZero={false} />
+          </div>
+        }
+        placement="right"
+        width={400}
+        open={filterDrawerVisible}
+        onClose={() => setFilterDrawerVisible(false)}
+        footer={
+          <div className="flex justify-between">
+            <Button onClick={handleClearFilters}>Clear All</Button>
+            <Space>
+              <Button onClick={() => setFilterDrawerVisible(false)}>Cancel</Button>
+              <Button type="primary" onClick={handleApplyFilters}>Apply Filters</Button>
+            </Space>
+          </div>
+        }
+      >
+        <div className="space-y-4">
+          {/* Search */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
+            <Input
+              placeholder="Search by asset tag, product name, model..."
+              value={tempFilters.search || ''}
+              onChange={(e) => handleTempFilterChange('search', e.target.value)}
+              allowClear
+            />
+          </div>
+
+          {/* Status */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+            <Select
+              placeholder="Select status"
+              value={tempFilters.status || undefined}
+              onChange={(value) => handleTempFilterChange('status', value)}
+              allowClear
+              style={{ width: '100%' }}
+            >
+              <Option value="available">Available</Option>
+              <Option value="assigned">Assigned</Option>
+              <Option value="in_use">In Use</Option>
+              <Option value="under_repair">Under Repair</Option>
+              <Option value="discarded">Discarded</Option>
+            </Select>
+          </div>
+
+          {/* Condition Status */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Condition</label>
+            <Select
+              placeholder="Select condition"
+              value={tempFilters.condition_status || undefined}
+              onChange={(value) => handleTempFilterChange('condition_status', value)}
+              allowClear
+              style={{ width: '100%' }}
+            >
+              <Option value="excellent">Excellent</Option>
+              <Option value="good">Good</Option>
+              <Option value="fair">Fair</Option>
+              <Option value="poor">Poor</Option>
+            </Select>
+          </div>
+
+          {/* Category */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+            <Select
+              placeholder="Select category"
+              value={tempFilters.category_id || undefined}
+              onChange={(value) => handleTempFilterChange('category_id', value)}
+              allowClear
+              showSearch
+              filterOption={(input, option) =>
+                option.children.toLowerCase().includes(input.toLowerCase())
+              }
+              style={{ width: '100%' }}
+            >
+              {categories.data?.map(category => (
+                <Option key={category.id} value={category.id}>
+                  {category.name}
+                </Option>
+              ))}
+            </Select>
+          </div>
+
+          {/* Product */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Product</label>
+            <Select
+              placeholder="Select product"
+              value={tempFilters.product_id || undefined}
+              onChange={(value) => handleTempFilterChange('product_id', value)}
+              allowClear
+              showSearch
+              filterOption={(input, option) =>
+                option.children.toLowerCase().includes(input.toLowerCase())
+              }
+              style={{ width: '100%' }}
+            >
+              {products.data?.map(product => (
+                <Option key={product.id} value={product.id}>
+                  {product.name} {product.model && `(${product.model})`}
+                </Option>
+              ))}
+            </Select>
+          </div>
+
+          {/* OEM */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">OEM/Manufacturer</label>
+            <Select
+              placeholder="Select OEM"
+              value={tempFilters.oem_id || undefined}
+              onChange={(value) => handleTempFilterChange('oem_id', value)}
+              allowClear
+              showSearch
+              filterOption={(input, option) =>
+                option.children.toLowerCase().includes(input.toLowerCase())
+              }
+              style={{ width: '100%' }}
+            >
+              {oems.data?.map(oem => (
+                <Option key={oem.id} value={oem.id}>
+                  {oem.name}
+                </Option>
+              ))}
+            </Select>
+          </div>
+
+          {/* Location */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
+            <Select
+              placeholder="Select location"
+              value={tempFilters.location_id || undefined}
+              onChange={(value) => handleTempFilterChange('location_id', value)}
+              allowClear
+              showSearch
+              filterOption={(input, option) =>
+                option.children.toLowerCase().includes(input.toLowerCase())
+              }
+              style={{ width: '100%' }}
+            >
+              {locations.data?.map(location => (
+                <Option key={location.id} value={location.id}>
+                  {location.name}
+                  {location.building && ` - ${location.building}`}
+                  {location.floor && ` (Floor: ${location.floor})`}
+                </Option>
+              ))}
+            </Select>
+          </div>
+
+          {/* Assigned To */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Assigned To</label>
+            <Select
+              placeholder="Select user"
+              value={tempFilters.assigned_to || undefined}
+              onChange={(value) => handleTempFilterChange('assigned_to', value)}
+              allowClear
+              showSearch
+              filterOption={(input, option) =>
+                option.children.toLowerCase().includes(input.toLowerCase())
+              }
+              style={{ width: '100%' }}
+            >
+              {users.data?.map(user => (
+                <Option key={user.user_id} value={user.user_id}>
+                  {user.first_name} {user.last_name} ({user.email})
+                </Option>
+              ))}
+            </Select>
+          </div>
+        </div>
+      </Drawer>
     </div>
   )
 }

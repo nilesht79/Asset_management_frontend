@@ -133,8 +133,27 @@ const Users = () => {
 
   const fetchDepartments = async () => {
     try {
-      const response = await userService.getDepartments()
-      setDepartments(response.data.data?.departments || [])
+      let allDepartments = []
+      let currentPage = 1
+      let hasMore = true
+
+      // Fetch all departments with pagination (max limit is 100)
+      while (hasMore) {
+        const response = await userService.getDepartments({ page: currentPage, limit: 100 })
+        const data = response.data.data
+        const departments = data?.departments || []
+
+        allDepartments = [...allDepartments, ...departments]
+
+        // Check if there are more pages
+        if (data?.pagination && currentPage < data.pagination.totalPages) {
+          currentPage++
+        } else {
+          hasMore = false
+        }
+      }
+
+      setDepartments(allDepartments)
     } catch (error) {
       console.error('Failed to fetch departments:', error)
     }
@@ -142,8 +161,27 @@ const Users = () => {
 
   const fetchLocations = async () => {
     try {
-      const response = await userService.getLocations()
-      setLocations(response.data.data?.locations || [])
+      let allLocations = []
+      let currentPage = 1
+      let hasMore = true
+
+      // Fetch all locations with pagination (max limit is 100)
+      while (hasMore) {
+        const response = await userService.getLocations({ page: currentPage, limit: 100 })
+        const data = response.data.data
+        const locations = data?.locations || []
+
+        allLocations = [...allLocations, ...locations]
+
+        // Check if there are more pages
+        if (data?.pagination && currentPage < data.pagination.totalPages) {
+          currentPage++
+        } else {
+          hasMore = false
+        }
+      }
+
+      setLocations(allLocations)
     } catch (error) {
       console.error('Failed to fetch locations:', error)
     }
@@ -196,6 +234,7 @@ const Users = () => {
 
   const handleSaveUser = async (values) => {
     try {
+      console.log('Form values:', values)
       if (editingUser) {
         await userService.updateUser(editingUser.id, values)
         message.success('User updated successfully')
@@ -203,12 +242,14 @@ const Users = () => {
         await userService.createUser(values)
         message.success('User created successfully')
       }
-      
+
       setUserModalVisible(false)
       fetchUsers()
+      fetchStatistics()
     } catch (error) {
       console.error('Failed to save user:', error)
-      message.error(editingUser ? 'Failed to update user' : 'Failed to create user')
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to save user'
+      message.error(errorMessage)
     }
   }
 
@@ -722,129 +763,181 @@ const Users = () => {
 
       {/* Filters and Actions */}
       <Card>
-        <div className="flex flex-col md:flex-row gap-4 mb-4">
-          <Search
-            placeholder="Search users..."
-            allowClear
-            style={{ width: 300 }}
-            onSearch={(value) => handleFilterChange('search', value)}
-            enterButton={<SearchOutlined />}
-          />
-          
-          <Select
-            placeholder="Filter by Role"
-            allowClear
-            style={{ width: 200 }}
-            onChange={(value) => handleFilterChange('role', value)}
-            value={filters.role || undefined}
-          >
-            {availableRoles.map(role => (
-              <Option key={role.value} value={role.value}>
-                {role.label}
-              </Option>
-            ))}
-          </Select>
-          
-          <Select
-            placeholder="Filter by Department"
-            allowClear
-            style={{ width: 200 }}
-            onChange={(value) => handleFilterChange('department_id', value)}
-            value={filters.department_id || undefined}
-          >
-            {departments.map(dept => (
-              <Option key={dept.id} value={dept.id}>
-                {dept.name}
-              </Option>
-            ))}
-          </Select>
+        <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+          {/* Search and Filter Row */}
+          <Row gutter={[16, 16]}>
+            <Col xs={24} sm={24} md={12} lg={7}>
+              <Search
+                placeholder="Search users..."
+                allowClear
+                onSearch={(value) => handleFilterChange('search', value)}
+                enterButton={<SearchOutlined />}
+              />
+            </Col>
 
-          <Select
-            placeholder="Filter by Location"
-            allowClear
-            style={{ width: 200 }}
-            onChange={(value) => handleFilterChange('location_id', value)}
-            value={filters.location_id || undefined}
-          >
-            {locations.map(loc => (
-              <Option key={loc.id} value={loc.id}>
-                {loc.name}
-              </Option>
-            ))}
-          </Select>
+            <Col xs={24} sm={12} md={6} lg={4}>
+              <Select
+                placeholder="Filter by Role"
+                allowClear
+                style={{ width: '100%' }}
+                onChange={(value) => handleFilterChange('role', value)}
+                value={filters.role || undefined}
+              >
+                {availableRoles.map(role => (
+                  <Option key={role.value} value={role.value}>
+                    {role.label}
+                  </Option>
+                ))}
+              </Select>
+            </Col>
 
-          <Select
-            placeholder="Filter by Status"
-            style={{ width: 150 }}
-            onChange={(value) => handleFilterChange('status', value)}
-            value={filters.status}
-          >
-            <Option value="active">Active</Option>
-            <Option value="inactive">Inactive</Option>
-            <Option value="">All</Option>
-          </Select>
+            <Col xs={24} sm={12} md={6} lg={4}>
+              <Select
+                placeholder="Filter by Department"
+                allowClear
+                showSearch
+                style={{ width: '100%' }}
+                onChange={(value) => handleFilterChange('department_id', value)}
+                value={filters.department_id || undefined}
+                filterOption={(input, option) =>
+                  (option?.children?.toString() || '').toLowerCase().includes(input.toLowerCase())
+                }
+              >
+                {departments.map(dept => (
+                  <Option key={dept.id} value={dept.id}>
+                    {dept.name}
+                  </Option>
+                ))}
+              </Select>
+            </Col>
 
-          <div className="flex-1" />
-          
-          <Space>
-            <Button
-              icon={<ReloadOutlined />}
-              onClick={fetchUsers}
-              disabled={loading}
-            >
-              Refresh
-            </Button>
-            
-            <Button
-              icon={<DownloadOutlined />}
-              onClick={handleExport}
-            >
-              Export
-            </Button>
+            <Col xs={24} sm={12} md={12} lg={5}>
+              <Select
+                placeholder="Filter by Location"
+                allowClear
+                showSearch
+                style={{ width: '100%' }}
+                onChange={(value) => handleFilterChange('location_id', value)}
+                value={filters.location_id || undefined}
+                popupMatchSelectWidth={false}
+                getPopupContainer={(trigger) => trigger.parentNode}
+                filterOption={(input, option) => {
+                  const searchText = input.toLowerCase()
+                  const locationName = option?.locationname?.toLowerCase() || ''
+                  const building = option?.building?.toLowerCase() || ''
+                  const floor = option?.floor?.toLowerCase() || ''
+                  return locationName.includes(searchText) ||
+                         building.includes(searchText) ||
+                         floor.includes(searchText)
+                }}
+              >
+                {locations.map(loc => (
+                  <Option
+                    key={loc.id}
+                    value={loc.id}
+                    locationname={loc.name}
+                    building={loc.building || ''}
+                    floor={loc.floor || ''}
+                  >
+                    <div style={{ whiteSpace: 'normal', wordBreak: 'break-word', padding: '4px 0' }}>
+                      <div style={{ fontWeight: 500 }}>{loc.name}</div>
+                      {(loc.building || loc.floor) && (
+                        <div style={{ fontSize: '11px', color: '#666', lineHeight: '1.3', marginTop: '2px' }}>
+                          {loc.building && `Bldg: ${loc.building}`}
+                          {loc.building && loc.floor && ' • '}
+                          {loc.floor && `Flr: ${loc.floor}`}
+                        </div>
+                      )}
+                    </div>
+                  </Option>
+                ))}
+              </Select>
+            </Col>
 
-            <Button
-              icon={<UploadOutlined />}
-              onClick={handleBulkUploadClick}
-            >
-              Bulk Upload
-            </Button>
+            <Col xs={24} sm={12} md={6} lg={4}>
+              <Select
+                placeholder="Filter by Status"
+                style={{ width: '100%' }}
+                onChange={(value) => handleFilterChange('status', value)}
+                value={filters.status}
+              >
+                <Option value="active">Active</Option>
+                <Option value="inactive">Inactive</Option>
+                <Option value="">All</Option>
+              </Select>
+            </Col>
+          </Row>
+
+          {/* Action Buttons Row */}
+          <Row gutter={[8, 8]} justify="end">
+            <Col>
+              <Button
+                icon={<ReloadOutlined />}
+                onClick={fetchUsers}
+                disabled={loading}
+              >
+                Refresh
+              </Button>
+            </Col>
+
+            <Col>
+              <Button
+                icon={<DownloadOutlined />}
+                onClick={handleExport}
+              >
+                Export
+              </Button>
+            </Col>
+
+            <Col>
+              <Button
+                icon={<UploadOutlined />}
+                onClick={handleBulkUploadClick}
+              >
+                Bulk Upload
+              </Button>
+            </Col>
 
             {selectedUsers.length > 0 && (
-              <Button
-                danger
-                icon={<DeleteOutlined />}
-                onClick={handleBulkDelete}
-              >
-                Delete Selected ({selectedUsers.length})
-              </Button>
+              <Col>
+                <Button
+                  danger
+                  icon={<DeleteOutlined />}
+                  onClick={handleBulkDelete}
+                >
+                  Delete Selected ({selectedUsers.length})
+                </Button>
+              </Col>
             )}
 
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={handleCreateUser}
-            >
-              Add User
-            </Button>
-          </Space>
-        </div>
+            <Col>
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={handleCreateUser}
+              >
+                Add User
+              </Button>
+            </Col>
+          </Row>
 
-        <Table
-          columns={columns}
-          dataSource={users}
-          rowKey="id"
-          loading={loading}
-          pagination={pagination}
-          onChange={handleTableChange}
-          rowSelection={{
-            selectedRowKeys: selectedUsers,
-            onChange: setSelectedUsers,
-            getCheckboxProps: (record) => ({
-              disabled: !userService.canUserManageUser(currentUser?.role, record.role)
-            })
-          }}
-          scroll={{ x: 1200 }}
-        />
+          <Table
+            columns={columns}
+            dataSource={users}
+            rowKey="id"
+            loading={loading}
+            pagination={pagination}
+            onChange={handleTableChange}
+            rowSelection={{
+              selectedRowKeys: selectedUsers,
+              onChange: setSelectedUsers,
+              getCheckboxProps: (record) => ({
+                disabled: !userService.canUserManageUser(currentUser?.role, record.role)
+              })
+            }}
+            scroll={{ x: 1200 }}
+          />
+        </Space>
       </Card>
 
       {/* User Modal */}
@@ -920,7 +1013,17 @@ const Users = () => {
                 label="Department"
                 name="department_id"
               >
-                <Select allowClear placeholder="Select department">
+                <Select
+                  allowClear
+                  placeholder="Select department"
+                  showSearch
+                  filterOption={(input, option) =>
+                    (option?.children?.toString() || '').toLowerCase().includes(input.toLowerCase())
+                  }
+                  optionFilterProp="children"
+                  virtual
+                  listHeight={256}
+                >
                   {departments.map(dept => (
                     <Option key={dept.id} value={dept.id}>
                       {dept.name}
@@ -937,10 +1040,40 @@ const Users = () => {
                 label="Location"
                 name="location_id"
               >
-                <Select allowClear placeholder="Select location">
+                <Select
+                  allowClear
+                  placeholder="Select location"
+                  showSearch
+                  filterOption={(input, option) => {
+                    const searchText = input.toLowerCase()
+                    const locationName = option?.locationname?.toLowerCase() || ''
+                    const building = option?.building?.toLowerCase() || ''
+                    const floor = option?.floor?.toLowerCase() || ''
+                    return locationName.includes(searchText) ||
+                           building.includes(searchText) ||
+                           floor.includes(searchText)
+                  }}
+                  virtual
+                  listHeight={256}
+                >
                   {locations.map(loc => (
-                    <Option key={loc.id} value={loc.id}>
-                      {loc.name}
+                    <Option
+                      key={loc.id}
+                      value={loc.id}
+                      locationname={loc.name}
+                      building={loc.building || ''}
+                      floor={loc.floor || ''}
+                    >
+                      <div>
+                        <div style={{ fontWeight: 500 }}>{loc.name}</div>
+                        {(loc.building || loc.floor) && (
+                          <div style={{ fontSize: '12px', color: '#666' }}>
+                            {loc.building && `Building: ${loc.building}`}
+                            {loc.building && loc.floor && ' • '}
+                            {loc.floor && `Floor: ${loc.floor}`}
+                          </div>
+                        )}
+                      </div>
                     </Option>
                   ))}
                 </Select>
@@ -980,14 +1113,26 @@ const Users = () => {
               name="password"
               rules={[
                 { required: true, message: 'Password is required' },
+                { min: 8, message: 'Password must be at least 8 characters' },
                 {
-                  pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/,
-                  message: 'Password must contain uppercase, lowercase, number, and special character (@$!%*?&)'
-                },
-                { min: 8, message: 'Password must be at least 8 characters' }
+                  validator: async (_, value) => {
+                    if (!value) return Promise.reject();
+
+                    // Import password strength checker
+                    const { checkPasswordStrength } = await import('../utils/passwordStrength');
+                    const strength = checkPasswordStrength(value);
+
+                    // Accept Medium, Good, or Strong passwords (score >= 40)
+                    if (strength.score < 40) {
+                      return Promise.reject('Password is too weak. Use at least 3 character types (uppercase, lowercase, numbers, special chars)');
+                    }
+
+                    return Promise.resolve();
+                  }
+                }
               ]}
             >
-              <PasswordInput showRequirements placeholder="Enter strong password" />
+              <PasswordInput showRequirements placeholder="Enter password (minimum: Medium strength)" />
             </Form.Item>
           )}
 
@@ -995,7 +1140,7 @@ const Users = () => {
             <Button onClick={() => setUserModalVisible(false)}>
               Cancel
             </Button>
-            <Button type="primary" htmlType="submit">
+            <Button type="primary" htmlType="submit" loading={loading}>
               {editingUser ? 'Update' : 'Create'}
             </Button>
           </div>

@@ -99,6 +99,8 @@ const LocationMainForm = ({ open, mode, location, onClose, onSuccess }) => {
           state_name: location.state_name,
           city_name: location.city_name,
           area_name: location.area_name,
+          building: location.building,
+          floor: location.floor,
           contact_person: location.contact_person,
           contact_email: location.contact_email,
           contact_phone: location.contact_phone
@@ -124,6 +126,8 @@ const LocationMainForm = ({ open, mode, location, onClose, onSuccess }) => {
         state_name: values.state_name,
         city_name: values.city_name,
         area_name: values.area_name,
+        building: values.building || '',
+        floor: values.floor || '',
         contact_person: values.contact_person,
         contact_email: values.contact_email,
         contact_phone: values.contact_phone || ''
@@ -302,7 +306,7 @@ const LocationMainForm = ({ open, mode, location, onClose, onSuccess }) => {
                   { pattern: /^\d{6}$/, message: 'Pincode must be 6 digits' }
                 ]}
               >
-                <Input 
+                <Input
                   placeholder="Enter 6-digit pincode"
                   maxLength={6}
                   onChange={handlePincodeChange}
@@ -316,7 +320,7 @@ const LocationMainForm = ({ open, mode, location, onClose, onSuccess }) => {
                 name="state_name"
                 rules={[{ required: true, message: 'Please enter state name' }]}
               >
-                <Input 
+                <Input
                   placeholder="State (auto-filled)"
                   readOnly={!!pincodeData}
                   style={{ backgroundColor: pincodeData ? '#f6f6f6' : 'white' }}
@@ -329,7 +333,7 @@ const LocationMainForm = ({ open, mode, location, onClose, onSuccess }) => {
                 name="city_name"
                 rules={[{ required: true, message: 'Please enter city name' }]}
               >
-                <Input 
+                <Input
                   placeholder="City (auto-filled)"
                   readOnly={!!pincodeData}
                   style={{ backgroundColor: pincodeData ? '#f6f6f6' : 'white' }}
@@ -341,11 +345,30 @@ const LocationMainForm = ({ open, mode, location, onClose, onSuccess }) => {
                 label="Area"
                 name="area_name"
               >
-                <Input 
+                <Input
                   placeholder="Area (auto-filled)"
                   readOnly={!!pincodeData}
                   style={{ backgroundColor: pincodeData ? '#f6f6f6' : 'white' }}
                 />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                label="Building"
+                name="building"
+              >
+                <Input placeholder="Enter building name/number (optional)" />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                label="Floor"
+                name="floor"
+              >
+                <Input placeholder="Enter floor number (optional)" />
               </Form.Item>
             </Col>
           </Row>

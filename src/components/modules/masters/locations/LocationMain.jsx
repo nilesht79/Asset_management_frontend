@@ -237,6 +237,20 @@ const LocationMain = () => {
       render: (text) => text || '-'
     },
     {
+      title: 'Building',
+      dataIndex: 'building',
+      key: 'building',
+      width: 120,
+      render: (text) => text || '-'
+    },
+    {
+      title: 'Floor',
+      dataIndex: 'floor',
+      key: 'floor',
+      width: 100,
+      render: (text) => text || '-'
+    },
+    {
       title: 'City, State',
       key: 'location_info',
       render: (_, record) => (

@@ -171,6 +171,10 @@ const masterService = {
     return api.get(`/masters/products/${id}`)
   },
 
+  getProductStatistics: () => {
+    return api.get('/masters/products/statistics')
+  },
+
   createProduct: (data) => {
     return api.post('/masters/products', data)
   },

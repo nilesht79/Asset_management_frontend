@@ -14,6 +14,7 @@ import {
 import ProductModelForm from './ProductModelForm'
 import ProductBulkUpload from './ProductBulkUpload'
 import { fetchProducts, deleteProduct, updateProduct, fetchOEMs, fetchProductCategories } from '../../../../store/slices/masterSlice'
+import masterService from '../../../../services/master'
 import dayjs from 'dayjs'
 
 const { Search } = Input
@@ -38,12 +39,35 @@ const ProductListDetailed = () => {
   const [categoryFilter, setCategoryFilter] = useState(null)
   const [viewDetailsVisible, setViewDetailsVisible] = useState(false)
   const [viewingProduct, setViewingProduct] = useState(null)
+  const [stats, setStats] = useState({
+    total: 0,
+    active: 0,
+    inactive: 0,
+    totalAssets: 0
+  })
 
   useEffect(() => {
     dispatch(fetchProducts({ page: 1, limit: 10 }))
     dispatch(fetchOEMs({ page: 1, limit: 100, status: 'active' }))
     dispatch(fetchProductCategories({ page: 1, limit: 100, status: 'active' }))
+    fetchStatistics()
   }, [dispatch])
+
+  const fetchStatistics = async () => {
+    try {
+      const response = await masterService.getProductStatistics()
+      const statsData = response.data.data
+
+      setStats({
+        total: statsData.total || 0,
+        active: statsData.active || 0,
+        inactive: statsData.inactive || 0,
+        totalAssets: statsData.totalAssets || 0
+      })
+    } catch (error) {
+      console.error('Failed to fetch statistics:', error)
+    }
+  }
 
   const buildFilterParams = (overrides = {}) => {
     const params = {
@@ -125,6 +149,7 @@ const ProductListDetailed = () => {
           await dispatch(deleteProduct(record.id)).unwrap()
           message.success('Product deleted successfully')
           dispatch(fetchProducts({ page: pagination?.page || 1, limit: pagination?.limit || 10 }))
+          fetchStatistics()
         } catch (error) {
           message.error(error.message || 'Failed to delete product')
         }
@@ -164,6 +189,7 @@ const ProductListDetailed = () => {
             limit: pagination?.limit || 10,
             ...(statusFilter !== 'all' ? { status: statusFilter } : {})
           }))
+          fetchStatistics()
         } catch (error) {
           message.error(error.message || `Failed to ${actionText} product`)
         }
@@ -180,6 +206,7 @@ const ProductListDetailed = () => {
   const handleFormSuccess = () => {
     handleModalClose()
     dispatch(fetchProducts({ page: pagination?.page || 1, limit: pagination?.limit || 10 }))
+    fetchStatistics()
   }
 
   const handleTableChange = (paginationInfo) => {
@@ -188,10 +215,6 @@ const ProductListDetailed = () => {
       limit: paginationInfo.pageSize
     })))
   }
-
-  // Calculate statistics
-  const activeProducts = productData.filter(p => p.is_active).length
-  const totalAssets = productData.reduce((sum, p) => sum + (p.asset_count || 0), 0)
 
   const columns = [
     {
@@ -366,7 +389,7 @@ const ProductListDetailed = () => {
           <Card>
             <div style={{ textAlign: 'center' }}>
               <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#1890ff' }}>
-                {productData.length}
+                {stats.total}
               </div>
               <div style={{ color: '#666', marginTop: '8px' }}>Total Products</div>
             </div>
@@ -376,7 +399,7 @@ const ProductListDetailed = () => {
           <Card>
             <div style={{ textAlign: 'center' }}>
               <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#52c41a' }}>
-                {activeProducts}
+                {stats.active}
               </div>
               <div style={{ color: '#666', marginTop: '8px' }}>Active Products</div>
             </div>
@@ -386,7 +409,7 @@ const ProductListDetailed = () => {
           <Card>
             <div style={{ textAlign: 'center' }}>
               <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#faad14' }}>
-                {totalAssets}
+                {stats.totalAssets}
               </div>
               <div style={{ color: '#666', marginTop: '8px' }}>Total Assets</div>
             </div>
@@ -396,7 +419,7 @@ const ProductListDetailed = () => {
           <Card>
             <div style={{ textAlign: 'center' }}>
               <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#722ed1' }}>
-                {productData.filter(p => !p.is_active).length}
+                {stats.inactive}
               </div>
               <div style={{ color: '#666', marginTop: '8px' }}>Inactive Products</div>
             </div>
@@ -545,6 +568,7 @@ const ProductListDetailed = () => {
         onClose={() => setIsBulkUploadVisible(false)}
         onSuccess={() => {
           dispatch(fetchProducts({ page: 1, limit: 10 }))
+          fetchStatistics()
           message.success('Products uploaded successfully')
         }}
       />
