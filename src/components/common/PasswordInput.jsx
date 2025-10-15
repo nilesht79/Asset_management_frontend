@@ -103,7 +103,9 @@ const PasswordInput = ({
             <Text style={{ fontSize: '12px', fontWeight: 500 }}>Password Requirements:</Text>
           </div>
           {requirements.map((req, index) => {
-            const isMet = strength && Object.values(strength.criteria)[index];
+            // Map requirement index to correct criteria key
+            const criteriaKeys = ['length', 'lowercase', 'uppercase', 'number', 'special'];
+            const isMet = strength && strength.criteria[criteriaKeys[index]];
             return (
               <Text
                 key={index}
