@@ -18,7 +18,6 @@ import { useDispatch, useSelector } from 'react-redux'
 import { logout } from '../../../store/slices/authSlice'
 import { toggleSidebar, selectSidebarCollapsed } from '../../../store/slices/uiSlice'
 import { getThemeByRole, applyTheme } from '../../../utils/roleThemes'
-import { getRoleBasedLoginRoute } from '../../../utils/redirectUtils'
 import { useNavigate } from 'react-router-dom'
 
 const { Header: AntHeader } = Layout
@@ -43,14 +42,10 @@ const Header = () => {
   }, [user?.role])
 
   const handleLogout = () => {
-    // Get the user's role before logout to determine redirect route
-    const userRole = user?.role
-
     // Dispatch logout action and navigate after completion
     dispatch(logout()).then(() => {
-      // Navigate to role-specific login page
-      const loginRoute = getRoleBasedLoginRoute(userRole)
-      navigate(loginRoute)
+      // Navigate to login page (same for all roles)
+      navigate('/login')
     })
   }
 

@@ -117,9 +117,13 @@ const CreateTicketModal = ({ visible, onClose, onSuccess }) => {
             showSearch
             placeholder="Search and select employee"
             onChange={handleEmployeeChange}
-            filterOption={(input, option) =>
-              option.children.toLowerCase().includes(input.toLowerCase())
-            }
+            filterOption={(input, option) => {
+              if (!option?.children) return false;
+              const searchText = typeof option.children === 'string'
+                ? option.children
+                : option.children.join(' ');
+              return searchText.toLowerCase().includes(input.toLowerCase());
+            }}
           >
             {employees.map((emp) => (
               <Option key={emp.user_id} value={emp.user_id}>

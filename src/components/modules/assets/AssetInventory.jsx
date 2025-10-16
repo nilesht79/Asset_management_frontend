@@ -41,7 +41,8 @@ import {
   TagOutlined,
   FileTextOutlined,
   EyeOutlined,
-  SettingOutlined
+  SettingOutlined,
+  BankOutlined
 } from '@ant-design/icons'
 import { Pie } from '@ant-design/plots'
 import { useSelector, useDispatch } from 'react-redux'
@@ -106,7 +107,16 @@ const AssetInventory = () => {
   const [bulkAddModalVisible, setBulkAddModalVisible] = useState(false)
   const [legacyImportModalVisible, setLegacyImportModalVisible] = useState(false)
   const [filterDrawerVisible, setFilterDrawerVisible] = useState(false)
-  const [tempFilters, setTempFilters] = useState({})
+  const [tempFilters, setTempFilters] = useState({
+    search: '',
+    status: '',
+    condition_status: '',
+    location_id: '',
+    assigned_to: '',
+    product_id: '',
+    category_id: '',
+    oem_id: ''
+  })
 
   // Redux selectors
   const assets = useSelector(selectAssets)
@@ -367,7 +377,16 @@ const AssetInventory = () => {
 
   // Filter drawer handlers
   const showFilterDrawer = () => {
-    setTempFilters(filters)
+    setTempFilters({
+      search: filters?.search || '',
+      status: filters?.status || '',
+      condition_status: filters?.condition_status || '',
+      location_id: filters?.location_id || '',
+      assigned_to: filters?.assigned_to || '',
+      product_id: filters?.product_id || '',
+      category_id: filters?.category_id || '',
+      oem_id: filters?.oem_id || ''
+    })
     setFilterDrawerVisible(true)
   }
 
@@ -396,6 +415,21 @@ const AssetInventory = () => {
 
   const handleTempFilterChange = (key, value) => {
     setTempFilters({ ...tempFilters, [key]: value })
+  }
+
+  const handleFilterDrawerClose = () => {
+    setFilterDrawerVisible(false)
+    // Reset tempFilters to current applied filters when closing without applying
+    setTempFilters({
+      search: filters?.search || '',
+      status: filters?.status || '',
+      condition_status: filters?.condition_status || '',
+      location_id: filters?.location_id || '',
+      assigned_to: filters?.assigned_to || '',
+      product_id: filters?.product_id || '',
+      category_id: filters?.category_id || '',
+      oem_id: filters?.oem_id || ''
+    })
   }
 
   // Fetch deleted assets
@@ -841,74 +875,109 @@ const AssetInventory = () => {
   // Asset Location Map Component
   const AssetLocationMap = ({ data }) => {
     const [searchTerm, setSearchTerm] = useState('')
+    const [expandedLocations, setExpandedLocations] = useState([])
     const [expandedBuildings, setExpandedBuildings] = useState([])
 
-    // Group locations by building
-    const buildingGroups = data.reduce((acc, item) => {
+    // Group by Location → Building → Floor hierarchy
+    const locationGroups = data.reduce((acc, item) => {
+      const location = item.location || 'Unspecified Location'
       const building = item.building || 'Unspecified Building'
-      if (!acc[building]) {
-        acc[building] = []
+      const floor = item.floor || 'No Floor Info'
+
+      if (!acc[location]) {
+        acc[location] = {}
       }
-      acc[building].push(item)
+      if (!acc[location][building]) {
+        acc[location][building] = []
+      }
+      acc[location][building].push(item)
       return acc
     }, {})
 
-    // Filter buildings and locations based on search
-    const filteredBuildingGroups = Object.entries(buildingGroups).reduce((acc, [building, locations]) => {
+    // Filter locations, buildings, and floors based on search
+    const filteredLocationGroups = Object.entries(locationGroups).reduce((acc, [location, buildings]) => {
       if (searchTerm) {
-        const filteredLocs = locations.filter(loc =>
-          loc.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (loc.building && loc.building.toLowerCase().includes(searchTerm.toLowerCase())) ||
-          (loc.floor && loc.floor.toLowerCase().includes(searchTerm.toLowerCase()))
-        )
-        if (filteredLocs.length > 0) {
-          acc[building] = filteredLocs
+        const filteredBuildings = Object.entries(buildings).reduce((buildingAcc, [building, items]) => {
+          const filteredItems = items.filter(item =>
+            item.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (item.building && item.building.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            (item.floor && item.floor.toLowerCase().includes(searchTerm.toLowerCase()))
+          )
+          if (filteredItems.length > 0) {
+            buildingAcc[building] = filteredItems
+          }
+          return buildingAcc
+        }, {})
+
+        if (Object.keys(filteredBuildings).length > 0) {
+          acc[location] = filteredBuildings
         }
       } else {
-        acc[building] = locations
+        acc[location] = buildings
       }
       return acc
     }, {})
 
     const totalAssets = data.reduce((sum, item) => sum + item.count, 0)
-    const filteredTotalAssets = Object.values(filteredBuildingGroups)
+    const filteredTotalAssets = Object.values(filteredLocationGroups)
+      .flatMap(buildings => Object.values(buildings))
       .flat()
-      .reduce((sum, loc) => sum + loc.count, 0)
+      .reduce((sum, item) => sum + item.count, 0)
 
-    // Auto-expand first 3 buildings or all if search active
+    // Auto-expand first 2 locations and first 2 buildings or all if search active
     useEffect(() => {
       if (searchTerm) {
-        setExpandedBuildings(Object.keys(filteredBuildingGroups))
+        setExpandedLocations(Object.keys(filteredLocationGroups))
+        const allBuildingKeys = Object.entries(filteredLocationGroups)
+          .flatMap(([loc, buildings]) => Object.keys(buildings).map(b => `${loc}|${b}`))
+        setExpandedBuildings(allBuildingKeys)
       } else {
-        setExpandedBuildings(Object.keys(buildingGroups).slice(0, 3))
+        setExpandedLocations(Object.keys(locationGroups).slice(0, 2))
+        const firstTwoBuildings = Object.entries(locationGroups)
+          .slice(0, 2)
+          .flatMap(([loc, buildings]) => Object.keys(buildings).slice(0, 2).map(b => `${loc}|${b}`))
+        setExpandedBuildings(firstTwoBuildings)
       }
-    }, [searchTerm])
+    }, [searchTerm, filteredLocationGroups, locationGroups])
 
-    const toggleBuilding = (building) => {
+    const toggleLocation = (location) => {
+      setExpandedLocations(prev =>
+        prev.includes(location)
+          ? prev.filter(l => l !== location)
+          : [...prev, location]
+      )
+    }
+
+    const toggleBuilding = (location, building) => {
+      const key = `${location}|${building}`
       setExpandedBuildings(prev =>
-        prev.includes(building)
-          ? prev.filter(b => b !== building)
-          : [...prev, building]
+        prev.includes(key)
+          ? prev.filter(b => b !== key)
+          : [...prev, key]
       )
     }
 
     const expandAll = () => {
-      setExpandedBuildings(Object.keys(filteredBuildingGroups))
+      setExpandedLocations(Object.keys(filteredLocationGroups))
+      const allBuildingKeys = Object.entries(filteredLocationGroups)
+        .flatMap(([loc, buildings]) => Object.keys(buildings).map(b => `${loc}|${b}`))
+      setExpandedBuildings(allBuildingKeys)
     }
 
     const collapseAll = () => {
+      setExpandedLocations([])
       setExpandedBuildings([])
     }
 
     return (
       <div className="p-4">
         <div className="mb-6">
-          <h3 className="text-lg font-semibold mb-3">Asset Distribution by Building & Floor</h3>
+          <h3 className="text-lg font-semibold mb-3">Asset Distribution by Location, Building & Floor</h3>
 
           {/* Search and Controls */}
           <div className="mb-4 space-y-3">
             <Input.Search
-              placeholder="Search buildings, floors, or locations..."
+              placeholder="Search locations, buildings, or floors..."
               allowClear
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -918,11 +987,11 @@ const AssetInventory = () => {
               <div className="flex items-center gap-4 text-sm text-gray-600">
                 <span className="flex items-center">
                   <EnvironmentOutlined className="mr-1" />
-                  {Object.keys(filteredBuildingGroups).length} Building{Object.keys(filteredBuildingGroups).length !== 1 ? 's' : ''}
+                  {Object.keys(filteredLocationGroups).length} Location{Object.keys(filteredLocationGroups).length !== 1 ? 's' : ''}
                 </span>
                 <span className="flex items-center">
                   <TagOutlined className="mr-1" />
-                  {Object.values(filteredBuildingGroups).flat().length} Location{Object.values(filteredBuildingGroups).flat().length !== 1 ? 's' : ''}
+                  {Object.values(filteredLocationGroups).flatMap(b => Object.keys(b)).length} Building{Object.values(filteredLocationGroups).flatMap(b => Object.keys(b)).length !== 1 ? 's' : ''}
                 </span>
                 <span className="flex items-center font-medium text-blue-600">
                   {searchTerm ? `${filteredTotalAssets} / ` : ''}{totalAssets} Assets
@@ -940,91 +1009,143 @@ const AssetInventory = () => {
           </div>
         </div>
 
-        {/* Building & Floor Hierarchy with Collapse */}
-        {Object.keys(filteredBuildingGroups).length === 0 ? (
+        {/* Location → Building → Floor Hierarchy with Collapse */}
+        {Object.keys(filteredLocationGroups).length === 0 ? (
           <div className="text-center py-8 text-gray-400">
             <EnvironmentOutlined style={{ fontSize: 48, marginBottom: 16 }} />
             <div>No locations found matching "{searchTerm}"</div>
           </div>
         ) : (
-          <div className="space-y-3">
-            {Object.entries(filteredBuildingGroups).map(([building, locations]) => {
-              const buildingTotal = locations.reduce((sum, loc) => sum + loc.count, 0)
-              const isExpanded = expandedBuildings.includes(building)
-              const floorGroups = locations.reduce((acc, loc) => {
-                const floor = loc.floor || 'No Floor Info'
-                if (!acc[floor]) acc[floor] = []
-                acc[floor].push(loc)
-                return acc
-              }, {})
+          <div className="space-y-4">
+            {Object.entries(filteredLocationGroups).map(([location, buildings]) => {
+              const locationTotal = Object.values(buildings)
+                .flat()
+                .reduce((sum, item) => sum + item.count, 0)
+              const isLocationExpanded = expandedLocations.includes(location)
+              const buildingCount = Object.keys(buildings).length
 
               return (
-                <div key={building} className="border rounded-lg overflow-hidden">
-                  {/* Building Header - Clickable */}
+                <div key={location} className="border-2 border-indigo-200 rounded-lg overflow-hidden shadow-md">
+                  {/* Location Header - Top Level */}
                   <div
-                    className="bg-gradient-to-r from-blue-50 to-blue-100 p-3 border-b cursor-pointer hover:from-blue-100 hover:to-blue-200 transition-colors"
-                    onClick={() => toggleBuilding(building)}
+                    className="bg-gradient-to-r from-indigo-100 to-indigo-200 p-4 cursor-pointer hover:from-indigo-200 hover:to-indigo-300 transition-colors"
+                    onClick={() => toggleLocation(location)}
                   >
                     <div className="flex justify-between items-center">
                       <div className="flex-1">
-                        <h4 className="font-semibold text-gray-800 flex items-center">
-                          <EnvironmentOutlined className="mr-2 text-blue-600" />
-                          {building}
-                          <span className="ml-2 text-xs font-normal text-gray-500">
-                            ({Object.keys(floorGroups).length} floor{Object.keys(floorGroups).length !== 1 ? 's' : ''}, {locations.length} location{locations.length !== 1 ? 's' : ''})
+                        <h3 className="text-lg font-bold text-gray-900 flex items-center">
+                          <EnvironmentOutlined className="mr-3 text-indigo-700 text-xl" />
+                          {location}
+                          <span className="ml-3 text-sm font-normal text-gray-600">
+                            ({buildingCount} building{buildingCount !== 1 ? 's' : ''})
                           </span>
-                        </h4>
+                        </h3>
                       </div>
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-4">
                         <div className="text-right">
-                          <div className="text-xl font-bold text-blue-600">{buildingTotal}</div>
-                          <div className="text-xs text-gray-600">assets</div>
+                          <div className="text-2xl font-bold text-indigo-700">{locationTotal}</div>
+                          <div className="text-xs text-gray-700">total assets</div>
                         </div>
-                        <div className="text-gray-400">
-                          {isExpanded ? '▼' : '▶'}
+                        <div className="text-gray-600 text-lg">
+                          {isLocationExpanded ? '▼' : '▶'}
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  {/* Collapsible Content */}
-                  {isExpanded && (
-                    <div className="p-3 bg-white">
-                      <Collapse
-                        ghost
-                        defaultActiveKey={Object.keys(floorGroups).slice(0, 2)}
-                        items={Object.entries(floorGroups).map(([floor, floorLocs]) => {
-                          const floorTotal = floorLocs.reduce((sum, loc) => sum + loc.count, 0)
-                          return {
-                            key: floor,
-                            label: (
+                  {/* Buildings under this Location */}
+                  {isLocationExpanded && (
+                    <div className="bg-white p-3 space-y-3">
+                      {Object.entries(buildings).map(([building, items]) => {
+                        const buildingTotal = items.reduce((sum, item) => sum + item.count, 0)
+                        const buildingKey = `${location}|${building}`
+                        const isBuildingExpanded = expandedBuildings.includes(buildingKey)
+
+                        // Group items by floor
+                        const floorGroups = items.reduce((acc, item) => {
+                          const floor = item.floor || 'No Floor Info'
+                          if (!acc[floor]) acc[floor] = []
+                          acc[floor].push(item)
+                          return acc
+                        }, {})
+
+                        return (
+                          <div key={buildingKey} className="border border-blue-200 rounded-lg overflow-hidden">
+                            {/* Building Header - Second Level */}
+                            <div
+                              className="bg-gradient-to-r from-blue-50 to-blue-100 p-3 cursor-pointer hover:from-blue-100 hover:to-blue-150 transition-colors"
+                              onClick={() => toggleBuilding(location, building)}
+                            >
                               <div className="flex justify-between items-center">
-                                <span className="font-medium text-gray-700">Floor: {floor}</span>
-                                <span className="text-sm font-semibold text-blue-600 mr-2">
-                                  {floorTotal} asset{floorTotal !== 1 ? 's' : ''}
-                                </span>
-                              </div>
-                            ),
-                            children: (
-                              <div className="space-y-1 pl-4">
-                                {floorLocs.map((loc, idx) => (
-                                  <div
-                                    key={idx}
-                                    className="flex justify-between items-center text-sm p-2 bg-gray-50 rounded hover:bg-blue-50 transition-colors"
-                                  >
-                                    <span className="text-gray-700">{loc.location}</span>
-                                    <Badge
-                                      count={loc.count}
-                                      showZero
-                                      style={{ backgroundColor: loc.count > 0 ? '#1890ff' : '#d9d9d9' }}
-                                    />
+                                <div className="flex-1">
+                                  <h4 className="font-semibold text-gray-800 flex items-center">
+                                    <BankOutlined className="mr-2 text-blue-600" />
+                                    {building}
+                                    <span className="ml-2 text-xs font-normal text-gray-500">
+                                      ({Object.keys(floorGroups).length} floor{Object.keys(floorGroups).length !== 1 ? 's' : ''})
+                                    </span>
+                                  </h4>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                  <div className="text-right">
+                                    <div className="text-lg font-bold text-blue-600">{buildingTotal}</div>
+                                    <div className="text-xs text-gray-600">assets</div>
                                   </div>
-                                ))}
+                                  <div className="text-gray-400">
+                                    {isBuildingExpanded ? '▼' : '▶'}
+                                  </div>
+                                </div>
                               </div>
-                            )
-                          }
-                        })}
-                      />
+                            </div>
+
+                            {/* Floors under this Building */}
+                            {isBuildingExpanded && (
+                              <div className="p-3 bg-gray-50">
+                                <Collapse
+                                  ghost
+                                  defaultActiveKey={Object.keys(floorGroups).slice(0, 2)}
+                                  items={Object.entries(floorGroups).map(([floor, floorItems]) => {
+                                    const floorTotal = floorItems.reduce((sum, item) => sum + item.count, 0)
+                                    return {
+                                      key: floor,
+                                      label: (
+                                        <div className="flex justify-between items-center">
+                                          <span className="font-medium text-gray-700">
+                                            <TagOutlined className="mr-2" />
+                                            Floor: {floor}
+                                          </span>
+                                          <span className="text-sm font-semibold text-blue-600 mr-2">
+                                            {floorTotal} asset{floorTotal !== 1 ? 's' : ''}
+                                          </span>
+                                        </div>
+                                      ),
+                                      children: (
+                                        <div className="space-y-1 pl-4">
+                                          {floorItems.map((item, idx) => (
+                                            <div
+                                              key={idx}
+                                              className="flex justify-between items-center text-sm p-2 bg-white rounded border hover:bg-blue-50 transition-colors"
+                                            >
+                                              <span className="text-gray-700 font-medium">
+                                                {item.location} - {item.building} - {item.floor}
+                                              </span>
+                                              <Badge
+                                                count={item.count}
+                                                showZero
+                                                style={{ backgroundColor: item.count > 0 ? '#1890ff' : '#d9d9d9' }}
+                                              />
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )
+                                    }
+                                  })}
+                                />
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })}
                     </div>
                   )}
                 </div>
@@ -1034,29 +1155,39 @@ const AssetInventory = () => {
         )}
 
         {/* Summary Statistics */}
-        {Object.keys(filteredBuildingGroups).length > 0 && (
-          <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-            <h4 className="font-medium mb-3 text-gray-700">Summary</h4>
+        {Object.keys(filteredLocationGroups).length > 0 && (
+          <div className="mt-6 p-4 bg-gradient-to-r from-gray-50 to-blue-50 rounded-lg border border-blue-200">
+            <h4 className="font-semibold mb-4 text-gray-800 text-lg">📊 Distribution Summary</h4>
             <Row gutter={16}>
-              <Col span={8}>
-                <Statistic
-                  title="Total Buildings"
-                  value={Object.keys(buildingGroups).length}
-                  prefix={<EnvironmentOutlined />}
-                />
-              </Col>
-              <Col span={8}>
+              <Col span={6}>
                 <Statistic
                   title="Total Locations"
-                  value={data.length}
-                  prefix={<TagOutlined />}
+                  value={Object.keys(locationGroups).length}
+                  prefix={<EnvironmentOutlined style={{ color: '#6366f1' }} />}
+                  valueStyle={{ color: '#6366f1', fontWeight: 'bold' }}
                 />
               </Col>
-              <Col span={8}>
+              <Col span={6}>
+                <Statistic
+                  title="Total Buildings"
+                  value={Object.values(locationGroups).flatMap(b => Object.keys(b)).length}
+                  prefix={<BankOutlined style={{ color: '#3b82f6' }} />}
+                  valueStyle={{ color: '#3b82f6', fontWeight: 'bold' }}
+                />
+              </Col>
+              <Col span={6}>
+                <Statistic
+                  title="Total Floors"
+                  value={data.length}
+                  prefix={<TagOutlined style={{ color: '#10b981' }} />}
+                  valueStyle={{ color: '#10b981', fontWeight: 'bold' }}
+                />
+              </Col>
+              <Col span={6}>
                 <Statistic
                   title="Total Assets"
                   value={totalAssets}
-                  valueStyle={{ color: '#1890ff' }}
+                  valueStyle={{ color: '#f59e0b', fontWeight: 'bold', fontSize: '24px' }}
                 />
               </Col>
             </Row>
@@ -1291,7 +1422,9 @@ const AssetInventory = () => {
             >
               <Button icon={<ExportOutlined />}>Export</Button>
             </Dropdown>
-            <Button icon={<FilterOutlined />} onClick={showFilterDrawer}>Filters</Button>
+            <Badge count={Object.values(filters || {}).filter(v => v && v !== '').length} offset={[-5, 5]}>
+              <Button icon={<FilterOutlined />} onClick={showFilterDrawer}>Filters</Button>
+            </Badge>
             <Button
               icon={<DeleteOutlined />}
               onClick={showDeletedAssetsModal}
@@ -1820,12 +1953,12 @@ const AssetInventory = () => {
         placement="right"
         width={400}
         open={filterDrawerVisible}
-        onClose={() => setFilterDrawerVisible(false)}
+        onClose={handleFilterDrawerClose}
         footer={
           <div className="flex justify-between">
             <Button onClick={handleClearFilters}>Clear All</Button>
             <Space>
-              <Button onClick={() => setFilterDrawerVisible(false)}>Cancel</Button>
+              <Button onClick={handleFilterDrawerClose}>Cancel</Button>
               <Button type="primary" onClick={handleApplyFilters}>Apply Filters</Button>
             </Space>
           </div>
@@ -1887,9 +2020,6 @@ const AssetInventory = () => {
               onChange={(value) => handleTempFilterChange('category_id', value)}
               allowClear
               showSearch
-              filterOption={(input, option) =>
-                option.children.toLowerCase().includes(input.toLowerCase())
-              }
               style={{ width: '100%' }}
             >
               {categories.data?.map(category => (
@@ -1983,8 +2113,8 @@ const AssetInventory = () => {
               style={{ width: '100%' }}
             >
               {users.data?.map(user => (
-                <Option key={user.user_id} value={user.user_id}>
-                  {user.first_name} {user.last_name} ({user.email})
+                <Option key={user.id} value={user.id}>
+                  {user.firstName} {user.lastName} ({user.email})
                 </Option>
               ))}
             </Select>

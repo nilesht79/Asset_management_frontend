@@ -87,21 +87,21 @@ const Login = () => {
           >
             <Form.Item
               name="email"
-              label="Email Address"
+              label="User Name"
               rules={[
                 {
                   required: true,
-                  message: 'Please enter your email address',
+                  message: 'Please enter your User Name',
                 },
                 {
                   type: 'email',
-                  message: 'Please enter a valid email address',
+                  message: 'Please enter a valid User Name',
                 },
               ]}
             >
               <Input
                 prefix={<UserOutlined className="text-gray-400" />}
-                placeholder="Enter your email"
+                placeholder="Enter your User Name"
                 autoComplete="email"
               />
             </Form.Item>
