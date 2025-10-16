@@ -138,12 +138,12 @@ const AssetInventory = () => {
     dispatch(fetchAssets({ page: 1, limit: 10 }))
     dispatch(fetchAssetStatistics())
 
-    // Fetch master data for dropdowns
-    dispatch(fetchOEMs())
-    dispatch(fetchProducts())
-    dispatch(fetchCategories())
-    dispatch(fetchLocations())
-    dispatch(fetchUsers())
+    // Fetch master data for dropdowns with high limit to get all items
+    dispatch(fetchOEMs({ limit: 1000 }))
+    dispatch(fetchProducts({ limit: 1000 }))
+    dispatch(fetchCategories({ limit: 1000, include_subcategories: 'true' }))
+    dispatch(fetchLocations({ limit: 1000 }))
+    dispatch(fetchUsers({ limit: 1000 }))
   }, [dispatch])
 
   // Clear errors when component unmounts
@@ -577,10 +577,11 @@ const AssetInventory = () => {
       data: chartData,
       angleField: 'value',
       colorField: 'location',
-      radius: 1.2,
+      radius: 1.1,
       innerRadius: 0.75,
-      height: 300,
+      height: 320,
       label: false,
+      appendPadding: [0, 0, 10, 0],
       meta: {
         location: {
           alias: 'Location',
@@ -621,7 +622,7 @@ const AssetInventory = () => {
     }
 
     return (
-      <div style={{ height: '300px' }}>
+      <div style={{ height: '340px' }}>
         <Pie {...config} />
       </div>
     )
@@ -693,11 +694,28 @@ const AssetInventory = () => {
       render: (text) => <span className="font-mono text-xs bg-blue-50 px-2 py-1 rounded text-blue-700">{text}</span>
     },
     {
-      title: <span className="font-semibold text-gray-700">Tag No</span>,
-      dataIndex: 'tag_no',
-      key: 'tag_no',
-      width: 100,
-      render: (tagNo) => tagNo ? <span className="font-mono text-xs">{tagNo}</span> : <span className="text-gray-400">—</span>
+      title: <span className="font-semibold text-gray-700">Assigned To</span>,
+      key: 'assigned_to',
+      width: 180,
+      render: (_, record) => {
+        if (record.assigned_user_name) {
+          return (
+            <div className="py-1">
+              <div className="font-medium text-gray-800 text-sm flex items-center">
+                <UserOutlined className="mr-1.5 text-blue-500" />
+                {record.assigned_user_name}
+              </div>
+              <div className="text-xs text-gray-500 mt-0.5 ml-5">{record.assigned_user_email || ''}</div>
+            </div>
+          )
+        }
+        return (
+          <span className="text-gray-400 italic flex items-center">
+            <UserOutlined className="mr-1.5" />
+            Unassigned
+          </span>
+        )
+      }
     },
     {
       title: <span className="font-semibold text-gray-700">Serial No</span>,
@@ -750,28 +768,11 @@ const AssetInventory = () => {
       render: (text) => text ? <Tooltip title={text}><span className="text-gray-600 text-xs">{text}</span></Tooltip> : <span className="text-gray-400">—</span>
     },
     {
-      title: <span className="font-semibold text-gray-700">Assigned To</span>,
-      key: 'assigned_to',
-      width: 180,
-      render: (_, record) => {
-        if (record.assigned_user_name) {
-          return (
-            <div className="py-1">
-              <div className="font-medium text-gray-800 text-sm flex items-center">
-                <UserOutlined className="mr-1.5 text-blue-500" />
-                {record.assigned_user_name}
-              </div>
-              <div className="text-xs text-gray-500 mt-0.5 ml-5">{record.assigned_user_email || ''}</div>
-            </div>
-          )
-        }
-        return (
-          <span className="text-gray-400 italic flex items-center">
-            <UserOutlined className="mr-1.5" />
-            Unassigned
-          </span>
-        )
-      }
+      title: <span className="font-semibold text-gray-700">Tag No</span>,
+      dataIndex: 'tag_no',
+      key: 'tag_no',
+      width: 100,
+      render: (tagNo) => tagNo ? <span className="font-mono text-xs">{tagNo}</span> : <span className="text-gray-400">—</span>
     },
     {
       title: <span className="font-semibold text-gray-700">Status</span>,
@@ -938,7 +939,8 @@ const AssetInventory = () => {
           .flatMap(([loc, buildings]) => Object.keys(buildings).slice(0, 2).map(b => `${loc}|${b}`))
         setExpandedBuildings(firstTwoBuildings)
       }
-    }, [searchTerm, filteredLocationGroups, locationGroups])
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [searchTerm])
 
     const toggleLocation = (location) => {
       setExpandedLocations(prev =>
@@ -1503,13 +1505,20 @@ const AssetInventory = () => {
                 label="Product"
                 rules={[{ required: true, message: 'Please select product!' }]}
               >
-                <Select placeholder="Select product">
-                  {products.data?.map(product => (
-                    <Option key={product.id} value={product.id}>
-                      {product.name} - {product.model}
-                    </Option>
-                  ))}
-                </Select>
+                <Select
+                  placeholder="Select product"
+                  showSearch
+                  optionFilterProp="children"
+                  filterOption={(input, option) => {
+                    const searchText = `${option.label || ''}`.toLowerCase()
+                    return searchText.includes(input.toLowerCase())
+                  }}
+                  options={products.data?.map(product => ({
+                    value: product.id,
+                    label: `${product.name}${product.model ? ` - ${product.model}` : ''}`
+                  }))}
+                  loading={products.loading}
+                />
               </Form.Item>
             </Col>
             <Col span={12}>
@@ -2020,14 +2029,17 @@ const AssetInventory = () => {
               onChange={(value) => handleTempFilterChange('category_id', value)}
               allowClear
               showSearch
+              optionFilterProp="children"
+              filterOption={(input, option) => {
+                const searchText = `${option.label || ''}`.toLowerCase()
+                return searchText.includes(input.toLowerCase())
+              }}
               style={{ width: '100%' }}
-            >
-              {categories.data?.map(category => (
-                <Option key={category.id} value={category.id}>
-                  {category.name}
-                </Option>
-              ))}
-            </Select>
+              options={categories.data?.map(category => ({
+                value: category.id,
+                label: category.name
+              }))}
+            />
           </div>
 
           {/* Product */}
@@ -2039,17 +2051,17 @@ const AssetInventory = () => {
               onChange={(value) => handleTempFilterChange('product_id', value)}
               allowClear
               showSearch
-              filterOption={(input, option) =>
-                option.children.toLowerCase().includes(input.toLowerCase())
-              }
+              optionFilterProp="children"
+              filterOption={(input, option) => {
+                const searchText = `${option.label || ''}`.toLowerCase()
+                return searchText.includes(input.toLowerCase())
+              }}
               style={{ width: '100%' }}
-            >
-              {products.data?.map(product => (
-                <Option key={product.id} value={product.id}>
-                  {product.name} {product.model && `(${product.model})`}
-                </Option>
-              ))}
-            </Select>
+              options={products.data?.map(product => ({
+                value: product.id,
+                label: `${product.name}${product.model ? ` (${product.model})` : ''}`
+              }))}
+            />
           </div>
 
           {/* OEM */}
@@ -2061,17 +2073,17 @@ const AssetInventory = () => {
               onChange={(value) => handleTempFilterChange('oem_id', value)}
               allowClear
               showSearch
-              filterOption={(input, option) =>
-                option.children.toLowerCase().includes(input.toLowerCase())
-              }
+              optionFilterProp="children"
+              filterOption={(input, option) => {
+                const searchText = `${option.label || ''}`.toLowerCase()
+                return searchText.includes(input.toLowerCase())
+              }}
               style={{ width: '100%' }}
-            >
-              {oems.data?.map(oem => (
-                <Option key={oem.id} value={oem.id}>
-                  {oem.name}
-                </Option>
-              ))}
-            </Select>
+              options={oems.data?.map(oem => ({
+                value: oem.id,
+                label: oem.name
+              }))}
+            />
           </div>
 
           {/* Location */}
@@ -2083,19 +2095,17 @@ const AssetInventory = () => {
               onChange={(value) => handleTempFilterChange('location_id', value)}
               allowClear
               showSearch
-              filterOption={(input, option) =>
-                option.children.toLowerCase().includes(input.toLowerCase())
-              }
+              optionFilterProp="children"
+              filterOption={(input, option) => {
+                const searchText = `${option.label || ''}`.toLowerCase()
+                return searchText.includes(input.toLowerCase())
+              }}
               style={{ width: '100%' }}
-            >
-              {locations.data?.map(location => (
-                <Option key={location.id} value={location.id}>
-                  {location.name}
-                  {location.building && ` - ${location.building}`}
-                  {location.floor && ` (Floor: ${location.floor})`}
-                </Option>
-              ))}
-            </Select>
+              options={locations.data?.map(location => ({
+                value: location.id,
+                label: `${location.name}${location.building ? ` - ${location.building}` : ''}${location.floor ? ` (Floor: ${location.floor})` : ''}`
+              }))}
+            />
           </div>
 
           {/* Assigned To */}
@@ -2107,17 +2117,17 @@ const AssetInventory = () => {
               onChange={(value) => handleTempFilterChange('assigned_to', value)}
               allowClear
               showSearch
-              filterOption={(input, option) =>
-                option.children.toLowerCase().includes(input.toLowerCase())
-              }
+              optionFilterProp="children"
+              filterOption={(input, option) => {
+                const searchText = `${option.label || ''}`.toLowerCase()
+                return searchText.includes(input.toLowerCase())
+              }}
               style={{ width: '100%' }}
-            >
-              {users.data?.map(user => (
-                <Option key={user.id} value={user.id}>
-                  {user.firstName} {user.lastName} ({user.email})
-                </Option>
-              ))}
-            </Select>
+              options={users.data?.map(user => ({
+                value: user.id,
+                label: `${user.firstName} ${user.lastName} (${user.email})`
+              }))}
+            />
           </div>
         </div>
       </Drawer>

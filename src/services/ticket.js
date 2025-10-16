@@ -132,6 +132,22 @@ const ticketService = {
   },
 
   /**
+   * Export tickets to Excel
+   */
+  exportTickets: async (filters = {}) => {
+    try {
+      const response = await apiClient.get('/tickets/export', {
+        params: filters,
+        responseType: 'blob'
+      });
+      return response;
+    } catch (error) {
+      console.error('Error exporting tickets:', error);
+      throw error;
+    }
+  },
+
+  /**
    * Add comment to ticket
    */
   addComment: async (ticketId, commentData) => {

@@ -27,7 +27,8 @@ import {
   CheckCircleOutlined,
   ClockCircleOutlined,
   AlertOutlined,
-  IssuesCloseOutlined
+  IssuesCloseOutlined,
+  DownloadOutlined
 } from '@ant-design/icons';
 import { useSelector } from 'react-redux';
 import ticketService from '../services/ticket';
@@ -173,6 +174,33 @@ const TicketDashboard = () => {
     fetchTickets();
     fetchStats();
     message.success('Ticket closed successfully');
+  };
+
+  const handleExport = async () => {
+    try {
+      message.loading({ content: 'Exporting tickets...', key: 'export' });
+
+      const params = ticketService.buildSearchParams(filters, {});
+      const response = await ticketService.exportTickets(params);
+
+      // Create blob and trigger download
+      const blob = new Blob([response.data], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `tickets_export_${new Date().toISOString().split('T')[0]}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      message.success({ content: 'Export completed successfully', key: 'export' });
+    } catch (error) {
+      console.error('Export error:', error);
+      message.error({ content: error.message || 'Failed to export tickets', key: 'export' });
+    }
   };
 
   const getActionMenu = (ticket) => ({
@@ -425,6 +453,14 @@ const TicketDashboard = () => {
           <div className="flex-1" />
 
           <Space>
+            <Button
+              icon={<DownloadOutlined />}
+              onClick={handleExport}
+              disabled={loading}
+            >
+              Export
+            </Button>
+
             <Button
               icon={<ReloadOutlined />}
               onClick={() => {

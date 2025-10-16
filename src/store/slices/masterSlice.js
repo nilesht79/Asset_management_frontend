@@ -972,8 +972,8 @@ const masterSlice = createSlice({
       })
       .addCase(fetchCategories.fulfilled, (state, action) => {
         state.categories.loading = false
-        state.categories.data = action.payload.categories || []
-        state.categories.total = action.payload.pagination?.totalItems || 0
+        state.categories.data = action.payload.data?.categories || action.payload.categories || []
+        state.categories.total = action.payload.data?.pagination?.total || action.payload.pagination?.total || 0
       })
       .addCase(fetchCategories.rejected, (state, action) => {
         state.categories.loading = false

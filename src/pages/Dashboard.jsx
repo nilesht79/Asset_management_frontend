@@ -6,6 +6,7 @@ import { useSelector } from 'react-redux'
 import SuperAdminDashboard from '../components/modules/dashboards/superadmin/SuperAdminDashboard'
 import AdminDashboard from '../components/modules/dashboards/admin/AdminDashboard'
 import EmployeeDashboard from '../components/modules/dashboards/employee/EmployeeDashboard'
+import CoordinatorDashboard from '../components/modules/dashboards/coordinator/CoordinatorDashboard'
 
 const { Title, Text } = Typography
 
@@ -49,7 +50,11 @@ const Dashboard = () => {
     return <EmployeeDashboard />
   }
 
-  // For other roles (coordinator, engineer, dept_head, dept_coordinator), show Phase 2 notice
+  if (user.role === 'coordinator' || user.role === 'department_coordinator') {
+    return <CoordinatorDashboard />
+  }
+
+  // For other roles (engineer, dept_head), show Phase 2 notice
   return (
     <div className="min-h-screen flex items-center justify-center">
       <div className="text-center p-8">

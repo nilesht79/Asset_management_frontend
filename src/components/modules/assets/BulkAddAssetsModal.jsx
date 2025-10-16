@@ -141,6 +141,10 @@ const BulkAddAssetsModal = ({ visible, onClose, onSuccess, products, locations, 
               showSearch
               placeholder="Select product"
               optionFilterProp="children"
+              filterOption={(input, option) => {
+                const searchText = `${option.label || ''}`.toLowerCase()
+                return searchText.includes(input.toLowerCase())
+              }}
               options={products?.map(p => ({ value: p.id, label: `${p.name} - ${p.model || 'N/A'}` }))}
             />
           </Form.Item>
