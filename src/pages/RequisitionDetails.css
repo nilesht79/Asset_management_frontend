@@ -1,0 +1,48 @@
+.requisition-details-page {
+  padding: 24px;
+  background: #f0f2f5;
+  min-height: calc(100vh - 64px);
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.timeline-card {
+  position: sticky;
+  top: 24px;
+}
+
+.timeline-card .ant-card-body {
+  max-height: calc(100vh - 200px);
+  overflow-y: auto;
+}
+
+/* Responsive adjustments */
+@media (max-width: 992px) {
+  .timeline-card {
+    position: relative;
+    top: 0;
+  }
+
+  .timeline-card .ant-card-body {
+    max-height: none;
+    overflow-y: visible;
+  }
+}
+
+@media (max-width: 768px) {
+  .requisition-details-page {
+    padding: 16px;
+  }
+
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

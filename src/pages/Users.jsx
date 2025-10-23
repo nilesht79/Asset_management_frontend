@@ -31,9 +31,10 @@ import {
   UploadOutlined,
   ReloadOutlined
 } from '@ant-design/icons'
-import { useSelector } from 'react-redux'
+import { useSelector, useDispatch } from 'react-redux'
 import userService from '../services/user'
 import dashboardService from '../services/dashboard'
+import { fetchBoards as fetchBoardsAction } from '../store/slices/masterSlice'
 import PasswordInput from '../components/common/PasswordInput'
 
 const { Search } = Input
@@ -44,6 +45,7 @@ const Users = () => {
   const [loading, setLoading] = useState(false)
   const [users, setUsers] = useState([])
   const [departments, setDepartments] = useState([])
+  const [boards, setBoards] = useState([])
   const [locations, setLocations] = useState([])
   const [pagination, setPagination] = useState({
     current: 1,
@@ -54,6 +56,7 @@ const Users = () => {
     search: '',
     status: 'active',
     role: '',
+    board_id: '',
     department_id: '',
     location_id: ''
   })
@@ -79,13 +82,21 @@ const Users = () => {
   const [isUploading, setIsUploading] = useState(false)
 
   const { user: currentUser } = useSelector(state => state.auth)
+  const dispatch = useDispatch()
   const [form] = Form.useForm()
 
   useEffect(() => {
     fetchUsers()
-    fetchDepartments()
-    fetchLocations()
   }, [pagination.current, pagination.pageSize, filters])
+
+  useEffect(() => {
+    fetchDepartments()
+  }, [filters.board_id])
+
+  useEffect(() => {
+    fetchBoards()
+    fetchLocations()
+  }, [])
 
   const fetchUsers = async () => {
     setLoading(true)
@@ -137,9 +148,12 @@ const Users = () => {
       let currentPage = 1
       let hasMore = true
 
+      // If a board is selected, fetch only departments for that board
+      const baseParams = filters.board_id ? { board_id: filters.board_id } : {}
+
       // Fetch all departments with pagination (max limit is 100)
       while (hasMore) {
-        const response = await userService.getDepartments({ page: currentPage, limit: 100 })
+        const response = await userService.getDepartments({ ...baseParams, page: currentPage, limit: 100 })
         const data = response.data.data
         const departments = data?.departments || []
 
@@ -156,6 +170,16 @@ const Users = () => {
       setDepartments(allDepartments)
     } catch (error) {
       console.error('Failed to fetch departments:', error)
+    }
+  }
+
+  const fetchBoards = async () => {
+    try {
+      const result = await dispatch(fetchBoardsAction({ limit: 1000 })).unwrap()
+      // Redux action returns response.data, which contains { data: { boards: [...] } }
+      setBoards(result.data?.boards || [])
+    } catch (error) {
+      console.error('Failed to fetch boards:', error)
     }
   }
 
@@ -196,10 +220,16 @@ const Users = () => {
   }
 
   const handleFilterChange = (key, value) => {
-    setFilters(prev => ({
-      ...prev,
-      [key]: value
-    }))
+    setFilters(prev => {
+      const newFilters = { ...prev, [key]: value }
+
+      // Cascading filter logic: when board changes, reset department
+      if (key === 'board_id') {
+        newFilters.department_id = ''
+      }
+
+      return newFilters
+    })
     setPagination(prev => ({
       ...prev,
       current: 1
@@ -766,7 +796,7 @@ const Users = () => {
         <Space direction="vertical" size="middle" style={{ width: '100%' }}>
           {/* Search and Filter Row */}
           <Row gutter={[16, 16]}>
-            <Col xs={24} sm={24} md={12} lg={7}>
+            <Col xs={24} sm={24} md={12} lg={6}>
               <Search
                 placeholder="Search users..."
                 allowClear
@@ -776,6 +806,43 @@ const Users = () => {
             </Col>
 
             <Col xs={24} sm={12} md={6} lg={4}>
+              <Select
+                placeholder="Filter by Board"
+                allowClear
+                style={{ width: '100%' }}
+                onChange={(value) => handleFilterChange('board_id', value)}
+                value={filters.board_id || undefined}
+              >
+                {boards.map(board => (
+                  <Option key={board.id} value={board.id}>
+                    {board.name}
+                  </Option>
+                ))}
+              </Select>
+            </Col>
+
+            <Col xs={24} sm={12} md={6} lg={4}>
+              <Select
+                placeholder="Filter by Department"
+                allowClear
+                showSearch
+                style={{ width: '100%' }}
+                onChange={(value) => handleFilterChange('department_id', value)}
+                value={filters.department_id || undefined}
+                disabled={filters.board_id && departments.length === 0}
+                filterOption={(input, option) =>
+                  (option?.children?.toString() || '').toLowerCase().includes(input.toLowerCase())
+                }
+              >
+                {departments.map(dept => (
+                  <Option key={dept.id} value={dept.id}>
+                    {dept.name}
+                  </Option>
+                ))}
+              </Select>
+            </Col>
+
+            <Col xs={24} sm={12} md={6} lg={3}>
               <Select
                 placeholder="Filter by Role"
                 allowClear
@@ -791,27 +858,7 @@ const Users = () => {
               </Select>
             </Col>
 
-            <Col xs={24} sm={12} md={6} lg={4}>
-              <Select
-                placeholder="Filter by Department"
-                allowClear
-                showSearch
-                style={{ width: '100%' }}
-                onChange={(value) => handleFilterChange('department_id', value)}
-                value={filters.department_id || undefined}
-                filterOption={(input, option) =>
-                  (option?.children?.toString() || '').toLowerCase().includes(input.toLowerCase())
-                }
-              >
-                {departments.map(dept => (
-                  <Option key={dept.id} value={dept.id}>
-                    {dept.name}
-                  </Option>
-                ))}
-              </Select>
-            </Col>
-
-            <Col xs={24} sm={12} md={12} lg={5}>
+            <Col xs={24} sm={12} md={12} lg={4}>
               <Select
                 placeholder="Filter by Location"
                 allowClear
@@ -854,7 +901,7 @@ const Users = () => {
               </Select>
             </Col>
 
-            <Col xs={24} sm={12} md={6} lg={4}>
+            <Col xs={24} sm={12} md={6} lg={3}>
               <Select
                 placeholder="Filter by Status"
                 style={{ width: '100%' }}

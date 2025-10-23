@@ -1,8 +1,17 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import masterService from '../../services/master'
+import boardService from '../../services/board'
 
 // Initial state
 const initialState = {
+  // Boards
+  boards: {
+    data: [],
+    total: 0,
+    loading: false,
+    error: null,
+  },
+
   // OEMs
   oems: {
     data: [],
@@ -228,6 +237,94 @@ export const exportOEMs = createAsyncThunk(
     } catch (error) {
       return rejectWithValue({
         message: error.response?.data?.message || 'Failed to export OEMs'
+      })
+    }
+  }
+)
+
+// Async thunks for Boards
+export const fetchBoards = createAsyncThunk(
+  'master/fetchBoards',
+  async (params = {}, { rejectWithValue }) => {
+    try {
+      const response = await boardService.getBoards(params)
+      return response.data
+    } catch (error) {
+      console.error('fetchBoards error:', error)
+      return rejectWithValue({
+        message: error.response?.data?.message || 'Failed to fetch boards',
+        errors: error.response?.data?.errors
+      })
+    }
+  }
+)
+
+export const fetchBoardById = createAsyncThunk(
+  'master/fetchBoardById',
+  async (id, { rejectWithValue }) => {
+    try {
+      const response = await boardService.getBoardById(id)
+      return response.data
+    } catch (error) {
+      return rejectWithValue({
+        message: error.response?.data?.message || 'Failed to fetch board details',
+        errors: error.response?.data?.errors
+      })
+    }
+  }
+)
+
+export const createBoard = createAsyncThunk(
+  'master/createBoard',
+  async (boardData, { dispatch, rejectWithValue }) => {
+    try {
+      const response = await boardService.createBoard(boardData)
+
+      // Refresh boards list
+      dispatch(fetchBoards())
+
+      return response.data
+    } catch (error) {
+      return rejectWithValue({
+        message: error.response?.data?.message || 'Failed to create board',
+        errors: error.response?.data?.errors
+      })
+    }
+  }
+)
+
+export const updateBoard = createAsyncThunk(
+  'master/updateBoard',
+  async ({ id, data }, { dispatch, rejectWithValue }) => {
+    try {
+      const response = await boardService.updateBoard(id, data)
+
+      // Refresh boards list
+      dispatch(fetchBoards())
+
+      return response.data
+    } catch (error) {
+      return rejectWithValue({
+        message: error.response?.data?.message || 'Failed to update board',
+        errors: error.response?.data?.errors
+      })
+    }
+  }
+)
+
+export const deleteBoard = createAsyncThunk(
+  'master/deleteBoard',
+  async (id, { dispatch, rejectWithValue }) => {
+    try {
+      await boardService.deleteBoard(id)
+
+      // Refresh boards list
+      dispatch(fetchBoards())
+
+      return id
+    } catch (error) {
+      return rejectWithValue({
+        message: error.response?.data?.message || 'Failed to delete board'
       })
     }
   }
@@ -964,7 +1061,60 @@ const masterSlice = createSlice({
         state.oems.loading = false
         state.oems.error = action.payload?.message || 'Failed to fetch OEMs'
       })
-      
+
+      // Boards
+      .addCase(fetchBoards.pending, (state) => {
+        state.boards.loading = true
+        state.boards.error = null
+      })
+      .addCase(fetchBoards.fulfilled, (state, action) => {
+        state.boards.loading = false
+        const boardsArray = action.payload.data?.boards || action.payload.boards || []
+        state.boards.data = Array.isArray(boardsArray) ? boardsArray : []
+        state.boards.total = action.payload.data?.pagination?.total || action.payload.pagination?.total || 0
+        state.boards.pagination = action.payload.data?.pagination || action.payload.pagination || {}
+      })
+      .addCase(fetchBoards.rejected, (state, action) => {
+        state.boards.loading = false
+        state.boards.error = action.payload?.message || 'Failed to fetch boards'
+      })
+
+      .addCase(createBoard.pending, (state) => {
+        state.boards.loading = true
+        state.boards.error = null
+      })
+      .addCase(createBoard.fulfilled, (state) => {
+        state.boards.loading = false
+      })
+      .addCase(createBoard.rejected, (state, action) => {
+        state.boards.loading = false
+        state.boards.error = action.payload?.message || 'Failed to create board'
+      })
+
+      .addCase(updateBoard.pending, (state) => {
+        state.boards.loading = true
+        state.boards.error = null
+      })
+      .addCase(updateBoard.fulfilled, (state) => {
+        state.boards.loading = false
+      })
+      .addCase(updateBoard.rejected, (state, action) => {
+        state.boards.loading = false
+        state.boards.error = action.payload?.message || 'Failed to update board'
+      })
+
+      .addCase(deleteBoard.pending, (state) => {
+        state.boards.loading = true
+        state.boards.error = null
+      })
+      .addCase(deleteBoard.fulfilled, (state) => {
+        state.boards.loading = false
+      })
+      .addCase(deleteBoard.rejected, (state, action) => {
+        state.boards.loading = false
+        state.boards.error = action.payload?.message || 'Failed to delete board'
+      })
+
       // Categories
       .addCase(fetchCategories.pending, (state) => {
         state.categories.loading = true
@@ -1156,9 +1306,11 @@ export const {
 } = masterSlice.actions
 
 // Selectors
+export const selectBoards = (state) => state.master.boards
 export const selectOEMs = (state) => state.master.oems
 export const selectCategories = (state) => state.master.categories
 export const selectProducts = (state) => state.master.products
+export const selectProductTypes = (state) => state.master.productTypes
 export const selectLocations = (state) => state.master.locations
 export const selectMasterSelections = (state) => ({
   oem: state.master.selectedOem,

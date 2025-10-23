@@ -19,7 +19,11 @@ import {
   SafetyCertificateOutlined,
   ThunderboltOutlined,
   ControlOutlined,
-  SecurityScanOutlined
+  SecurityScanOutlined,
+  SwapOutlined,
+  CheckCircleOutlined,
+  SendOutlined,
+  DeliveredProcedureOutlined
 } from '@ant-design/icons'
 import { selectSidebarCollapsed } from '../../../store/slices/uiSlice'
 import { getThemeByRole } from '../../../utils/roleThemes'
@@ -85,6 +89,10 @@ const Sidebar = () => {
           label: 'Master Data',
           children: [
             {
+              key: '/masters/boards',
+              label: 'Board Master',
+            },
+            {
               key: '/masters/oem',
               label: 'OEM Master',
             },
@@ -109,29 +117,18 @@ const Sidebar = () => {
               label: 'Asset Inventory',
             },
             {
-              key: '/assets/assignment',
-              label: 'Asset Assignment',
-            },
-            {
               key: '/assets/movement',
               label: 'Asset Movement',
             },
             {
-              key: '/assets/lifecycle',
-              label: 'Asset Lifecycle',
+              key: '/standby/pool',
+              label: 'Standby Pool',
+              icon: <SwapOutlined />
             },
             {
-              key: '/assets/requisitions',
-              label: 'Asset Requisitions',
-            },
-            {
-              key: '/assets/discovery',
-              label: 'Asset Discovery',
-            },
-            {
-              key: '/assets/audit',
-              label: 'Physical Audit',
-            },
+              key: '/standby/assignments',
+              label: 'Standby Assignments',
+            }
           ],
         },
         // Ticketing & SLA Module
@@ -139,6 +136,12 @@ const Sidebar = () => {
           key: '/tickets',
           icon: <CustomerServiceOutlined />,
           label: 'Ticket Management',
+        },
+        // Inventory Reconciliation Module
+        {
+          key: '/reconciliation',
+          icon: <CheckCircleOutlined />,
+          label: 'Inventory Reconciliation',
         },
         // Reporting & Analytics Module
         {
@@ -241,17 +244,40 @@ const Sidebar = () => {
               label: 'Asset Inventory',
             },
             {
-              key: '/assets/assignment',
-              label: 'Asset Assignment',
-            },
-            {
               key: '/assets/movement',
               label: 'Asset Movement',
             },
             {
-              key: '/assets/requisitions',
-              label: 'Asset Requisitions',
+              key: '/standby/pool',
+              label: 'Standby Pool',
+              icon: <SwapOutlined />
             },
+            {
+              key: '/standby/assignments',
+              label: 'Standby Assignments',
+            },
+            {
+              key: 'asset-requisitions',
+              icon: <ShoppingOutlined />,
+              label: 'Asset Requisitions',
+              children: [
+                {
+                  key: '/assignments/asset-assignment',
+                  icon: <SendOutlined />,
+                  label: 'Asset Assignment',
+                },
+                {
+                  key: '/deliveries/management',
+                  icon: <DeliveredProcedureOutlined />,
+                  label: 'Delivery Management',
+                },
+                {
+                  key: '/requisitions/all-requisitions',
+                  icon: <FileTextOutlined />,
+                  label: 'All Requisitions',
+                }
+              ]
+            }
           ],
         },
         {
@@ -266,34 +292,81 @@ const Sidebar = () => {
     if (['department_head', 'department_coordinator'].includes(user?.role)) {
       baseItems.push(
         {
-          key: 'department',
-          icon: <UserOutlined />,
-          label: 'Department Management',
+          key: '/approvals/department-head',
+          icon: <CheckCircleOutlined />,
+          label: 'Requisition Approvals',
+        },
+        {
+          key: '/requisitions/all-requisitions',
+          icon: <FileTextOutlined />,
+          label: 'All Requisitions',
+        },
+        // {
+        //   key: 'department',
+        //   icon: <UserOutlined />,
+        //   label: 'Department Management',
+        //   children: [
+        //     {
+        //       key: '/department/assets',
+        //       label: 'Department Assets',
+        //     },
+        //     {
+        //       key: '/department/tickets',
+        //       label: 'Department Tickets',
+        //     },
+        //     {
+        //       key: '/department/reports',
+        //       label: 'Department Reports',
+        //     },
+        //   ],
+        // }
+      )
+    }
+
+    // IT Head items - IT approval workflow and asset management
+    if (['it_head'].includes(user?.role)) {
+      baseItems.push(
+        {
+          key: '/approvals/it-head',
+          icon: <CheckCircleOutlined />,
+          label: 'IT Requisition Approvals',
+        },
+        {
+          key: '/requisitions/all-requisitions',
+          icon: <FileTextOutlined />,
+          label: 'All Requisitions',
+        },
+        {
+          key: 'assets',
+          icon: <DesktopOutlined />,
+          label: 'Asset Management',
           children: [
             {
-              key: '/department/assets',
-              label: 'Department Assets',
+              key: '/assets/inventory',
+              label: 'Asset Inventory',
             },
             {
-              key: '/department/requisitions',
-              label: 'Asset Requisitions',
-            },
-            {
-              key: '/department/tickets',
-              label: 'Department Tickets',
-            },
-            {
-              key: '/department/reports',
-              label: 'Department Reports',
+              key: '/assets/components',
+              label: 'Component Management',
             },
           ],
+        },
+        {
+          key: '/tickets',
+          icon: <CustomerServiceOutlined />,
+          label: 'Ticket Management',
         }
       )
     }
 
-    // Engineer items - Technical ticket handling, asset viewing
+    // Engineer items - Technical ticket handling, asset viewing, deliveries
     if (['engineer'].includes(user?.role)) {
       baseItems.push(
+        {
+          key: '/deliveries/my-deliveries',
+          icon: <DeliveredProcedureOutlined />,
+          label: 'My Deliveries',
+        },
         {
           key: 'tickets',
           icon: <ToolOutlined />,
@@ -308,6 +381,11 @@ const Sidebar = () => {
               label: 'Repair Management',
             },
           ],
+        },
+        {
+          key: '/reconciliation',
+          icon: <CheckCircleOutlined />,
+          label: 'Inventory Reconciliation',
         },
         {
           key: 'assets',
@@ -332,9 +410,19 @@ const Sidebar = () => {
           label: 'My Assets',
         },
         {
-          key: '/create-requisition',
+          key: 'requisitions',
           icon: <ShoppingOutlined />,
-          label: 'Request Asset',
+          label: 'Asset Requisitions',
+          children: [
+            {
+              key: '/requisitions/my-requisitions',
+              label: 'My Requisitions',
+            },
+            {
+              key: '/requisitions/new',
+              label: 'New Requisition',
+            },
+          ],
         },
         {
           key: '/create-ticket',
@@ -391,6 +479,11 @@ const Sidebar = () => {
     if (pathname.startsWith('/assets/delivery')) return ['/assets/delivery']
     if (pathname.startsWith('/assets/view')) return ['/assets/view']
 
+    // Asset Requisitions routes (nested under Asset Management)
+    if (pathname.startsWith('/assignments/asset-assignment')) return ['/assignments/asset-assignment']
+    if (pathname.startsWith('/deliveries/management')) return ['/deliveries/management']
+    if (pathname.startsWith('/requisitions/all-requisitions')) return ['/requisitions/all-requisitions']
+
     // Ticket Management routes
     if (pathname.startsWith('/tickets')) return ['/tickets']
 
@@ -434,6 +527,12 @@ const Sidebar = () => {
     }
     if (pathname.startsWith('/assets')) {
       keys.push('assets')
+    }
+    // Auto-open Asset Requisitions submenu for requisition-related routes
+    if (pathname.startsWith('/assignments/asset-assignment') ||
+        pathname.startsWith('/deliveries/management') ||
+        pathname.startsWith('/requisitions/all-requisitions')) {
+      keys.push('assets', 'asset-requisitions')
     }
     if (pathname.startsWith('/tickets')) {
       keys.push('tickets')

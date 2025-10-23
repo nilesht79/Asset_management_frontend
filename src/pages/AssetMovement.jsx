@@ -127,7 +127,9 @@ const AssetMovement = () => {
       returned: 'green',
       relocated: 'purple',
       unassigned: 'red',
-      available: 'default'
+      available: 'default',
+      component_install: 'cyan',
+      component_remove: 'magenta'
     };
     return colors[type] || 'default';
   };
@@ -168,10 +170,17 @@ const AssetMovement = () => {
       title: 'Asset Tag',
       dataIndex: 'asset_tag',
       key: 'asset_tag',
-      width: 130,
+      width: 180,
+      ellipsis: {
+        showTitle: false,
+      },
       render: (text, record) => (
         <Space>
-          <Tag color="blue">{text}</Tag>
+          <Tooltip title={text}>
+            <Tag color="blue" style={{ maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {text}
+            </Tag>
+          </Tooltip>
           <Tooltip title="View full history">
             <Button
               type="link"
@@ -187,18 +196,28 @@ const AssetMovement = () => {
       title: 'Movement Type',
       dataIndex: 'movement_type',
       key: 'movement_type',
-      width: 130,
-      render: (type) => (
-        <Tag color={getMovementTypeColor(type)} icon={<SwapOutlined />}>
-          {type?.toUpperCase()}
-        </Tag>
-      ),
+      width: 180,
+      ellipsis: {
+        showTitle: false,
+      },
+      render: (type) => {
+        const displayText = type?.replace(/_/g, ' ').toUpperCase();
+        return (
+          <Tooltip title={displayText}>
+            <Tag color={getMovementTypeColor(type)} icon={<SwapOutlined />} style={{ maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {displayText}
+            </Tag>
+          </Tooltip>
+        );
+      },
       filters: [
         { text: 'Assigned', value: 'assigned' },
         { text: 'Transferred', value: 'transferred' },
         { text: 'Returned', value: 'returned' },
         { text: 'Relocated', value: 'relocated' },
-        { text: 'Unassigned', value: 'unassigned' }
+        { text: 'Unassigned', value: 'unassigned' },
+        { text: 'Component Install', value: 'component_install' },
+        { text: 'Component Remove', value: 'component_remove' }
       ],
       onFilter: (value, record) => record.movement_type === value
     },
@@ -369,6 +388,8 @@ const AssetMovement = () => {
               <Option value="returned">Returned</Option>
               <Option value="relocated">Relocated</Option>
               <Option value="unassigned">Unassigned</Option>
+              <Option value="component_install">Component Install</Option>
+              <Option value="component_remove">Component Remove</Option>
             </Select>
           </Col>
           <Col xs={24} sm={12} md={8}>

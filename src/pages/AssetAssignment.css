@@ -1,0 +1,44 @@
+.asset-assignment-page {
+  padding: 24px;
+  background: #f0f2f5;
+  min-height: calc(100vh - 64px);
+}
+
+.assignment-card {
+  transition: all 0.3s ease;
+}
+
+.assignment-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.assignment-actions {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.tab-badge {
+  display: inline-block;
+  background: #ff4d4f;
+  color: white;
+  border-radius: 10px;
+  padding: 2px 8px;
+  font-size: 12px;
+  margin-left: 8px;
+  font-weight: 600;
+}
+
+/* Responsive adjustments */
+@media (max-width: 992px) {
+  .assignment-actions {
+    margin-top: 16px;
+  }
+}
+
+@media (max-width: 768px) {
+  .asset-assignment-page {
+    padding: 16px;
+  }
+}

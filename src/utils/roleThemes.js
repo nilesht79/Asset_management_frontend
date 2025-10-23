@@ -89,6 +89,35 @@ export const ROLE_THEMES = {
       accent: '#2563eb'
     }
   },
+  it_head: {
+    name: 'IT Head',
+    primary: {
+      50: '#eff6ff',
+      100: '#dbeafe',
+      200: '#bfdbfe',
+      300: '#93c5fd',
+      400: '#60a5fa',
+      500: '#3b82f6',
+      600: '#2563eb', // Core blue
+      700: '#1d4ed8',
+      800: '#1e40af',
+      900: '#1e3a8a',
+    },
+    gradient: 'from-blue-600 to-blue-700',
+    accent: '#2563eb',
+    sidebar: {
+      bg: '#1e3a8a', // Deep blue
+      hover: '#1e40af',
+      active: '#1d4ed8',
+      text: '#ffffff',
+      icon: '#bfdbfe'
+    },
+    header: {
+      bg: '#ffffff',
+      border: '#2563eb',
+      accent: '#2563eb'
+    }
+  },
   coordinator: {
     name: 'Coordinator',
     primary: {

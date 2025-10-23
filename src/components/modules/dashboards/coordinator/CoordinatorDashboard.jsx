@@ -16,20 +16,21 @@ import {
   Empty
 } from 'antd'
 import {
-  ToolOutlined,
-  ShoppingCartOutlined,
-  CustomerServiceOutlined,
-  AlertOutlined,
-  CheckCircleOutlined,
-  ClockCircleOutlined,
-  FileTextOutlined,
-  BarChartOutlined,
-  EnvironmentOutlined,
-  RiseOutlined,
-  FallOutlined,
-  ArrowUpOutlined,
-  ArrowDownOutlined
-} from '@ant-design/icons'
+  Package,
+  CheckCircle2,
+  PackageOpen,
+  Wrench,
+  ClipboardList,
+  AlertTriangle,
+  MapPin,
+  BarChart3,
+  Activity,
+  FileText,
+  Zap,
+  ShieldAlert,
+  Calendar,
+  Target
+} from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import { fetchAssetStatistics } from '../../../../store/slices/assetSlice'
@@ -180,10 +181,10 @@ const CoordinatorDashboard = () => {
   }
 
   const quickActions = [
-    { title: 'Asset Inventory', icon: <ToolOutlined />, path: '/assets/inventory', color: 'blue' },
-    { title: 'Requisitions', icon: <ShoppingCartOutlined />, path: '/assets/inventory', color: 'green' },
-    { title: 'Tickets', icon: <CustomerServiceOutlined />, path: '/tickets', color: 'orange' },
-    { title: 'Asset Reports', icon: <BarChartOutlined />, path: '/assets/inventory', color: 'purple' }
+    { title: 'Asset Inventory', icon: <Package size={18} />, path: '/assets/inventory', color: '#3b82f6', bgColor: 'bg-blue-50', hoverColor: 'hover:bg-blue-100' },
+    { title: 'Requisitions', icon: <ClipboardList size={18} />, path: '/assets/inventory', color: '#10b981', bgColor: 'bg-green-50', hoverColor: 'hover:bg-green-100' },
+    { title: 'Tickets', icon: <FileText size={18} />, path: '/tickets', color: '#f59e0b', bgColor: 'bg-orange-50', hoverColor: 'hover:bg-orange-100' },
+    { title: 'Asset Reports', icon: <BarChart3 size={18} />, path: '/assets/inventory', color: '#8b5cf6', bgColor: 'bg-purple-50', hoverColor: 'hover:bg-purple-100' }
   ]
 
   const assignmentColumns = [
@@ -313,228 +314,263 @@ const CoordinatorDashboard = () => {
 
   const getAlertIcon = (severity) => {
     const icons = {
-      warning: <AlertOutlined className="text-orange-500" />,
-      info: <FileTextOutlined className="text-blue-500" />,
-      error: <AlertOutlined className="text-red-500" />
+      warning: <AlertTriangle size={18} className="text-orange-500" />,
+      info: <FileText size={18} className="text-blue-500" />,
+      error: <ShieldAlert size={18} className="text-red-500" />
     }
-    return icons[severity] || <AlertOutlined />
+    return icons[severity] || <AlertTriangle size={18} />
   }
 
   return (
-    <div className="space-y-4">
-      {/* Compact Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-lg p-4 text-white shadow-md">
+    <div className="space-y-5">
+      {/* Professional Header */}
+      <div className="bg-white border-b border-gray-200 -mx-6 -mt-6 px-6 py-5 mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold">Coordinator Dashboard</h1>
-            <p className="text-blue-100 text-sm mt-1">Asset allocation and lifecycle management overview</p>
+            <div className="flex items-center gap-3">
+              {/* <div className="bg-blue-600 p-2.5 rounded-lg">
+                <Target className="text-white" size={22} />
+              </div> */}
+              <div>
+                <h1 className="text-2xl font-semibold text-gray-900">Coordinator Dashboard</h1>
+                <p className="text-sm text-gray-600 mt-0.5">Asset Operations & Lifecycle Management</p>
+              </div>
+            </div>
           </div>
           <div className="text-right">
-            <div className="text-xs text-blue-200">Last Updated</div>
-            <div className="text-sm font-semibold">{new Date().toLocaleTimeString()}</div>
+            <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">Last Updated</div>
+            <div className="text-sm font-medium text-gray-900">{new Date().toLocaleString()}</div>
           </div>
         </div>
       </div>
 
-      {/* Key Metrics - Compact Grid with Progress */}
-      <Row gutter={[12, 12]}>
+      {/* Key Metrics */}
+      <Row gutter={[16, 16]}>
         <Col xs={24} sm={12} lg={6}>
-          <Badge.Ribbon text="Active" color="blue">
-            <Card size="small" className="border-l-4 border-l-blue-500 hover:shadow-md transition-shadow">
-              <Statistic
-                title={<span className="text-xs">Total Assets</span>}
-                value={statistics.data?.totalAssets || 0}
-                prefix={<ToolOutlined className="text-blue-500" />}
-                loading={statistics.loading}
-                valueStyle={{ fontSize: '24px' }}
-              />
-              <Progress
-                percent={100}
-                size="small"
-                showInfo={false}
-                strokeColor="#3b82f6"
-                className="mt-2"
-              />
-            </Card>
-          </Badge.Ribbon>
-        </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <Tooltip title={`${((statistics.data?.assignedAssets / statistics.data?.totalAssets) * 100 || 0).toFixed(1)}% Utilization Rate`}>
-            <Card size="small" className="border-l-4 border-l-green-500 hover:shadow-md transition-shadow">
-              <Statistic
-                title={<span className="text-xs">Assigned</span>}
-                value={statistics.data?.assignedAssets || 0}
-                prefix={<CheckCircleOutlined className="text-green-500" />}
-                loading={statistics.loading}
-                valueStyle={{ fontSize: '24px' }}
-                suffix={
-                  <span className="text-xs text-gray-400">
-                    /{statistics.data?.totalAssets || 0}
-                  </span>
-                }
-              />
-              <Progress
-                percent={((statistics.data?.assignedAssets / statistics.data?.totalAssets) * 100) || 0}
-                size="small"
-                showInfo={false}
-                strokeColor="#22c55e"
-                className="mt-2"
-              />
-            </Card>
-          </Tooltip>
-        </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <Card size="small" className="border-l-4 border-l-orange-500 hover:shadow-md transition-shadow">
-            <Statistic
-              title={<span className="text-xs">Available</span>}
-              value={statistics.data?.availableAssets || 0}
-              prefix={<ShoppingCartOutlined className="text-orange-500" />}
-              loading={statistics.loading}
-              valueStyle={{ fontSize: '24px' }}
+          <Card className="border border-gray-200 hover:border-blue-400 transition-colors" bodyStyle={{ padding: '20px' }}>
+            <div className="flex items-start justify-between mb-4">
+              <div className="bg-blue-50 p-2 rounded-lg">
+                <Package className="text-blue-600" size={20} />
+              </div>
+              <div className="text-xs text-gray-500 uppercase tracking-wide">Total</div>
+            </div>
+            <div className="text-3xl font-semibold text-gray-900 mb-1">
+              {statistics.loading ? '...' : (statistics.data?.totalAssets || 0).toLocaleString()}
+            </div>
+            <div className="text-sm text-gray-600 mb-3">Total Assets</div>
+            <Progress
+              percent={100}
+              size="small"
+              showInfo={false}
+              strokeColor="#2563eb"
+              trailColor="#e5e7eb"
             />
+          </Card>
+        </Col>
+
+        <Col xs={24} sm={12} lg={6}>
+          <Card className="border border-gray-200 hover:border-green-400 transition-colors" bodyStyle={{ padding: '20px' }}>
+            <div className="flex items-start justify-between mb-4">
+              <div className="bg-green-50 p-2 rounded-lg">
+                <CheckCircle2 className="text-green-600" size={20} />
+              </div>
+              <Tooltip title={`${((statistics.data?.assignedAssets / statistics.data?.totalAssets) * 100 || 0).toFixed(1)}% utilization rate`}>
+                <div className="text-xs text-green-600 font-medium">
+                  {((statistics.data?.assignedAssets / statistics.data?.totalAssets) * 100 || 0).toFixed(0)}%
+                </div>
+              </Tooltip>
+            </div>
+            <div className="text-3xl font-semibold text-gray-900 mb-1">
+              {statistics.loading ? '...' : (statistics.data?.assignedAssets || 0).toLocaleString()}
+            </div>
+            <div className="text-sm text-gray-600 mb-3">Assigned Assets</div>
+            <Progress
+              percent={((statistics.data?.assignedAssets / statistics.data?.totalAssets) * 100) || 0}
+              size="small"
+              showInfo={false}
+              strokeColor="#16a34a"
+              trailColor="#e5e7eb"
+            />
+          </Card>
+        </Col>
+
+        <Col xs={24} sm={12} lg={6}>
+          <Card className="border border-gray-200 hover:border-orange-400 transition-colors" bodyStyle={{ padding: '20px' }}>
+            <div className="flex items-start justify-between mb-4">
+              <div className="bg-orange-50 p-2 rounded-lg">
+                <PackageOpen className="text-orange-600" size={20} />
+              </div>
+              <div className="text-xs text-orange-600 font-medium">
+                {((statistics.data?.availableAssets / statistics.data?.totalAssets) * 100 || 0).toFixed(0)}%
+              </div>
+            </div>
+            <div className="text-3xl font-semibold text-gray-900 mb-1">
+              {statistics.loading ? '...' : (statistics.data?.availableAssets || 0).toLocaleString()}
+            </div>
+            <div className="text-sm text-gray-600 mb-3">Available Assets</div>
             <Progress
               percent={((statistics.data?.availableAssets / statistics.data?.totalAssets) * 100) || 0}
               size="small"
               showInfo={false}
-              strokeColor="#f97316"
-              className="mt-2"
+              strokeColor="#ea580c"
+              trailColor="#e5e7eb"
             />
           </Card>
         </Col>
+
         <Col xs={24} sm={12} lg={6}>
-          <Badge.Ribbon text={statistics.data?.underRepairAssets > 0 ? "Alert" : "Good"} color={statistics.data?.underRepairAssets > 0 ? "red" : "green"}>
-            <Card size="small" className="border-l-4 border-l-red-500 hover:shadow-md transition-shadow">
-              <Statistic
-                title={<span className="text-xs">Under Repair</span>}
-                value={statistics.data?.underRepairAssets || 0}
-                prefix={<AlertOutlined className="text-red-500" />}
-                loading={statistics.loading}
-                valueStyle={{ fontSize: '24px' }}
-              />
-              <Progress
-                percent={statistics.data?.underRepairAssets > 0 ? 100 : 0}
-                size="small"
-                showInfo={false}
-                strokeColor="#ef4444"
-                status={statistics.data?.underRepairAssets > 0 ? "exception" : "success"}
-                className="mt-2"
-              />
-            </Card>
-          </Badge.Ribbon>
+          <Card className="border border-gray-200 hover:border-red-400 transition-colors" bodyStyle={{ padding: '20px' }}>
+            <div className="flex items-start justify-between mb-4">
+              <div className="bg-red-50 p-2 rounded-lg">
+                <Wrench className="text-red-600" size={20} />
+              </div>
+              {statistics.data?.underRepairAssets > 0 ? (
+                <Badge status="error" text="Alert" />
+              ) : (
+                <Badge status="success" text="Normal" />
+              )}
+            </div>
+            <div className="text-3xl font-semibold text-gray-900 mb-1">
+              {statistics.loading ? '...' : (statistics.data?.underRepairAssets || 0).toLocaleString()}
+            </div>
+            <div className="text-sm text-gray-600 mb-3">Under Repair</div>
+            <Progress
+              percent={statistics.data?.underRepairAssets > 0 ? 100 : 0}
+              size="small"
+              showInfo={false}
+              strokeColor={statistics.data?.underRepairAssets > 0 ? "#dc2626" : "#16a34a"}
+              trailColor="#e5e7eb"
+              status={statistics.data?.underRepairAssets > 0 ? "exception" : "success"}
+            />
+          </Card>
         </Col>
       </Row>
 
-      <Divider orientation="left" className="text-gray-600">Quick Overview</Divider>
-
-      {/* Quick Insights - Two Column Layout */}
-      <Row gutter={[12, 12]}>
+      {/* Overview Section */}
+      <Row gutter={[16, 16]}>
         {/* Today's Activity */}
         <Col xs={24} lg={12}>
           <Card
-            size="small"
-            title={<span className="text-sm font-semibold">📊 Today's Activity</span>}
-            className="shadow-sm"
+            title={
+              <div className="flex items-center gap-2">
+                <Activity size={18} className="text-gray-700" />
+                <span className="font-semibold">Today's Activity</span>
+              </div>
+            }
+            className="border border-gray-200"
+            style={{ height: '340px' }}
           >
-            <Space direction="vertical" size="small" className="w-full">
-              <Row gutter={[8, 8]}>
-                <Col span={12}>
-                  <Tooltip title="Tickets created today">
-                    <div className="text-center p-2 bg-blue-50 rounded border border-blue-200 hover:shadow-sm transition-shadow cursor-pointer">
-                      <div className="text-xl font-bold text-blue-600">{todaysTickets.length}</div>
-                      <div className="text-xs text-gray-600">New Tickets</div>
-                    </div>
-                  </Tooltip>
-                </Col>
-                <Col span={12}>
-                  <Tooltip title="Assets added this month">
-                    <div className="text-center p-2 bg-green-50 rounded border border-green-200 hover:shadow-sm transition-shadow cursor-pointer">
-                      <div className="text-xl font-bold text-green-600">{statistics.data?.addedThisMonth || 0}</div>
-                      <div className="text-xs text-gray-600">Assets</div>
-                    </div>
-                  </Tooltip>
-                </Col>
-                <Col span={12}>
-                  <Tooltip title="Tickets resolved today">
-                    <div className="text-center p-2 bg-purple-50 rounded border border-purple-200 hover:shadow-sm transition-shadow cursor-pointer">
-                      <div className="text-xl font-bold text-purple-600">
-                        {todaysTickets.filter(t => t.status === 'resolved' || t.status === 'closed').length}
-                      </div>
-                      <div className="text-xs text-gray-600">Resolved</div>
-                    </div>
-                  </Tooltip>
-                </Col>
-                <Col span={12}>
-                  <Tooltip title="Assets with expiring warranties">
-                    <div className="text-center p-2 bg-orange-50 rounded border border-orange-200 hover:shadow-sm transition-shadow cursor-pointer">
-                      <div className="text-xl font-bold text-orange-600">
-                        {statistics.data?.warrantyExpiringSoon || 0}
-                      </div>
-                      <div className="text-xs text-gray-600">Warranty Alerts</div>
-                    </div>
-                  </Tooltip>
-                </Col>
-              </Row>
-            </Space>
+            <Row gutter={[12, 12]}>
+              <Col span={12}>
+                <div className="border border-gray-200 rounded-lg p-4 hover:border-blue-400 transition-colors">
+                  <div className="flex items-center gap-2 mb-2">
+                    <FileText size={16} className="text-blue-600" />
+                    <span className="text-xs text-gray-500 uppercase">Tickets</span>
+                  </div>
+                  <div className="text-2xl font-semibold text-gray-900">{todaysTickets.length}</div>
+                  <div className="text-xs text-gray-600 mt-1">New Today</div>
+                </div>
+              </Col>
+
+              <Col span={12}>
+                <div className="border border-gray-200 rounded-lg p-4 hover:border-green-400 transition-colors">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Package size={16} className="text-green-600" />
+                    <span className="text-xs text-gray-500 uppercase">Assets</span>
+                  </div>
+                  <div className="text-2xl font-semibold text-gray-900">{statistics.data?.addedThisMonth || 0}</div>
+                  <div className="text-xs text-gray-600 mt-1">Added This Month</div>
+                </div>
+              </Col>
+
+              <Col span={12}>
+                <div className="border border-gray-200 rounded-lg p-4 hover:border-purple-400 transition-colors">
+                  <div className="flex items-center gap-2 mb-2">
+                    <CheckCircle2 size={16} className="text-purple-600" />
+                    <span className="text-xs text-gray-500 uppercase">Resolved</span>
+                  </div>
+                  <div className="text-2xl font-semibold text-gray-900">
+                    {todaysTickets.filter(t => t.status === 'resolved' || t.status === 'closed').length}
+                  </div>
+                  <div className="text-xs text-gray-600 mt-1">Tickets Today</div>
+                </div>
+              </Col>
+
+              <Col span={12}>
+                <div className="border border-gray-200 rounded-lg p-4 hover:border-orange-400 transition-colors">
+                  <div className="flex items-center gap-2 mb-2">
+                    <ShieldAlert size={16} className="text-orange-600" />
+                    <span className="text-xs text-gray-500 uppercase">Warranties</span>
+                  </div>
+                  <div className="text-2xl font-semibold text-gray-900">
+                    {statistics.data?.warrantyExpiringSoon || 0}
+                  </div>
+                  <div className="text-xs text-gray-600 mt-1">Expiring Soon</div>
+                </div>
+              </Col>
+            </Row>
           </Card>
         </Col>
 
         {/* Quick Actions */}
         <Col xs={24} lg={12}>
           <Card
-            size="small"
-            title={<span className="text-sm font-semibold">⚡ Quick Actions</span>}
-            className="shadow-sm"
+            title={
+              <div className="flex items-center gap-2">
+                <Zap size={18} className="text-gray-700" />
+                <span className="font-semibold">Quick Actions</span>
+              </div>
+            }
+            className="border border-gray-200"
+            style={{ height: '340px' }}
           >
-            <Space direction="vertical" size="small" className="w-full">
-              <Row gutter={[8, 8]}>
-                {quickActions.map((action, index) => (
-                  <Col span={12} key={index}>
-                    <Tooltip title={`Navigate to ${action.title}`} placement="top">
-                      <Button
-                        block
-                        size="small"
-                        className="h-12 flex items-center justify-center hover:scale-105 transition-transform"
-                        onClick={() => navigate(action.path)}
-                      >
-                        <div className="flex items-center space-x-2">
-                          <span className={`text-${action.color}-500`}>{action.icon}</span>
-                          <span className="text-xs font-medium">{action.title}</span>
-                        </div>
-                      </Button>
-                    </Tooltip>
-                  </Col>
-                ))}
-              </Row>
-            </Space>
+            <Row gutter={[12, 12]}>
+              {quickActions.map((action, index) => (
+                <Col span={12} key={index}>
+                  <Button
+                    block
+                    className="border border-gray-200 hover:border-blue-400 transition-colors"
+                    style={{ height: '118px' }}
+                    onClick={() => navigate(action.path)}
+                  >
+                    <div className="flex flex-col items-center gap-2">
+                      <div style={{ color: action.color }}>
+                        {action.icon}
+                      </div>
+                      <span className="text-sm font-medium text-gray-700">{action.title}</span>
+                    </div>
+                  </Button>
+                </Col>
+              ))}
+            </Row>
           </Card>
         </Col>
       </Row>
 
-      <Divider orientation="left" className="text-gray-600">Detailed Analytics</Divider>
-
-      {/* Main Content - Two Column Layout */}
-      <Row gutter={[12, 12]}>
-        {/* Left Column */}
+      {/* Analytics Section */}
+      <Row gutter={[16, 16]}>
+        {/* Asset Distribution */}
         <Col xs={24} lg={12}>
-          {/* Asset Distribution by Location */}
           <Card
-            size="small"
             title={
               <div className="flex items-center justify-between">
-                <span className="text-sm font-semibold">📍 Asset Distribution by Location</span>
+                <div className="flex items-center gap-2">
+                  <MapPin size={18} className="text-gray-700" />
+                  <span className="font-semibold">Asset Distribution by Location</span>
+                </div>
                 <Button
                   type="link"
                   size="small"
-                  icon={<EnvironmentOutlined />}
                   onClick={() => navigate('/assets')}
                 >
-                  Details
+                  View All
                 </Button>
               </div>
             }
             loading={statistics.loading}
-            className="shadow-sm"
-            style={{ minHeight: '420px' }}
+            className="border border-gray-200"
+            style={{ height: '580px' }}
+            bodyStyle={{ height: 'calc(100% - 57px)', overflow: 'auto' }}
           >
             <LocationPieChart
               data={statistics.data?.locationDistribution || []}
@@ -543,46 +579,45 @@ const CoordinatorDashboard = () => {
           </Card>
         </Col>
 
-        {/* Right Column */}
+        {/* Ticket Analytics */}
         <Col xs={24} lg={12}>
-          {/* Ticket Status by Category */}
           <Card
-            size="small"
             title={
               <div className="flex items-center justify-between">
-                <span className="text-sm font-semibold">🎫 Ticket Status by Category</span>
+                <div className="flex items-center gap-2">
+                  <BarChart3 size={18} className="text-gray-700" />
+                  <span className="font-semibold">Ticket Status by Category</span>
+                </div>
                 <Button
                   type="link"
                   size="small"
                   onClick={() => navigate('/tickets')}
                 >
-                  All Tickets
+                  View All
                 </Button>
               </div>
             }
             loading={loading}
-            className="shadow-sm"
-            style={{ minHeight: '420px', maxHeight: '420px', overflow: 'auto' }}
+            className="border border-gray-200"
+            style={{ height: '580px' }}
+            bodyStyle={{ height: 'calc(100% - 57px)', overflow: 'auto' }}
           >
             <TicketStatusByCategory data={ticketStatsByCategory} />
           </Card>
         </Col>
       </Row>
 
-      <Divider orientation="left" className="text-gray-600">Recent Activity</Divider>
-
-      {/* Today's Tickets - Full Width */}
+      {/* Today's Tickets */}
       <Card
-        size="small"
         title={
-          <div className="flex items-center justify-between">
-            <Space>
-              <span className="text-sm font-semibold">📋 Today's Tickets</span>
-              <Badge count={todaysTickets.length} showZero overflowCount={99} style={{ backgroundColor: '#1890ff' }} />
-            </Space>
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <div className="flex items-center gap-2">
+              <Calendar size={18} className="text-gray-700" />
+              <span className="font-semibold">Today's Tickets</span>
+              <Badge count={todaysTickets.length} showZero overflowCount={99} />
+            </div>
             <Button
               type="primary"
-              size="small"
               onClick={() => navigate('/tickets')}
             >
               View All Tickets
@@ -590,21 +625,22 @@ const CoordinatorDashboard = () => {
           </div>
         }
         loading={loading}
-        className="shadow-sm"
+        className="border border-gray-200"
       >
         {todaysTickets.length === 0 ? (
           <Empty
             image={Empty.PRESENTED_IMAGE_SIMPLE}
             description="No tickets created today"
-            className="py-8"
           />
         ) : (
           <Table
             columns={todaysTicketsColumns}
             dataSource={todaysTickets}
             rowKey="ticket_id"
-            pagination={{ pageSize: 5, size: 'small' }}
-            size="small"
+            pagination={{
+              pageSize: 5,
+              showTotal: (total) => `Total ${total} tickets`
+            }}
             scroll={{ x: 1200 }}
           />
         )}

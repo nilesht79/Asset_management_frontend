@@ -42,7 +42,8 @@ import {
   FileTextOutlined,
   EyeOutlined,
   SettingOutlined,
-  BankOutlined
+  BankOutlined,
+  ApiOutlined
 } from '@ant-design/icons'
 import { Pie } from '@ant-design/plots'
 import { useSelector, useDispatch } from 'react-redux'
@@ -70,9 +71,11 @@ import {
   fetchOEMs,
   fetchProducts,
   fetchCategories,
+  fetchBoards,
   selectOEMs,
   selectProducts,
-  selectCategories
+  selectCategories,
+  selectBoards
 } from '../../../store/slices/masterSlice'
 import {
   fetchLocations,
@@ -84,6 +87,7 @@ import {
 } from '../../../store/slices/userSlice'
 import BulkAddAssetsModal from './BulkAddAssetsModal'
 import LegacyImportModal from './LegacyImportModal'
+import ComponentManager from './components/ComponentManager'
 
 const { Title, Text } = Typography
 const { Option } = Select
@@ -107,6 +111,8 @@ const AssetInventory = () => {
   const [bulkAddModalVisible, setBulkAddModalVisible] = useState(false)
   const [legacyImportModalVisible, setLegacyImportModalVisible] = useState(false)
   const [filterDrawerVisible, setFilterDrawerVisible] = useState(false)
+  const [componentDrawerVisible, setComponentDrawerVisible] = useState(false)
+  const [managingComponentsAsset, setManagingComponentsAsset] = useState(null)
   const [tempFilters, setTempFilters] = useState({
     search: '',
     status: '',
@@ -115,7 +121,8 @@ const AssetInventory = () => {
     assigned_to: '',
     product_id: '',
     category_id: '',
-    oem_id: ''
+    oem_id: '',
+    board_id: ''
   })
 
   // Redux selectors
@@ -131,6 +138,7 @@ const AssetInventory = () => {
   const categories = useSelector(selectCategories)
   const locations = useSelector(selectLocations)
   const users = useSelector(selectUsers)
+  const boards = useSelector(selectBoards)
 
   // Load initial data
   useEffect(() => {
@@ -139,6 +147,7 @@ const AssetInventory = () => {
     dispatch(fetchAssetStatistics())
 
     // Fetch master data for dropdowns with high limit to get all items
+    dispatch(fetchBoards({ limit: 1000 }))
     dispatch(fetchOEMs({ limit: 1000 }))
     dispatch(fetchProducts({ limit: 1000 }))
     dispatch(fetchCategories({ limit: 1000, include_subcategories: 'true' }))
@@ -194,6 +203,8 @@ const AssetInventory = () => {
     setEditingAsset(null)
     setIsAddModalVisible(true)
     form.resetFields()
+    // Fetch assets dropdown for parent asset selection
+    dispatch(fetchAssetsDropdown())
   }
 
   const showEditModal = (asset) => {
@@ -214,6 +225,18 @@ const AssetInventory = () => {
 
   const handleSubmit = async (values) => {
     try {
+      // Validate: Components cannot be assigned to users
+      if (values.asset_type === 'component' && values.assigned_to) {
+        message.error('Components cannot be assigned to users. Please remove the assignment or change asset type.')
+        return
+      }
+
+      // Validate: Components must have parent_asset_id
+      if (values.asset_type === 'component' && !values.parent_asset_id) {
+        message.error('Components must have a parent asset selected.')
+        return
+      }
+
       if (editingAsset) {
         await dispatch(updateAsset({ id: editingAsset.id, data: values })).unwrap()
         message.success('Asset updated successfully')
@@ -274,6 +297,11 @@ const AssetInventory = () => {
 
   const handleAssetSettings = (asset) => {
     message.info(`Settings for ${asset.asset_tag} - Coming soon!`)
+  }
+
+  const handleManageComponents = (asset) => {
+    setManagingComponentsAsset(asset)
+    setComponentDrawerVisible(true)
   }
 
   const handleAssignAsset = async (values) => {
@@ -385,7 +413,8 @@ const AssetInventory = () => {
       assigned_to: filters?.assigned_to || '',
       product_id: filters?.product_id || '',
       category_id: filters?.category_id || '',
-      oem_id: filters?.oem_id || ''
+      oem_id: filters?.oem_id || '',
+      board_id: filters?.board_id || ''
     })
     setFilterDrawerVisible(true)
   }
@@ -405,7 +434,8 @@ const AssetInventory = () => {
       assigned_to: '',
       product_id: '',
       category_id: '',
-      oem_id: ''
+      oem_id: '',
+      board_id: ''
     }
     setTempFilters(clearedFilters)
     dispatch(setAssetFilters(clearedFilters))
@@ -681,8 +711,21 @@ const AssetInventory = () => {
       width: 200,
       render: (_, record) => (
         <div className="py-1">
-          <div className="font-semibold text-gray-800 text-sm">{record.product_name || 'N/A'}</div>
-          <div className="text-xs text-gray-500 mt-0.5">{record.product_model || 'No model'}</div>
+          <div className="flex items-center gap-2">
+            <div>
+              <div className="font-semibold text-gray-800 text-sm">{record.product_name || 'N/A'}</div>
+              <div className="text-xs text-gray-500 mt-0.5">{record.product_model || 'No model'}</div>
+            </div>
+            {record.installed_component_count > 0 && (
+              <Tooltip title={`${record.installed_component_count} component${record.installed_component_count !== 1 ? 's' : ''} installed`}>
+                <Badge
+                  count={record.installed_component_count}
+                  style={{ backgroundColor: '#52c41a' }}
+                  size="small"
+                />
+              </Tooltip>
+            )}
+          </div>
         </div>
       )
     },
@@ -780,14 +823,26 @@ const AssetInventory = () => {
       width: 110,
       align: 'center',
       render: (_, record) => {
-        const isAssigned = record.assigned_to
+        const statusConfig = {
+          available: { color: 'green', label: 'Available' },
+          assigned: { color: 'blue', label: 'Assigned' },
+          in_transit: { color: 'orange', label: 'In Transit' },
+          in_use: { color: 'cyan', label: 'In Use' },
+          under_repair: { color: 'red', label: 'Under Repair' },
+          retired: { color: 'default', label: 'Retired' },
+          lost: { color: 'volcano', label: 'Lost' },
+          damaged: { color: 'magenta', label: 'Damaged' }
+        };
+
+        const config = statusConfig[record.status] || { color: 'default', label: record.status };
+
         return (
           <Tag
-            color={isAssigned ? 'blue' : 'green'}
+            color={config.color}
             className="font-medium"
             style={{ minWidth: '80px', textAlign: 'center' }}
           >
-            {isAssigned ? 'Assigned' : 'Available'}
+            {config.label}
           </Tag>
         )
       }
@@ -814,6 +869,12 @@ const AssetInventory = () => {
                     icon: <EyeOutlined />,
                     onClick: () => showViewDetailsModal(record)
                   },
+                  ...(record.asset_type !== 'component' ? [{
+                    key: 'components',
+                    label: 'Manage Components',
+                    icon: <ApiOutlined />,
+                    onClick: () => handleManageComponents(record)
+                  }] : []),
                   {
                     key: 'edit',
                     label: 'Edit Asset',
@@ -1476,24 +1537,29 @@ const AssetInventory = () => {
           form={form}
           layout="vertical"
           onFinish={handleSubmit}
+          onValuesChange={(changedValues, allValues) => {
+            // Auto-clear assigned_to when changing to component type
+            if (changedValues.asset_type === 'component' && allValues.assigned_to) {
+              form.setFieldsValue({ assigned_to: undefined })
+            }
+            // Auto-clear parent_asset_id and installation_notes when changing away from component
+            if (changedValues.asset_type && changedValues.asset_type !== 'component') {
+              form.setFieldsValue({
+                parent_asset_id: undefined,
+                installation_notes: undefined
+              })
+            }
+          }}
         >
           <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                name="asset_tag"
-                label="Asset Tag"
-                rules={[{ required: true, message: 'Please input asset tag!' }]}
-              >
-                <Input placeholder="Enter asset tag" />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
+            <Col span={24}>
               <Form.Item
                 name="serial_number"
                 label="Serial Number"
                 rules={[{ required: true, message: 'Please input serial number!' }]}
+                extra="Asset Tag will be auto-generated from product name"
               >
-                <Input placeholder="Enter serial number" />
+                <Input placeholder="Enter serial number (e.g., SN123456)" />
               </Form.Item>
             </Col>
           </Row>
@@ -1554,26 +1620,105 @@ const AssetInventory = () => {
             </Col>
             <Col span={12}>
               <Form.Item
-                name="assigned_to"
-                label="Assigned To (Optional)"
+                name="asset_type"
+                label="Asset Type"
+                initialValue="standalone"
+                extra="Standalone: Regular assets. Component: Parts that can be installed in other assets (can be spare stock or installed)"
               >
-                <Select
-                  placeholder="Select user (asset will inherit location from user)"
-                  showSearch
-                  allowClear
-                  optionFilterProp="children"
-                  filterOption={(input, option) =>
-                    (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-                  }
-                  options={users.data?.map(user => ({
-                    value: user.id,
-                    label: `${user.firstName} ${user.lastName} (${user.email})`
-                  }))}
-                  loading={users.loading}
-                />
+                <Select placeholder="Select asset type">
+                  <Option value="standalone">Standalone (Laptops, Printers, etc.)</Option>
+                  <Option value="component">Component (RAM, HDD, Monitor, etc.)</Option>
+                </Select>
               </Form.Item>
             </Col>
           </Row>
+
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                noStyle
+                shouldUpdate={(prevValues, currentValues) => prevValues.asset_type !== currentValues.asset_type}
+              >
+                {({ getFieldValue }) => {
+                  const assetType = getFieldValue('asset_type')
+                  const isComponent = assetType === 'component'
+                  return (
+                    <Form.Item
+                      name="assigned_to"
+                      label="Assigned To (Optional)"
+                      extra={isComponent ? "Components cannot be assigned to users" : "Asset will inherit location from assigned user"}
+                    >
+                      <Select
+                        placeholder={isComponent ? "N/A - Components cannot be assigned" : "Select user (asset will inherit location from user)"}
+                        showSearch
+                        allowClear
+                        disabled={isComponent}
+                        optionFilterProp="children"
+                        filterOption={(input, option) =>
+                          (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                        }
+                        options={users.data?.map(user => ({
+                          value: user.id,
+                          label: `${user.firstName} ${user.lastName} (${user.email})`
+                        }))}
+                        loading={users.loading}
+                      />
+                    </Form.Item>
+                  )
+                }}
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                noStyle
+                shouldUpdate={(prevValues, currentValues) => prevValues.asset_type !== currentValues.asset_type}
+              >
+                {({ getFieldValue }) => {
+                  const assetType = getFieldValue('asset_type')
+                  return assetType === 'component' ? (
+                    <Form.Item
+                      name="parent_asset_id"
+                      label="Parent Asset (Optional)"
+                      extra="Leave empty for spare/stock components. Select parent when installing the component."
+                    >
+                      <Select
+                        placeholder="Leave empty for spare stock, or select parent asset..."
+                        showSearch
+                        allowClear
+                        optionFilterProp="children"
+                        filterOption={(input, option) =>
+                          (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                        }
+                        options={dropdown.data?.filter(asset => asset.asset_type !== 'component').map(asset => ({
+                          value: asset.id,
+                          label: `${asset.asset_tag} - ${asset.product_name}`
+                        }))}
+                        loading={dropdown.loading}
+                      />
+                    </Form.Item>
+                  ) : null
+                }}
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Form.Item
+            noStyle
+            shouldUpdate={(prevValues, currentValues) => prevValues.asset_type !== currentValues.asset_type}
+          >
+            {({ getFieldValue }) => {
+              const assetType = getFieldValue('asset_type')
+              return assetType === 'component' ? (
+                <Form.Item
+                  name="installation_notes"
+                  label="Installation Notes (Optional)"
+                  extra="Add notes about the component installation"
+                >
+                  <Input.TextArea rows={2} placeholder="E.g., Upgraded from previous component" />
+                </Form.Item>
+              ) : null
+            }}
+          </Form.Item>
 
           <Row gutter={16}>
             <Col span={12}>
@@ -1717,12 +1862,14 @@ const AssetInventory = () => {
           }}>
             Edit Asset
           </Button>,
-          <Button key="assign" type="primary" icon={<UserOutlined />} onClick={() => {
-            setViewDetailsModalVisible(false)
-            showAssignModal(viewingAsset)
-          }}>
-            Assign Asset
-          </Button>,
+          ...(viewingAsset?.asset_type !== 'component' ? [
+            <Button key="assign" type="primary" icon={<UserOutlined />} onClick={() => {
+              setViewDetailsModalVisible(false)
+              showAssignModal(viewingAsset)
+            }}>
+              Assign Asset
+            </Button>
+          ] : []),
           <Button key="close" onClick={() => {
             setViewDetailsModalVisible(false)
             setViewingAsset(null)
@@ -1735,13 +1882,19 @@ const AssetInventory = () => {
         {viewingAsset && (
           <div className="space-y-4">
             <Row gutter={[16, 16]}>
-              <Col span={12}>
+              <Col span={8}>
                 <div className="bg-gray-50 p-3 rounded">
-                  <Text type="secondary" className="text-xs">Asset Tag</Text>
+                  <Text type="secondary" className="text-xs">Asset Tag (Auto-generated)</Text>
                   <div className="font-medium text-lg">{viewingAsset.asset_tag}</div>
                 </div>
               </Col>
-              <Col span={12}>
+              <Col span={8}>
+                <div className="bg-gray-50 p-3 rounded">
+                  <Text type="secondary" className="text-xs">Serial Number</Text>
+                  <div className="font-medium text-lg">{viewingAsset.serial_number || 'N/A'}</div>
+                </div>
+              </Col>
+              <Col span={8}>
                 <div className="bg-gray-50 p-3 rounded">
                   <Text type="secondary" className="text-xs">Status</Text>
                   <div className="mt-1">
@@ -1773,6 +1926,51 @@ const AssetInventory = () => {
               </Col>
             </Row>
 
+            <Divider orientation="left">Asset Type & Hierarchy</Divider>
+            <Row gutter={[16, 16]}>
+              <Col span={12}>
+                <Text type="secondary">Asset Type:</Text>
+                <div className="font-medium">
+                  <Tag color={
+                    viewingAsset.asset_type === 'component' ? 'green' :
+                    viewingAsset.asset_type === 'parent' ? 'blue' : 'default'
+                  }>
+                    {viewingAsset.asset_type ? viewingAsset.asset_type.toUpperCase() : 'STANDALONE'}
+                  </Tag>
+                </div>
+              </Col>
+              {viewingAsset.asset_type === 'component' && viewingAsset.parent_asset_tag && (
+                <Col span={12}>
+                  <Text type="secondary">Parent Asset:</Text>
+                  <div className="font-medium flex items-center">
+                    <ApiOutlined className="mr-2" />
+                    {viewingAsset.parent_asset_tag}
+                  </div>
+                </Col>
+              )}
+              {viewingAsset.asset_type === 'component' && viewingAsset.installation_date && (
+                <Col span={12}>
+                  <Text type="secondary">Installation Date:</Text>
+                  <div className="font-medium">{new Date(viewingAsset.installation_date).toLocaleDateString()}</div>
+                </Col>
+              )}
+              {viewingAsset.asset_type === 'component' && viewingAsset.installed_by_name && (
+                <Col span={12}>
+                  <Text type="secondary">Installed By:</Text>
+                  <div className="font-medium">{viewingAsset.installed_by_name}</div>
+                </Col>
+              )}
+            </Row>
+
+            {viewingAsset.asset_type === 'component' && viewingAsset.installation_notes && (
+              <>
+                <Divider orientation="left">Installation Notes</Divider>
+                <div className="bg-blue-50 p-3 rounded">
+                  <Text>{viewingAsset.installation_notes}</Text>
+                </div>
+              </>
+            )}
+
             <Divider orientation="left">Location & Assignment</Divider>
             <Row gutter={[16, 16]}>
               <Col span={12}>
@@ -1787,7 +1985,7 @@ const AssetInventory = () => {
                 <div className="font-medium flex items-center">
                   <UserOutlined className="mr-2" />
                   <div>
-                    <div>{viewingAsset.assigned_user_name || 'Unassigned'}</div>
+                    <div>{viewingAsset.assigned_user_name || (viewingAsset.asset_type === 'component' ? 'N/A (Components cannot be assigned)' : 'Unassigned')}</div>
                     {viewingAsset.assigned_user_email && (
                       <div className="text-xs text-gray-500">{viewingAsset.assigned_user_email}</div>
                     )}
@@ -1985,6 +2183,28 @@ const AssetInventory = () => {
             />
           </div>
 
+          {/* Board */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Board</label>
+            <Select
+              placeholder="Select board"
+              value={tempFilters.board_id || undefined}
+              onChange={(value) => handleTempFilterChange('board_id', value)}
+              allowClear
+              showSearch
+              optionFilterProp="children"
+              filterOption={(input, option) => {
+                const searchText = `${option.label || ''}`.toLowerCase()
+                return searchText.includes(input.toLowerCase())
+              }}
+              style={{ width: '100%' }}
+              options={boards.data?.map(board => ({
+                value: board.id,
+                label: board.name
+              }))}
+            />
+          </div>
+
           {/* Status */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
@@ -2130,6 +2350,34 @@ const AssetInventory = () => {
             />
           </div>
         </div>
+      </Drawer>
+
+      {/* Component Manager Drawer */}
+      <Drawer
+        title={
+          <Space>
+            <ApiOutlined className="text-blue-600" />
+            <span>Component Manager</span>
+            {managingComponentsAsset && (
+              <Tag color="blue">{managingComponentsAsset.asset_tag}</Tag>
+            )}
+          </Space>
+        }
+        open={componentDrawerVisible}
+        onClose={() => {
+          setComponentDrawerVisible(false)
+          setManagingComponentsAsset(null)
+        }}
+        width={1200}
+        destroyOnClose
+      >
+        {managingComponentsAsset && (
+          <ComponentManager
+            assetId={managingComponentsAsset.id}
+            assetTag={managingComponentsAsset.asset_tag}
+            assetType={managingComponentsAsset.asset_type}
+          />
+        )}
       </Drawer>
     </div>
   )

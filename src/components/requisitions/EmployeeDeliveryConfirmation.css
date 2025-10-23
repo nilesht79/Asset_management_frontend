@@ -1,0 +1,18 @@
+.employee-delivery-confirmation-modal .ant-descriptions-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.employee-delivery-confirmation-modal .ant-descriptions-item-label {
+  font-weight: 500;
+  background: #f5f5f5;
+}
+
+.employee-delivery-confirmation-modal ul {
+  margin-bottom: 0;
+}
+
+.employee-delivery-confirmation-modal ul li {
+  margin-bottom: 4px;
+}

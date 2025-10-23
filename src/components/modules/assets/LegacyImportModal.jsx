@@ -175,6 +175,34 @@ const LegacyImportModal = ({ visible, onClose, onSuccess }) => {
       width: 200
     },
     {
+      title: 'Asset Type',
+      dataIndex: 'asset_type',
+      key: 'asset_type',
+      width: 100,
+      render: (text) => text ? <Tag color={text === 'component' ? 'green' : 'blue'}>{text}</Tag> : <Text type="secondary">standalone</Text>
+    },
+    {
+      title: 'Parent Asset',
+      dataIndex: 'parent_asset_tag',
+      key: 'parent_asset_tag',
+      width: 120,
+      render: (text) => text || <Text type="secondary">-</Text>
+    },
+    {
+      title: 'Standby',
+      dataIndex: 'is_standby_asset',
+      key: 'is_standby',
+      width: 80,
+      render: (val) => val ? <Tag color="purple">Yes</Tag> : <Tag>No</Tag>
+    },
+    {
+      title: 'Available',
+      dataIndex: 'standby_available',
+      key: 'standby_available',
+      width: 80,
+      render: (val) => val ? <Tag color="green">Yes</Tag> : <Tag>No</Tag>
+    },
+    {
       title: 'Assigned To',
       dataIndex: 'assigned_user_name',
       key: 'assigned_to',
@@ -210,7 +238,7 @@ const LegacyImportModal = ({ visible, onClose, onSuccess }) => {
             <div style={{ marginBottom: 24 }}>
               <Title level={5}>Step 1: Download Template</Title>
               <Text type="secondary">
-                Download the Excel template with sample data and reference sheets for products and users.
+                Download the Excel template with sample data and reference sheets for products, users, and component hierarchy.
               </Text>
               <div style={{ marginTop: 16 }}>
                 <Button

@@ -1,11 +1,12 @@
 import React, { useState } from 'react'
-import { Tabs, Button, message } from 'antd'
+import { Tabs, Button, message, Space } from 'antd'
 import {
   AppstoreOutlined,
   BranchesOutlined,
   TagsOutlined,
   OrderedListOutlined,
   UploadOutlined,
+  DownloadOutlined,
   UnorderedListOutlined
 } from '@ant-design/icons'
 import ProductCategory from './ProductCategory'
@@ -16,11 +17,41 @@ import ProductListDetailed from './ProductListDetailed'
 import ProductBulkUpload from './ProductBulkUpload'
 import { useDispatch } from 'react-redux'
 import { fetchProducts } from '../../../../store/slices/masterSlice'
+import api from '../../../../services/api'
 
 const ProductMaster = () => {
   const [activeTab, setActiveTab] = useState('products')
   const [isBulkUploadVisible, setIsBulkUploadVisible] = useState(false)
+  const [exporting, setExporting] = useState(false)
   const dispatch = useDispatch()
+
+  // Handle export
+  const handleExport = async () => {
+    try {
+      setExporting(true)
+      const response = await api.get('/masters/products/export', {
+        params: { format: 'xlsx' },
+        responseType: 'blob'
+      })
+
+      // Create download link
+      const url = window.URL.createObjectURL(new Blob([response.data]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', `products_export_${new Date().toISOString().split('T')[0]}.xlsx`)
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
+
+      message.success('Products exported successfully')
+    } catch (error) {
+      console.error('Export error:', error)
+      message.error(error.response?.data?.message || 'Failed to export products')
+    } finally {
+      setExporting(false)
+    }
+  }
 
   const tabItems = [
     {
@@ -92,14 +123,24 @@ const ProductMaster = () => {
             Dashboard {'>'} Master {'>'} Product Master
           </div>
         </div>
-        <Button
-          type="primary"
-          icon={<UploadOutlined />}
-          onClick={() => setIsBulkUploadVisible(true)}
-          size="large"
-        >
-          Bulk Upload Products
-        </Button>
+        <Space>
+          <Button
+            icon={<DownloadOutlined />}
+            onClick={handleExport}
+            loading={exporting}
+            size="large"
+          >
+            Export
+          </Button>
+          <Button
+            type="primary"
+            icon={<UploadOutlined />}
+            onClick={() => setIsBulkUploadVisible(true)}
+            size="large"
+          >
+            Bulk Upload
+          </Button>
+        </Space>
       </div>
 
       {/* Tabs Navigation */}

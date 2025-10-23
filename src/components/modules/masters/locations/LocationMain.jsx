@@ -157,6 +157,29 @@ const LocationMain = () => {
     }
   }
 
+  const handleExport = async () => {
+    try {
+      const statusParam = statusFilter === 'all' ? {} : { status: statusFilter }
+      const response = await api.get('/masters/locations/export', {
+        params: { format: 'xlsx', ...statusParam },
+        responseType: 'blob'
+      })
+
+      const url = window.URL.createObjectURL(new Blob([response.data]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', `locations_export_${new Date().toISOString().split('T')[0]}.xlsx`)
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
+      message.success('Locations exported successfully')
+    } catch (error) {
+      console.error('Error exporting locations:', error)
+      message.error('Failed to export locations')
+    }
+  }
+
   const handleBulkUpload = async (file) => {
     setUploading(true)
     const formData = new FormData()
@@ -348,6 +371,12 @@ const LocationMain = () => {
             </Select>
           </div>
           <Space>
+            <Button
+              icon={<DownloadOutlined />}
+              onClick={handleExport}
+            >
+              Export
+            </Button>
             <Button
               icon={<UploadOutlined />}
               onClick={() => setIsBulkModalVisible(true)}

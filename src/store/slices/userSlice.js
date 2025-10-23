@@ -10,7 +10,16 @@ const initialState = {
     loading: false,
     error: null,
   },
-  
+
+  // User assets
+  userAssets: {
+    data: [],
+    total: 0,
+    loading: false,
+    error: null,
+    userId: null,
+  },
+
   // Departments
   departments: {
     data: [],
@@ -19,17 +28,17 @@ const initialState = {
     loading: false,
     error: null,
   },
-  
+
   // Currently selected items
   selectedUser: null,
   selectedDepartment: null,
-  
+
   // Filters and search
   filters: {
     user: { search: '', status: 'active', role: '', department_id: '' },
     department: { search: '', status: 'active', parent_id: null },
   },
-  
+
   // User roles and permissions
   roles: [
     { value: 'superadmin', label: 'Super Admin' },
@@ -116,14 +125,29 @@ export const deleteUser = createAsyncThunk(
   async (id, { dispatch, rejectWithValue }) => {
     try {
       await userService.deleteUser(id)
-      
+
       // Refresh users list
       dispatch(fetchUsers())
-      
+
       return id
     } catch (error) {
       return rejectWithValue({
         message: error.response?.data?.message || 'Failed to delete user'
+      })
+    }
+  }
+)
+
+export const fetchUserAssets = createAsyncThunk(
+  'user/fetchUserAssets',
+  async ({ userId, params = {} }, { rejectWithValue }) => {
+    try {
+      const response = await userService.getUserAssets(userId, params)
+      return response.data
+    } catch (error) {
+      return rejectWithValue({
+        message: error.response?.data?.message || 'Failed to fetch user assets',
+        errors: error.response?.data?.errors
       })
     }
   }
@@ -253,7 +277,25 @@ const userSlice = createSlice({
       .addCase(fetchUser.fulfilled, (state, action) => {
         state.selectedUser = action.payload
       })
-      
+
+      // User Assets
+      .addCase(fetchUserAssets.pending, (state) => {
+        state.userAssets.loading = true
+        state.userAssets.error = null
+      })
+      .addCase(fetchUserAssets.fulfilled, (state, action) => {
+        state.userAssets.loading = false
+        state.userAssets.data = action.payload.data?.assets || []
+        state.userAssets.total = action.payload.data?.total || 0
+        state.userAssets.userId = action.payload.data?.userId || null
+      })
+      .addCase(fetchUserAssets.rejected, (state, action) => {
+        state.userAssets.loading = false
+        state.userAssets.error = action.payload?.message || 'Failed to fetch user assets'
+        state.userAssets.data = []
+        state.userAssets.total = 0
+      })
+
       // Departments
       .addCase(fetchDepartments.pending, (state) => {
         state.departments.loading = true
@@ -289,6 +331,7 @@ export const {
 
 // Selectors
 export const selectUsers = (state) => state.user.users
+export const selectUserAssets = (state) => state.user.userAssets
 export const selectDepartments = (state) => state.user.departments
 export const selectUserSelections = (state) => ({
   user: state.user.selectedUser,

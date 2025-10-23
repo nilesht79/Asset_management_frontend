@@ -101,6 +101,22 @@ const BulkAddAssetsModal = ({ visible, onClose, onSuccess, products, locations, 
   const previewColumns = [
     { title: 'Row', dataIndex: 'row_number', key: 'row', width: 60 },
     { title: 'Serial Number', dataIndex: 'serial_number', key: 'serial', width: 150 },
+    { title: 'Asset Type', dataIndex: 'asset_type', key: 'asset_type', width: 100 },
+    { title: 'Parent Asset', dataIndex: 'parent_asset_tag', key: 'parent_tag', width: 120 },
+    {
+      title: 'Standby',
+      dataIndex: 'is_standby_asset',
+      key: 'is_standby',
+      width: 80,
+      render: (val) => val ? 'Yes' : 'No'
+    },
+    {
+      title: 'Available',
+      dataIndex: 'standby_available',
+      key: 'standby_available',
+      width: 80,
+      render: (val) => val ? 'Yes' : 'No'
+    },
     { title: 'Status', dataIndex: 'status', key: 'status', width: 100 },
     { title: 'Condition', dataIndex: 'condition_status', key: 'condition', width: 100 },
     { title: 'Purchase Date', dataIndex: 'purchase_date', key: 'purchase_date', width: 120 },
@@ -163,7 +179,8 @@ const BulkAddAssetsModal = ({ visible, onClose, onSuccess, products, locations, 
             <ol className="list-decimal list-inside space-y-1 text-sm">
               <li>Click "Download Template" to get the Excel file</li>
               <li>Fill in the "Serial Number" column for all {assetData?.quantity} rows</li>
-              <li>You can also update Purchase Date, Cost, and Notes if needed</li>
+              <li>Optionally, set "Asset Type" to "component" and specify "Parent Asset Tag" to create components</li>
+              <li>You can also update Purchase Date, Cost, Installation Notes, and other fields</li>
               <li>Upload the completed file below</li>
             </ol>
           </div>

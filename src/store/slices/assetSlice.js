@@ -51,6 +51,28 @@ const initialState = {
     data: [],
     loading: false,
     error: null
+  },
+
+  // Component management state
+  components: {
+    data: [],
+    loading: false,
+    error: null,
+    parentAsset: null
+  },
+
+  // Asset hierarchy state
+  hierarchy: {
+    data: null,
+    loading: false,
+    error: null
+  },
+
+  // Component operations (install/remove) state
+  componentOperation: {
+    loading: false,
+    error: null,
+    success: false
   }
 }
 
@@ -228,6 +250,104 @@ export const exportAssets = createAsyncThunk(
   }
 )
 
+// ============================================================================
+// Component Management Async Thunks
+// ============================================================================
+
+// Fetch components installed in an asset
+export const fetchAssetComponents = createAsyncThunk(
+  'asset/fetchAssetComponents',
+  async ({ assetId, includeRemoved = false }, { rejectWithValue }) => {
+    try {
+      const response = await assetService.getAssetComponents(assetId, { include_removed: includeRemoved })
+      return response.data
+    } catch (error) {
+      console.error('fetchAssetComponents error:', error)
+      return rejectWithValue({
+        message: error.response?.data?.message || 'Failed to fetch asset components',
+        errors: error.response?.data?.errors
+      })
+    }
+  }
+)
+
+// Fetch asset hierarchy tree
+export const fetchAssetHierarchy = createAsyncThunk(
+  'asset/fetchAssetHierarchy',
+  async (assetId, { rejectWithValue }) => {
+    try {
+      const response = await assetService.getAssetHierarchy(assetId)
+      return response.data
+    } catch (error) {
+      console.error('fetchAssetHierarchy error:', error)
+      return rejectWithValue({
+        message: error.response?.data?.message || 'Failed to fetch asset hierarchy',
+        errors: error.response?.data?.errors
+      })
+    }
+  }
+)
+
+// Install a component into an asset
+export const installComponent = createAsyncThunk(
+  'asset/installComponent',
+  async ({ parentAssetId, componentAssetId, installationNotes, installedBy }, { rejectWithValue }) => {
+    try {
+      const response = await assetService.installComponent(parentAssetId, {
+        component_asset_id: componentAssetId,
+        installation_notes: installationNotes,
+        installed_by: installedBy
+      })
+      return response.data
+    } catch (error) {
+      console.error('installComponent error:', error)
+      return rejectWithValue({
+        message: error.response?.data?.message || 'Failed to install component',
+        errors: error.response?.data?.errors
+      })
+    }
+  }
+)
+
+// Remove a component from an asset
+export const removeComponent = createAsyncThunk(
+  'asset/removeComponent',
+  async ({ parentAssetId, componentId, removalNotes }, { rejectWithValue }) => {
+    try {
+      const response = await assetService.removeComponent(parentAssetId, componentId, {
+        removal_notes: removalNotes
+      })
+      return response.data
+    } catch (error) {
+      console.error('removeComponent error:', error)
+      return rejectWithValue({
+        message: error.response?.data?.message || 'Failed to remove component',
+        errors: error.response?.data?.errors
+      })
+    }
+  }
+)
+
+// Reinstall a previously removed component
+export const reinstallComponent = createAsyncThunk(
+  'asset/reinstallComponent',
+  async ({ parentAssetId, componentId, installationNotes, installedBy }, { rejectWithValue }) => {
+    try {
+      const response = await assetService.reinstallComponent(parentAssetId, componentId, {
+        installation_notes: installationNotes,
+        installed_by: installedBy
+      })
+      return response.data
+    } catch (error) {
+      console.error('reinstallComponent error:', error)
+      return rejectWithValue({
+        message: error.response?.data?.message || 'Failed to reinstall component',
+        errors: error.response?.data?.errors
+      })
+    }
+  }
+)
+
 // Create slice
 const assetSlice = createSlice({
   name: 'asset',
@@ -244,6 +364,9 @@ const assetSlice = createSlice({
         state.statistics.error = null
         state.assignment.error = null
         state.dropdown.error = null
+        state.components.error = null
+        state.hierarchy.error = null
+        state.componentOperation.error = null
       }
     },
 
@@ -252,6 +375,9 @@ const assetSlice = createSlice({
       state.statistics.error = null
       state.assignment.error = null
       state.dropdown.error = null
+      state.components.error = null
+      state.hierarchy.error = null
+      state.componentOperation.error = null
     },
 
     // Set selected asset
@@ -280,6 +406,30 @@ const assetSlice = createSlice({
     // Set pagination
     setAssetPagination: (state, action) => {
       state.assets.pagination = { ...state.assets.pagination, ...action.payload }
+    },
+
+    // Component management actions
+    clearComponentError: (state) => {
+      state.components.error = null
+      state.hierarchy.error = null
+      state.componentOperation.error = null
+    },
+
+    clearComponentOperationState: (state) => {
+      state.componentOperation.loading = false
+      state.componentOperation.error = null
+      state.componentOperation.success = false
+    },
+
+    clearComponentsData: (state) => {
+      state.components.data = []
+      state.components.parentAsset = null
+      state.components.error = null
+    },
+
+    clearHierarchyData: (state) => {
+      state.hierarchy.data = null
+      state.hierarchy.error = null
     }
   },
   extraReducers: (builder) => {
@@ -401,6 +551,87 @@ const assetSlice = createSlice({
         state.dropdown.loading = false
         state.dropdown.error = action.payload?.message || 'Failed to fetch assets dropdown'
       })
+
+      // ============================================================================
+      // Component Management Reducers
+      // ============================================================================
+
+      // Fetch Asset Components
+      .addCase(fetchAssetComponents.pending, (state) => {
+        state.components.loading = true
+        state.components.error = null
+      })
+      .addCase(fetchAssetComponents.fulfilled, (state, action) => {
+        state.components.loading = false
+        state.components.data = action.payload.data?.components || action.payload.components || []
+        state.components.parentAsset = action.payload.data?.parent_asset || action.payload.parent_asset || null
+      })
+      .addCase(fetchAssetComponents.rejected, (state, action) => {
+        state.components.loading = false
+        state.components.error = action.payload?.message || 'Failed to fetch asset components'
+      })
+
+      // Fetch Asset Hierarchy
+      .addCase(fetchAssetHierarchy.pending, (state) => {
+        state.hierarchy.loading = true
+        state.hierarchy.error = null
+      })
+      .addCase(fetchAssetHierarchy.fulfilled, (state, action) => {
+        state.hierarchy.loading = false
+        state.hierarchy.data = action.payload.data?.hierarchy || action.payload.hierarchy || null
+      })
+      .addCase(fetchAssetHierarchy.rejected, (state, action) => {
+        state.hierarchy.loading = false
+        state.hierarchy.error = action.payload?.message || 'Failed to fetch asset hierarchy'
+      })
+
+      // Install Component
+      .addCase(installComponent.pending, (state) => {
+        state.componentOperation.loading = true
+        state.componentOperation.error = null
+        state.componentOperation.success = false
+      })
+      .addCase(installComponent.fulfilled, (state) => {
+        state.componentOperation.loading = false
+        state.componentOperation.success = true
+      })
+      .addCase(installComponent.rejected, (state, action) => {
+        state.componentOperation.loading = false
+        state.componentOperation.error = action.payload?.message || 'Failed to install component'
+        state.componentOperation.success = false
+      })
+
+      // Remove Component
+      .addCase(removeComponent.pending, (state) => {
+        state.componentOperation.loading = true
+        state.componentOperation.error = null
+        state.componentOperation.success = false
+      })
+      .addCase(removeComponent.fulfilled, (state) => {
+        state.componentOperation.loading = false
+        state.componentOperation.success = true
+      })
+      .addCase(removeComponent.rejected, (state, action) => {
+        state.componentOperation.loading = false
+        state.componentOperation.error = action.payload?.message || 'Failed to remove component'
+        state.componentOperation.success = false
+      })
+
+      // Reinstall Component
+      .addCase(reinstallComponent.pending, (state) => {
+        state.componentOperation.loading = true
+        state.componentOperation.error = null
+        state.componentOperation.success = false
+      })
+      .addCase(reinstallComponent.fulfilled, (state) => {
+        state.componentOperation.loading = false
+        state.componentOperation.success = true
+      })
+      .addCase(reinstallComponent.rejected, (state, action) => {
+        state.componentOperation.loading = false
+        state.componentOperation.error = action.payload?.message || 'Failed to reinstall component'
+        state.componentOperation.success = false
+      })
   }
 })
 
@@ -413,7 +644,11 @@ export const {
   setAssetFilters,
   clearAssetFilters,
   resetAssetState,
-  setAssetPagination
+  setAssetPagination,
+  clearComponentError,
+  clearComponentOperationState,
+  clearComponentsData,
+  clearHierarchyData
 } = assetSlice.actions
 
 // Selectors
@@ -423,5 +658,10 @@ export const selectSelectedAsset = (state) => state.asset.selectedAsset
 export const selectAssetFilters = (state) => state.asset.filters
 export const selectAssetAssignment = (state) => state.asset.assignment
 export const selectAssetsDropdown = (state) => state.asset.dropdown
+
+// Component management selectors
+export const selectAssetComponents = (state) => state.asset.components
+export const selectAssetHierarchy = (state) => state.asset.hierarchy
+export const selectComponentOperation = (state) => state.asset.componentOperation
 
 export default assetSlice.reducer

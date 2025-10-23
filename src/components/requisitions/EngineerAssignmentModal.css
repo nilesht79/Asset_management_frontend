@@ -1,0 +1,27 @@
+.engineer-assignment-modal .ant-modal-header {
+  background: linear-gradient(to right, #1890ff, #096dd9);
+  border-bottom: none;
+}
+
+.engineer-assignment-modal .ant-modal-title {
+  color: white;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.engineer-assignment-modal .ant-modal-close-x {
+  color: white;
+}
+
+.engineer-assignment-modal .ant-descriptions-title {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.engineer-assignment-modal .ant-form-item-label > label {
+  font-weight: 500;
+}
+
+.engineer-assignment-modal .ant-alert {
+  border-radius: 4px;
+}

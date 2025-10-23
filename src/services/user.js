@@ -39,6 +39,11 @@ const userService = {
     return api.get(`/users/${id}/subordinates`)
   },
 
+  getUserAssets: (id, params = {}) => {
+    const queryString = apiUtils.buildQueryString(params)
+    return api.get(`/users/${id}/assets${queryString ? `?${queryString}` : ''}`)
+  },
+
   // Department Services
   getDepartments: (params = {}) => {
     const queryString = apiUtils.buildQueryString(params)
@@ -208,6 +213,7 @@ const userService = {
     const roleMap = {
       'superadmin': 'Super Admin',
       'admin': 'Admin',
+      'it_head': 'IT Head',
       'department_head': 'Department Head',
       'coordinator': 'Coordinator',
       'department_coordinator': 'Department Coordinator',
@@ -221,6 +227,7 @@ const userService = {
     const colorMap = {
       'superadmin': '#722ed1',
       'admin': '#f5222d',
+      'it_head': '#eb2f96',
       'department_head': '#fa541c',
       'coordinator': '#faad14',
       'department_coordinator': '#13c2c2',
@@ -234,6 +241,7 @@ const userService = {
     return {
       'superadmin': 100,
       'admin': 90,
+      'it_head': 80,
       'department_head': 70,
       'coordinator': 60,
       'department_coordinator': 50,
@@ -271,6 +279,7 @@ const userService = {
     if (filters.search) params.search = filters.search
     if (filters.status) params.status = filters.status
     if (filters.role) params.role = filters.role
+    if (filters.board_id) params.board_id = filters.board_id
     if (filters.department_id) params.department_id = filters.department_id
     if (filters.location_id) params.location_id = filters.location_id
     if (filters.parent_id !== undefined) params.parent_id = filters.parent_id

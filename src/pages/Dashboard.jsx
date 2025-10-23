@@ -7,6 +7,8 @@ import SuperAdminDashboard from '../components/modules/dashboards/superadmin/Sup
 import AdminDashboard from '../components/modules/dashboards/admin/AdminDashboard'
 import EmployeeDashboard from '../components/modules/dashboards/employee/EmployeeDashboard'
 import CoordinatorDashboard from '../components/modules/dashboards/coordinator/CoordinatorDashboard'
+import DepartmentHeadDashboard from '../components/modules/dashboards/department-head/DepartmentHeadDashboard'
+import ITHeadDashboard from '../components/modules/dashboards/it-head/ITHeadDashboard'
 
 const { Title, Text } = Typography
 
@@ -54,7 +56,15 @@ const Dashboard = () => {
     return <CoordinatorDashboard />
   }
 
-  // For other roles (engineer, dept_head), show Phase 2 notice
+  if (user.role === 'department_head' || user.role === 'dept_head') {
+    return <DepartmentHeadDashboard />
+  }
+
+  if (user.role === 'it_head') {
+    return <ITHeadDashboard />
+  }
+
+  // For other roles (engineer), show Phase 2 notice
   return (
     <div className="min-h-screen flex items-center justify-center">
       <div className="text-center p-8">

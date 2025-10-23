@@ -104,7 +104,7 @@ const ProductModelForm = ({ open, mode, product, onClose, onSuccess }) => {
     return mode === 'create' ? (
       <Space>
         <CheckCircleOutlined style={{ color: '#52c41a' }} />
-        Add New Product Model
+        Add New Product 
       </Space>
     ) : (
       <Space>
@@ -328,7 +328,7 @@ const ProductModelForm = ({ open, mode, product, onClose, onSuccess }) => {
             <Form.Item
               label={
                 <Space>
-                  <span>Product Model Name</span>
+                  <span>Product Name</span>
                   <Tooltip title="Enter the complete product model name">
                     <InfoCircleOutlined style={{ color: '#8c8c8c' }} />
                   </Tooltip>

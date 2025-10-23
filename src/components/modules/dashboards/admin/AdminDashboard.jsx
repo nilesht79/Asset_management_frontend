@@ -14,8 +14,8 @@ import {
   Progress,
   Divider
 } from 'antd'
-import { 
-  UserOutlined, 
+import {
+  UserOutlined,
   TeamOutlined,
   AlertOutlined,
   DatabaseOutlined,
@@ -27,11 +27,14 @@ import {
   ClockCircleOutlined,
   GlobalOutlined,
   ToolOutlined,
-  RiseOutlined
+  RiseOutlined,
+  SwapOutlined
 } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
+import { useDispatch, useSelector } from 'react-redux'
 import ReactECharts from 'echarts-for-react'
 import dashboardService from '../../../../services/dashboard'
+import { fetchStandbyStatistics, selectStandbyStatistics } from '../../../../store/slices/standbySlice'
 
 const { Title, Text } = Typography
 
@@ -66,9 +69,12 @@ const AdminDashboard = () => {
   const [recentActivities, setRecentActivities] = useState([])
   const [pendingApprovals, setPendingApprovals] = useState([])
   const navigate = useNavigate()
+  const dispatch = useDispatch()
+  const standbyStatistics = useSelector(selectStandbyStatistics)
 
   useEffect(() => {
     loadDashboardData()
+    dispatch(fetchStandbyStatistics())
   }, [])
 
   const loadDashboardData = async () => {
@@ -423,6 +429,82 @@ const AdminDashboard = () => {
                   User registrations
                 </Text>
               </div>
+            </Card>
+          </Col>
+        </Row>
+
+        {/* Standby Assets Statistics */}
+        <Row gutter={[24, 24]} style={{ marginBottom: '32px' }}>
+          <Col span={24}>
+            <Card
+              title={
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  paddingBottom: '12px',
+                  borderBottom: `1px solid ${THEME.border}`
+                }}>
+                  <SwapOutlined style={{ marginRight: '8px', color: THEME.info, fontSize: '16px' }} />
+                  <span style={{ fontSize: '16px', fontWeight: 600, color: THEME.dark }}>
+                    Standby Assets Pool
+                  </span>
+                  <Tag
+                    color={THEME.info}
+                    style={{ fontSize: '11px', fontWeight: 500, marginLeft: '12px' }}
+                    onClick={() => navigate('/standby/pool')}
+                  >
+                    VIEW ALL
+                  </Tag>
+                </div>
+              }
+              style={{
+                borderRadius: '12px',
+                border: 'none',
+                boxShadow: `0 4px 12px ${THEME.shadow}`
+              }}
+            >
+              <Row gutter={[16, 16]}>
+                <Col xs={24} sm={12} md={6}>
+                  <div style={{ textAlign: 'center', padding: '12px' }}>
+                    <Statistic
+                      title={<span style={{ fontSize: '13px', color: THEME.gray }}>Total Pool</span>}
+                      value={standbyStatistics.total || 0}
+                      valueStyle={{ color: THEME.info, fontSize: '32px', fontWeight: 600 }}
+                      prefix={<SwapOutlined />}
+                    />
+                  </div>
+                </Col>
+                <Col xs={24} sm={12} md={6}>
+                  <div style={{ textAlign: 'center', padding: '12px' }}>
+                    <Statistic
+                      title={<span style={{ fontSize: '13px', color: THEME.gray }}>Available</span>}
+                      value={standbyStatistics.available || 0}
+                      valueStyle={{ color: THEME.success, fontSize: '32px', fontWeight: 600 }}
+                      prefix={<CheckCircleOutlined />}
+                    />
+                  </div>
+                </Col>
+                <Col xs={24} sm={12} md={6}>
+                  <div style={{ textAlign: 'center', padding: '12px' }}>
+                    <Statistic
+                      title={<span style={{ fontSize: '13px', color: THEME.gray }}>Assigned</span>}
+                      value={standbyStatistics.assigned || 0}
+                      valueStyle={{ color: THEME.warning, fontSize: '32px', fontWeight: 600 }}
+                      prefix={<ClockCircleOutlined />}
+                    />
+                  </div>
+                </Col>
+                <Col xs={24} sm={12} md={6}>
+                  <div style={{ textAlign: 'center', padding: '12px' }}>
+                    <Statistic
+                      title={<span style={{ fontSize: '13px', color: THEME.gray }}>Under Repair</span>}
+                      value={standbyStatistics.under_repair || 0}
+                      valueStyle={{ color: THEME.danger, fontSize: '32px', fontWeight: 600 }}
+                      prefix={<ToolOutlined />}
+                    />
+                  </div>
+                </Col>
+              </Row>
             </Card>
           </Col>
         </Row>

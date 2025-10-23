@@ -30,9 +30,10 @@ import {
   DownloadOutlined,
   ReloadOutlined
 } from '@ant-design/icons'
-import { useSelector } from 'react-redux'
+import { useSelector, useDispatch } from 'react-redux'
 import userService from '../../../../services/user'
 import dashboardService from '../../../../services/dashboard'
+import { fetchBoards as fetchBoardsAction } from '../../../../store/slices/masterSlice'
 import UserForm from './UserForm'
 
 const { Search } = Input
@@ -43,6 +44,7 @@ const UserMaster = () => {
   const [loading, setLoading] = useState(false)
   const [users, setUsers] = useState([])
   const [departments, setDepartments] = useState([])
+  const [boards, setBoards] = useState([])
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
@@ -52,6 +54,7 @@ const UserMaster = () => {
     search: '',
     status: 'active',
     role: '',
+    board_id: '',
     department_id: ''
   })
   const [selectedUsers, setSelectedUsers] = useState([])
@@ -71,11 +74,19 @@ const UserMaster = () => {
   const [approvalsLoading, setApprovalsLoading] = useState(false)
 
   const { user: currentUser } = useSelector(state => state.auth)
+  const dispatch = useDispatch()
 
   useEffect(() => {
     fetchUsers()
-    fetchDepartments()
   }, [pagination.current, pagination.pageSize, filters])
+
+  useEffect(() => {
+    fetchDepartments()
+  }, [filters.board_id])
+
+  useEffect(() => {
+    fetchBoards()
+  }, [])
 
   const fetchUsers = async () => {
     setLoading(true)
@@ -115,10 +126,21 @@ const UserMaster = () => {
 
   const fetchDepartments = async () => {
     try {
-      const response = await userService.getDepartments()
+      // If a board is selected, fetch only departments for that board
+      const params = filters.board_id ? { board_id: filters.board_id, limit: 1000 } : { limit: 1000 }
+      const response = await userService.getDepartments(params)
       setDepartments(response.data.data?.departments || [])
     } catch (error) {
       console.error('Failed to fetch departments:', error)
+    }
+  }
+
+  const fetchBoards = async () => {
+    try {
+      const result = await dispatch(fetchBoardsAction({ limit: 1000 })).unwrap()
+      setBoards(result.boards || [])
+    } catch (error) {
+      console.error('Failed to fetch boards:', error)
     }
   }
 
@@ -131,10 +153,16 @@ const UserMaster = () => {
   }
 
   const handleFilterChange = (key, value) => {
-    setFilters(prev => ({
-      ...prev,
-      [key]: value
-    }))
+    setFilters(prev => {
+      const newFilters = { ...prev, [key]: value }
+
+      // Cascading filter logic: when board changes, reset department
+      if (key === 'board_id') {
+        newFilters.department_id = ''
+      }
+
+      return newFilters
+    })
     setPagination(prev => ({
       ...prev,
       current: 1
@@ -528,6 +556,35 @@ const UserMaster = () => {
         <div style={{ marginBottom: 16 }}>
           <Space wrap>
             <Select
+              placeholder="Filter by Board"
+              allowClear
+              style={{ width: 200 }}
+              onChange={(value) => handleFilterChange('board_id', value)}
+              value={filters.board_id || undefined}
+            >
+              {boards.map(board => (
+                <Option key={board.id} value={board.id}>
+                  {board.name}
+                </Option>
+              ))}
+            </Select>
+
+            <Select
+              placeholder="Filter by Department"
+              allowClear
+              style={{ width: 200 }}
+              onChange={(value) => handleFilterChange('department_id', value)}
+              value={filters.department_id || undefined}
+              disabled={filters.board_id && departments.length === 0}
+            >
+              {departments.map(dept => (
+                <Option key={dept.id} value={dept.id}>
+                  {dept.name}
+                </Option>
+              ))}
+            </Select>
+
+            <Select
               placeholder="Filter by Role"
               allowClear
               style={{ width: 200 }}
@@ -540,21 +597,7 @@ const UserMaster = () => {
                 </Option>
               ))}
             </Select>
-            
-            <Select
-              placeholder="Filter by Department"
-              allowClear
-              style={{ width: 200 }}
-              onChange={(value) => handleFilterChange('department_id', value)}
-              value={filters.department_id || undefined}
-            >
-              {departments.map(dept => (
-                <Option key={dept.id} value={dept.id}>
-                  {dept.name}
-                </Option>
-              ))}
-            </Select>
-            
+
             <Select
               placeholder="Filter by Status"
               style={{ width: 150 }}

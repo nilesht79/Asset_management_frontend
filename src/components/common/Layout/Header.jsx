@@ -55,6 +55,7 @@ const Header = () => {
       superadmin: <SecurityScanOutlined className="text-red-500" />,
       admin: <SafetyCertificateOutlined className="text-blue-500" />,
       department_head: <TeamOutlined className="text-green-500" />,
+      it_head: <SecurityScanOutlined className="text-indigo-500" />,
       coordinator: <ToolOutlined className="text-yellow-600" />,
       department_coordinator: <ContactsOutlined className="text-cyan-500" />,
       engineer: <ToolOutlined className="text-purple-500" />,

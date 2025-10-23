@@ -8,6 +8,10 @@ import assetSlice from './slices/assetSlice'
 import uiSlice from './slices/uiSlice'
 import permissionControlSlice from './slices/permissionControlSlice'
 import componentFieldTemplatesSlice from './slices/componentFieldTemplatesSlice'
+import standbySlice from './slices/standbySlice'
+import standbyAssignmentSlice from './slices/standbyAssignmentSlice'
+import requisitionSlice from './slices/requisitionSlice'
+import reconciliationSlice from './slices/reconciliationSlice'
 
 // Configure the Redux store
 export const store = configureStore({
@@ -19,6 +23,10 @@ export const store = configureStore({
     ui: uiSlice,
     permissionControl: permissionControlSlice,
     componentFieldTemplates: componentFieldTemplatesSlice,
+    standby: standbySlice,
+    standbyAssignment: standbyAssignmentSlice,
+    requisitions: requisitionSlice,
+    reconciliation: reconciliationSlice,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

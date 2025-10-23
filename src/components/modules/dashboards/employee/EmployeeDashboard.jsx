@@ -21,7 +21,9 @@ import {
   Timeline,
   Divider,
   Alert,
-  Statistic
+  Statistic,
+  Progress,
+  Spin
 } from 'antd';
 import {
   LaptopOutlined,
@@ -36,119 +38,121 @@ import {
   SendOutlined,
   HistoryOutlined,
   WarningOutlined,
-  InfoCircleOutlined
+  InfoCircleOutlined,
+  RiseOutlined,
+  FileSearchOutlined,
+  DashboardOutlined,
+  ExclamationCircleOutlined
 } from '@ant-design/icons';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+import { fetchMyRequisitions, createRequisition } from '../../../../store/slices/requisitionSlice';
+
+dayjs.extend(relativeTime);
 
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
 
 const EmployeeDashboard = () => {
-  const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState('assets');
-  const [myAssets, setMyAssets] = useState([]);
-  const [myRequests, setMyRequests] = useState([]);
-  const [myTickets, setMyTickets] = useState([]);
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
 
-  // Modal states
+  const [activeTab, setActiveTab] = useState('overview');
   const [requestModalVisible, setRequestModalVisible] = useState(false);
-  const [ticketModalVisible, setTicketModalVisible] = useState(false);
   const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
 
   // Forms
   const [requestForm] = Form.useForm();
-  const [ticketForm] = Form.useForm();
 
+  // Redux state
   const user = useSelector(state => state.auth.user);
+  const { requisitions, loading } = useSelector(state => state.requisitions);
+
+  // Dashboard statistics
+  const [stats, setStats] = useState({
+    totalRequisitions: 0,
+    pendingRequisitions: 0,
+    approvedRequisitions: 0,
+    rejectedRequisitions: 0,
+    assignedAssets: 0,
+    completedRequisitions: 0
+  });
+
+  // Recent activity
+  const [recentActivity, setRecentActivity] = useState([]);
 
   useEffect(() => {
     loadDashboardData();
   }, []);
 
+  useEffect(() => {
+    if (requisitions.length > 0) {
+      calculateStats(requisitions);
+      prepareRecentActivity(requisitions);
+    }
+  }, [requisitions]);
+
   const loadDashboardData = async () => {
-    setLoading(true);
     try {
-      // TODO: Replace with actual API calls
-      // Mock data for now
-      setMyAssets([
-        {
-          id: 1,
-          assetTag: 'AST-2024-001',
-          productName: 'Dell Latitude 5420',
-          category: 'Laptop',
-          serialNumber: 'DL5420-2024-001',
-          assignedDate: '2024-01-15',
-          condition: 'Good',
-          warrantyExpiry: '2026-01-15'
-        },
-        {
-          id: 2,
-          assetTag: 'AST-2024-045',
-          productName: 'HP Monitor 24"',
-          category: 'Monitor',
-          serialNumber: 'HP24-2024-045',
-          assignedDate: '2024-01-15',
-          condition: 'Good',
-          warrantyExpiry: '2025-01-15'
-        }
-      ]);
-
-      setMyRequests([
-        {
-          id: 1,
-          requestId: 'REQ-2024-123',
-          productType: 'Desktop Computer',
-          quantity: 1,
-          status: 'pending_dept_head',
-          requestDate: '2024-03-01',
-          reason: 'Current laptop is outdated'
-        },
-        {
-          id: 2,
-          requestId: 'REQ-2024-089',
-          productType: 'Wireless Mouse',
-          quantity: 1,
-          status: 'approved',
-          requestDate: '2024-02-15',
-          reason: 'Mouse not working',
-          approvedDate: '2024-02-16'
-        }
-      ]);
-
-      setMyTickets([
-        {
-          id: 1,
-          ticketId: 'TKT-2024-456',
-          assetTag: 'AST-2024-001',
-          issueType: 'Hardware Issue',
-          subject: 'Laptop screen flickering',
-          status: 'in_progress',
-          priority: 'high',
-          createdDate: '2024-03-05',
-          assignedTo: 'John Doe (Engineer)'
-        }
-      ]);
+      await dispatch(fetchMyRequisitions({ limit: 100 })).unwrap();
     } catch (error) {
       message.error('Failed to load dashboard data');
       console.error(error);
-    } finally {
-      setLoading(false);
     }
+  };
+
+  const calculateStats = (requisitionsData) => {
+    const newStats = {
+      totalRequisitions: requisitionsData.length,
+      pendingRequisitions: requisitionsData.filter(r =>
+        ['pending_dept_head', 'pending_it_head', 'pending_assignment'].includes(r.status)
+      ).length,
+      approvedRequisitions: requisitionsData.filter(r =>
+        ['approved_by_dept_head', 'approved_by_it_head'].includes(r.status)
+      ).length,
+      rejectedRequisitions: requisitionsData.filter(r =>
+        ['rejected_by_dept_head', 'rejected_by_it_head', 'cancelled'].includes(r.status)
+      ).length,
+      assignedAssets: requisitionsData.filter(r =>
+        ['assigned', 'delivered'].includes(r.status)
+      ).length,
+      completedRequisitions: requisitionsData.filter(r => r.status === 'completed').length
+    };
+    setStats(newStats);
+  };
+
+  const prepareRecentActivity = (requisitionsData) => {
+    const activities = requisitionsData
+      .slice(0, 5)
+      .map(req => ({
+        id: req.requisition_id,
+        requisition_number: req.requisition_number,
+        status: req.status,
+        purpose: req.purpose,
+        created_at: req.created_at,
+        urgency: req.urgency
+      }));
+    setRecentActivity(activities);
   };
 
   // Status renderers
   const getStatusTag = (status) => {
     const statusConfig = {
       pending_dept_head: { color: 'orange', icon: <ClockCircleOutlined />, text: 'Pending Dept Head' },
-      pending_it_head: { color: 'blue', icon: <ClockCircleOutlined />, text: 'Pending IT Head' },
-      approved: { color: 'green', icon: <CheckCircleOutlined />, text: 'Approved' },
-      rejected: { color: 'red', icon: <CloseCircleOutlined />, text: 'Rejected' },
-      allocated: { color: 'success', icon: <CheckCircleOutlined />, text: 'Allocated' },
-      in_progress: { color: 'processing', icon: <ToolOutlined />, text: 'In Progress' },
-      resolved: { color: 'success', icon: <CheckCircleOutlined />, text: 'Resolved' },
-      open: { color: 'default', icon: <InboxOutlined />, text: 'Open' }
+      approved_by_dept_head: { color: 'blue', icon: <CheckCircleOutlined />, text: 'Dept Approved' },
+      rejected_by_dept_head: { color: 'red', icon: <CloseCircleOutlined />, text: 'Dept Rejected' },
+      pending_it_head: { color: 'orange', icon: <ClockCircleOutlined />, text: 'Pending IT Head' },
+      approved_by_it_head: { color: 'blue', icon: <CheckCircleOutlined />, text: 'IT Approved' },
+      rejected_by_it_head: { color: 'red', icon: <CloseCircleOutlined />, text: 'IT Rejected' },
+      pending_assignment: { color: 'purple', icon: <ClockCircleOutlined />, text: 'Pending Assignment' },
+      assigned: { color: 'cyan', icon: <CheckCircleOutlined />, text: 'Asset Assigned' },
+      delivered: { color: 'lime', icon: <CheckCircleOutlined />, text: 'Delivered' },
+      completed: { color: 'green', icon: <CheckCircleOutlined />, text: 'Completed' },
+      cancelled: { color: 'default', icon: <CloseCircleOutlined />, text: 'Cancelled' }
     };
 
     const config = statusConfig[status] || { color: 'default', icon: null, text: status };
@@ -159,613 +163,498 @@ const EmployeeDashboard = () => {
     );
   };
 
-  // My Assets Table
-  const assetsColumns = [
-    {
-      title: 'Asset Tag',
-      dataIndex: 'assetTag',
-      key: 'assetTag',
-      render: (text) => <Text strong code>{text}</Text>
-    },
-    {
-      title: 'Product',
-      dataIndex: 'productName',
-      key: 'productName',
-      render: (text, record) => (
-        <Space direction="vertical" size={0}>
-          <Text strong>{text}</Text>
-          <Text type="secondary" style={{ fontSize: 12 }}>{record.category}</Text>
-        </Space>
-      )
-    },
-    {
-      title: 'Serial Number',
-      dataIndex: 'serialNumber',
-      key: 'serialNumber',
-      render: (text) => <Text code style={{ fontSize: 11 }}>{text}</Text>
-    },
-    {
-      title: 'Assigned Date',
-      dataIndex: 'assignedDate',
-      key: 'assignedDate',
-      render: (date) => dayjs(date).format('MMM DD, YYYY')
-    },
-    {
-      title: 'Condition',
-      dataIndex: 'condition',
-      key: 'condition',
-      render: (condition) => (
-        <Tag color={condition === 'Good' ? 'green' : 'orange'}>{condition}</Tag>
-      )
-    },
-    {
-      title: 'Actions',
-      key: 'actions',
-      render: (_, record) => (
-        <Space>
-          <Tooltip title="View Details">
-            <Button
-              type="text"
-              icon={<EyeOutlined />}
-              onClick={() => {
-                setSelectedItem(record);
-                setDetailModalVisible(true);
-              }}
-            />
-          </Tooltip>
-          <Tooltip title="Report Issue">
-            <Button
-              type="text"
-              icon={<WarningOutlined />}
-              onClick={() => {
-                ticketForm.setFieldsValue({ assetTag: record.assetTag });
-                setTicketModalVisible(true);
-              }}
-            />
-          </Tooltip>
-        </Space>
-      )
-    }
-  ];
+  const getUrgencyTag = (urgency) => {
+    const urgencyConfig = {
+      low: { color: 'green', text: 'Low' },
+      medium: { color: 'blue', text: 'Medium' },
+      high: { color: 'orange', text: 'High' },
+      critical: { color: 'red', text: 'Critical' }
+    };
+    const config = urgencyConfig[urgency] || urgencyConfig.medium;
+    return <Tag color={config.color}>{config.text}</Tag>;
+  };
 
-  // My Requests Table
-  const requestsColumns = [
+  // Requisitions Table Columns
+  const requisitionsColumns = [
     {
-      title: 'Request ID',
-      dataIndex: 'requestId',
-      key: 'requestId',
-      render: (text) => <Text strong code>{text}</Text>
+      title: 'Requisition #',
+      dataIndex: 'requisition_number',
+      key: 'requisition_number',
+      render: (text) => <Text strong code>{text}</Text>,
+      width: 150
+    },
+    {
+      title: 'Purpose',
+      dataIndex: 'purpose',
+      key: 'purpose',
+      ellipsis: true,
+      render: (text) => (
+        <Tooltip title={text}>
+          <Text>{text}</Text>
+        </Tooltip>
+      )
     },
     {
       title: 'Product Type',
-      dataIndex: 'productType',
-      key: 'productType',
-      render: (text) => <Text strong>{text}</Text>
-    },
-    {
-      title: 'Quantity',
-      dataIndex: 'quantity',
-      key: 'quantity',
-      align: 'center'
+      dataIndex: 'product_type_name',
+      key: 'product_type_name',
+      width: 150
     },
     {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
-      render: (status) => getStatusTag(status)
+      render: (status) => getStatusTag(status),
+      width: 180
     },
     {
-      title: 'Request Date',
-      dataIndex: 'requestDate',
-      key: 'requestDate',
-      render: (date) => dayjs(date).format('MMM DD, YYYY')
+      title: 'Urgency',
+      dataIndex: 'urgency',
+      key: 'urgency',
+      render: (urgency) => getUrgencyTag(urgency),
+      width: 100
+    },
+    {
+      title: 'Created',
+      dataIndex: 'created_at',
+      key: 'created_at',
+      render: (date) => (
+        <Tooltip title={dayjs(date).format('MMMM DD, YYYY HH:mm')}>
+          {dayjs(date).fromNow()}
+        </Tooltip>
+      ),
+      width: 120
     },
     {
       title: 'Actions',
       key: 'actions',
       render: (_, record) => (
         <Button
-          type="text"
+          type="link"
           icon={<EyeOutlined />}
-          onClick={() => {
-            setSelectedItem(record);
-            setDetailModalVisible(true);
-          }}
+          onClick={() => navigate(`/requisitions/${record.requisition_id}`)}
         >
           View
         </Button>
-      )
-    }
-  ];
-
-  // My Tickets Table
-  const ticketsColumns = [
-    {
-      title: 'Ticket ID',
-      dataIndex: 'ticketId',
-      key: 'ticketId',
-      render: (text) => <Text strong code>{text}</Text>
-    },
-    {
-      title: 'Asset',
-      dataIndex: 'assetTag',
-      key: 'assetTag',
-      render: (text) => <Text code>{text}</Text>
-    },
-    {
-      title: 'Issue',
-      dataIndex: 'subject',
-      key: 'subject',
-      render: (text, record) => (
-        <Space direction="vertical" size={0}>
-          <Text strong>{text}</Text>
-          <Text type="secondary" style={{ fontSize: 11 }}>{record.issueType}</Text>
-        </Space>
-      )
-    },
-    {
-      title: 'Priority',
-      dataIndex: 'priority',
-      key: 'priority',
-      render: (priority) => {
-        const colors = { low: 'default', medium: 'blue', high: 'orange', critical: 'red' };
-        return <Tag color={colors[priority]}>{priority.toUpperCase()}</Tag>;
-      }
-    },
-    {
-      title: 'Status',
-      dataIndex: 'status',
-      key: 'status',
-      render: (status) => getStatusTag(status)
-    },
-    {
-      title: 'Assigned To',
-      dataIndex: 'assignedTo',
-      key: 'assignedTo',
-      render: (text) => <Text style={{ fontSize: 12 }}>{text || 'Unassigned'}</Text>
-    },
-    {
-      title: 'Actions',
-      key: 'actions',
-      render: (_, record) => (
-        <Button
-          type="text"
-          icon={<EyeOutlined />}
-          onClick={() => {
-            setSelectedItem(record);
-            setDetailModalVisible(true);
-          }}
-        >
-          View
-        </Button>
-      )
+      ),
+      width: 100
     }
   ];
 
   // Handle Request Asset
   const handleRequestAsset = async (values) => {
     try {
-      setLoading(true);
-      // TODO: API call to create requisition
-      message.success('Asset request submitted successfully');
+      setSubmitting(true);
+      await dispatch(createRequisition(values)).unwrap();
+      message.success('Asset requisition submitted successfully');
       requestForm.resetFields();
       setRequestModalVisible(false);
       loadDashboardData();
     } catch (error) {
-      message.error('Failed to submit request');
+      message.error(error.message || 'Failed to submit requisition');
       console.error(error);
     } finally {
-      setLoading(false);
-    }
-  };
-
-  // Handle Create Ticket
-  const handleCreateTicket = async (values) => {
-    try {
-      setLoading(true);
-      // TODO: API call to create ticket
-      message.success('Ticket created successfully');
-      ticketForm.resetFields();
-      setTicketModalVisible(false);
-      loadDashboardData();
-    } catch (error) {
-      message.error('Failed to create ticket');
-      console.error(error);
-    } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
   return (
-    <div style={{ padding: '24px' }}>
-      {/* Header Section */}
-      <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
-        <Col>
-          <Title level={2} style={{ margin: 0 }}>
-            My Workspace
-          </Title>
-          <Text type="secondary">Manage your assets, requests, and support tickets</Text>
-        </Col>
-        <Col>
-          <Space>
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={() => setRequestModalVisible(true)}
-              size="large"
-            >
-              Request Asset
-            </Button>
-            <Button
-              icon={<ToolOutlined />}
-              onClick={() => setTicketModalVisible(true)}
-              size="large"
-            >
-              Report Issue
-            </Button>
-          </Space>
-        </Col>
-      </Row>
-
-      {/* Quick Stats */}
-      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-        <Col xs={24} sm={12} md={6}>
-          <Card>
-            <Statistic
-              title="My Assets"
-              value={myAssets.length}
-              prefix={<LaptopOutlined />}
-              valueStyle={{ color: '#262626' }}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} md={6}>
-          <Card>
-            <Statistic
-              title="Pending Requests"
-              value={myRequests.filter(r => r.status.includes('pending')).length}
-              prefix={<ClockCircleOutlined />}
-              valueStyle={{ color: '#faad14' }}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} md={6}>
-          <Card>
-            <Statistic
-              title="Open Tickets"
-              value={myTickets.filter(t => ['open', 'in_progress'].includes(t.status)).length}
-              prefix={<ToolOutlined />}
-              valueStyle={{ color: '#1890ff' }}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} md={6}>
-          <Card>
-            <Statistic
-              title="Approved Requests"
-              value={myRequests.filter(r => r.status === 'approved').length}
-              prefix={<CheckCircleOutlined />}
-              valueStyle={{ color: '#52c41a' }}
-            />
-          </Card>
-        </Col>
-      </Row>
-
-      {/* Main Content Tabs */}
-      <Card>
-        <Tabs activeKey={activeTab} onChange={setActiveTab} size="large">
-          <Tabs.TabPane
-            tab={
-              <span>
-                <LaptopOutlined />
-                My Assets ({myAssets.length})
-              </span>
-            }
-            key="assets"
-          >
-            <Table
-              columns={assetsColumns}
-              dataSource={myAssets}
-              rowKey="id"
-              loading={loading}
-              pagination={{ pageSize: 10 }}
-              locale={{
-                emptyText: (
-                  <Empty
-                    description="No assets assigned to you yet"
-                    image={Empty.PRESENTED_IMAGE_SIMPLE}
-                  />
-                )
-              }}
-            />
-          </Tabs.TabPane>
-
-          <Tabs.TabPane
-            tab={
-              <span>
-                <FileTextOutlined />
-                My Requests ({myRequests.length})
-              </span>
-            }
-            key="requests"
-          >
-            <Table
-              columns={requestsColumns}
-              dataSource={myRequests}
-              rowKey="id"
-              loading={loading}
-              pagination={{ pageSize: 10 }}
-              locale={{
-                emptyText: (
-                  <Empty
-                    description="You haven't made any requests yet"
-                    image={Empty.PRESENTED_IMAGE_SIMPLE}
-                  >
-                    <Button
-                      type="primary"
-                      icon={<PlusOutlined />}
-                      onClick={() => setRequestModalVisible(true)}
-                    >
-                      Request Your First Asset
-                    </Button>
-                  </Empty>
-                )
-              }}
-            />
-          </Tabs.TabPane>
-
-          <Tabs.TabPane
-            tab={
-              <span>
-                <ToolOutlined />
-                My Tickets ({myTickets.length})
-              </span>
-            }
-            key="tickets"
-          >
-            <Table
-              columns={ticketsColumns}
-              dataSource={myTickets}
-              rowKey="id"
-              loading={loading}
-              pagination={{ pageSize: 10 }}
-              locale={{
-                emptyText: (
-                  <Empty
-                    description="No support tickets created"
-                    image={Empty.PRESENTED_IMAGE_SIMPLE}
-                  >
-                    <Button
-                      icon={<ToolOutlined />}
-                      onClick={() => setTicketModalVisible(true)}
-                    >
-                      Report an Issue
-                    </Button>
-                  </Empty>
-                )
-              }}
-            />
-          </Tabs.TabPane>
-        </Tabs>
-      </Card>
-
-      {/* Request Asset Modal */}
-      <Modal
-        title={
-          <Space>
-            <PlusOutlined />
-            <span>Request New Asset</span>
-          </Space>
-        }
-        open={requestModalVisible}
-        onCancel={() => {
-          setRequestModalVisible(false);
-          requestForm.resetFields();
-        }}
-        footer={null}
-        width={600}
-      >
-        <Alert
-          message="Asset Request Process"
-          description="Your request will be reviewed by your Department Head, then IT Head, and finally allocated by the Coordinator."
-          type="info"
-          showIcon
-          style={{ marginBottom: 16 }}
-        />
-        <Form
-          form={requestForm}
-          layout="vertical"
-          onFinish={handleRequestAsset}
-        >
-          <Form.Item
-            name="productCategory"
-            label="Product Category"
-            rules={[{ required: true, message: 'Please select a category' }]}
-          >
-            <Select placeholder="Select product category">
-              <Select.Option value="laptop">Laptop</Select.Option>
-              <Select.Option value="desktop">Desktop Computer</Select.Option>
-              <Select.Option value="monitor">Monitor</Select.Option>
-              <Select.Option value="keyboard">Keyboard</Select.Option>
-              <Select.Option value="mouse">Mouse</Select.Option>
-              <Select.Option value="headset">Headset</Select.Option>
-              <Select.Option value="other">Other</Select.Option>
-            </Select>
-          </Form.Item>
-
-          <Form.Item
-            name="productType"
-            label="Product Type / Model"
-            rules={[{ required: true, message: 'Please specify product type' }]}
-          >
-            <Input placeholder="e.g., Dell Latitude 5420, HP Monitor 24 inch" />
-          </Form.Item>
-
-          <Form.Item
-            name="quantity"
-            label="Quantity"
-            rules={[{ required: true, message: 'Please enter quantity' }]}
-            initialValue={1}
-          >
-            <Input type="number" min={1} />
-          </Form.Item>
-
-          <Form.Item
-            name="reason"
-            label="Reason for Request"
-            rules={[{ required: true, message: 'Please provide a reason' }]}
-          >
-            <TextArea
-              rows={4}
-              placeholder="Explain why you need this asset..."
-            />
-          </Form.Item>
-
-          <Form.Item>
-            <Space style={{ float: 'right' }}>
-              <Button onClick={() => {
-                setRequestModalVisible(false);
-                requestForm.resetFields();
-              }}>
-                Cancel
+    <div style={{ padding: '24px', background: '#f0f2f5', minHeight: 'calc(100vh - 64px)' }}>
+      <Spin spinning={loading}>
+        {/* Header Section */}
+        <div style={{ marginBottom: 24 }}>
+          <Row justify="space-between" align="middle" style={{ marginBottom: 16 }}>
+            <Col>
+              <Title level={2} style={{ margin: 0, fontSize: '24px', fontWeight: 600, color: '#262626' }}>
+                Employee Dashboard
+              </Title>
+              <Text type="secondary" style={{ fontSize: '14px' }}>
+                Welcome back, {user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : 'User'}
+              </Text>
+            </Col>
+            <Col>
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={() => setRequestModalVisible(true)}
+                size="large"
+              >
+                New Requisition
               </Button>
-              <Button type="primary" htmlType="submit" loading={loading} icon={<SendOutlined />}>
-                Submit Request
-              </Button>
-            </Space>
-          </Form.Item>
-        </Form>
-      </Modal>
+            </Col>
+          </Row>
+        </div>
 
-      {/* Create Ticket Modal */}
-      <Modal
-        title={
-          <Space>
-            <ToolOutlined />
-            <span>Report Issue / Create Ticket</span>
-          </Space>
-        }
-        open={ticketModalVisible}
-        onCancel={() => {
-          setTicketModalVisible(false);
-          ticketForm.resetFields();
-        }}
-        footer={null}
-        width={600}
-      >
-        <Form
-          form={ticketForm}
-          layout="vertical"
-          onFinish={handleCreateTicket}
-        >
-          <Form.Item
-            name="assetTag"
-            label="Asset Tag"
-            rules={[{ required: true, message: 'Please enter asset tag' }]}
-          >
-            <Select
-              placeholder="Select asset"
-              showSearch
-              filterOption={(input, option) =>
-                option.children.toLowerCase().includes(input.toLowerCase())
+        {/* Statistics Cards */}
+        <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+          <Col xs={24} sm={12} md={6}>
+            <Card bordered={false}>
+              <Statistic
+                title="Total Requisitions"
+                value={stats.totalRequisitions}
+                prefix={<FileTextOutlined />}
+                valueStyle={{ color: '#262626' }}
+              />
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} md={6}>
+            <Card bordered={false}>
+              <Statistic
+                title="Pending Review"
+                value={stats.pendingRequisitions}
+                prefix={<ClockCircleOutlined />}
+                valueStyle={{ color: '#faad14' }}
+              />
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} md={6}>
+            <Card bordered={false}>
+              <Statistic
+                title="Assets Assigned"
+                value={stats.assignedAssets}
+                prefix={<LaptopOutlined />}
+                valueStyle={{ color: '#52c41a' }}
+              />
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} md={6}>
+            <Card bordered={false}>
+              <Statistic
+                title="Completed"
+                value={stats.completedRequisitions}
+                prefix={<CheckCircleOutlined />}
+                valueStyle={{ color: '#1890ff' }}
+              />
+            </Card>
+          </Col>
+        </Row>
+
+        {/* Main Content Area */}
+        <Row gutter={[16, 16]}>
+          {/* Left Column - Requisitions Overview */}
+          <Col xs={24} lg={16}>
+            <Card
+              title={
+                <Space>
+                  <FileTextOutlined />
+                  <Text strong>My Requisitions</Text>
+                  <Badge count={stats.totalRequisitions} />
+                </Space>
               }
+              extra={
+                <Button
+                  type="link"
+                  onClick={() => navigate('/requisitions/my-requisitions')}
+                >
+                  View All
+                </Button>
+              }
+              bordered={false}
+              style={{ marginBottom: '16px' }}
             >
-              {myAssets.map(asset => (
-                <Select.Option key={asset.id} value={asset.assetTag}>
-                  {asset.assetTag} - {asset.productName}
-                </Select.Option>
-              ))}
-            </Select>
-          </Form.Item>
+              <Table
+                columns={requisitionsColumns}
+                dataSource={requisitions.slice(0, 5)}
+                rowKey="requisition_id"
+                loading={loading}
+                pagination={false}
+                scroll={{ x: 800 }}
+                locale={{
+                  emptyText: (
+                    <Empty
+                      description="No requisitions found"
+                      image={Empty.PRESENTED_IMAGE_SIMPLE}
+                    >
+                      <Button
+                        type="primary"
+                        icon={<PlusOutlined />}
+                        onClick={() => setRequestModalVisible(true)}
+                      >
+                        Create Your First Requisition
+                      </Button>
+                    </Empty>
+                  )
+                }}
+              />
+            </Card>
 
-          <Form.Item
-            name="issueType"
-            label="Issue Type"
-            rules={[{ required: true, message: 'Please select issue type' }]}
-          >
-            <Select placeholder="Select issue type">
-              <Select.Option value="hardware">Hardware Issue</Select.Option>
-              <Select.Option value="software">Software Issue</Select.Option>
-              <Select.Option value="performance">Performance Issue</Select.Option>
-              <Select.Option value="network">Network/Connectivity</Select.Option>
-              <Select.Option value="other">Other</Select.Option>
-            </Select>
-          </Form.Item>
+            {/* Requisition Status Overview */}
+            {stats.totalRequisitions > 0 && (
+              <Card
+                title={<Text strong>Status Overview</Text>}
+                bordered={false}
+              >
+                <Space direction="vertical" style={{ width: '100%' }} size="large">
+                  <div>
+                    <div style={{ marginBottom: '8px', display: 'flex', justifyContent: 'space-between' }}>
+                      <Text>Pending Review</Text>
+                      <Text type="secondary">
+                        {stats.pendingRequisitions} / {stats.totalRequisitions}
+                      </Text>
+                    </div>
+                    <Progress
+                      percent={Math.round((stats.pendingRequisitions / stats.totalRequisitions) * 100)}
+                      strokeColor="#faad14"
+                      showInfo={false}
+                    />
+                  </div>
+                  <div>
+                    <div style={{ marginBottom: '8px', display: 'flex', justifyContent: 'space-between' }}>
+                      <Text>Assigned Assets</Text>
+                      <Text type="secondary">
+                        {stats.assignedAssets} / {stats.totalRequisitions}
+                      </Text>
+                    </div>
+                    <Progress
+                      percent={Math.round((stats.assignedAssets / stats.totalRequisitions) * 100)}
+                      strokeColor="#52c41a"
+                      showInfo={false}
+                    />
+                  </div>
+                  <div>
+                    <div style={{ marginBottom: '8px', display: 'flex', justifyContent: 'space-between' }}>
+                      <Text>Completed</Text>
+                      <Text type="secondary">
+                        {stats.completedRequisitions} / {stats.totalRequisitions}
+                      </Text>
+                    </div>
+                    <Progress
+                      percent={Math.round((stats.completedRequisitions / stats.totalRequisitions) * 100)}
+                      strokeColor="#1890ff"
+                      showInfo={false}
+                    />
+                  </div>
+                </Space>
+              </Card>
+            )}
+          </Col>
 
-          <Form.Item
-            name="priority"
-            label="Priority"
-            rules={[{ required: true, message: 'Please select priority' }]}
-            initialValue="medium"
-          >
-            <Select>
-              <Select.Option value="low">Low</Select.Option>
-              <Select.Option value="medium">Medium</Select.Option>
-              <Select.Option value="high">High</Select.Option>
-              <Select.Option value="critical">Critical</Select.Option>
-            </Select>
-          </Form.Item>
+          {/* Right Column - Recent Activity & Quick Actions */}
+          <Col xs={24} lg={8}>
+            {/* Quick Actions */}
+            <Card
+              title={<Text strong>Quick Actions</Text>}
+              bordered={false}
+              style={{ marginBottom: '16px' }}
+            >
+              <Space direction="vertical" style={{ width: '100%' }} size="small">
+                <Button
+                  type="primary"
+                  icon={<PlusOutlined />}
+                  onClick={() => setRequestModalVisible(true)}
+                  block
+                >
+                  New Requisition
+                </Button>
+                <Button
+                  icon={<FileTextOutlined />}
+                  onClick={() => navigate('/requisitions/my-requisitions')}
+                  block
+                >
+                  View All Requisitions
+                </Button>
+                <Button
+                  icon={<HistoryOutlined />}
+                  onClick={() => navigate('/requisitions/my-requisitions?status=completed')}
+                  block
+                >
+                  View History
+                </Button>
+              </Space>
+            </Card>
 
-          <Form.Item
-            name="subject"
-            label="Subject"
-            rules={[{ required: true, message: 'Please enter subject' }]}
-          >
-            <Input placeholder="Brief description of the issue" />
-          </Form.Item>
+            {/* Recent Activity */}
+            <Card
+              title={
+                <Space>
+                  <HistoryOutlined />
+                  <Text strong>Recent Activity</Text>
+                </Space>
+              }
+              bordered={false}
+            >
+              {recentActivity.length > 0 ? (
+                <Timeline>
+                  {recentActivity.map((activity) => (
+                    <Timeline.Item
+                      key={activity.id}
+                      color={
+                        activity.status === 'completed' ? 'green' :
+                        activity.status.includes('rejected') ? 'red' :
+                        activity.status.includes('approved') ? 'blue' : 'orange'
+                      }
+                    >
+                      <Space direction="vertical" size={4} style={{ width: '100%' }}>
+                        <Text strong code style={{ fontSize: '12px' }}>
+                          {activity.requisition_number}
+                        </Text>
+                        <Space size={4} wrap>
+                          {getStatusTag(activity.status)}
+                          {getUrgencyTag(activity.urgency)}
+                        </Space>
+                        <Paragraph
+                          ellipsis={{ rows: 2 }}
+                          style={{ marginBottom: 4, color: '#8c8c8c', fontSize: '13px' }}
+                        >
+                          {activity.purpose}
+                        </Paragraph>
+                        <Text type="secondary" style={{ fontSize: '12px' }}>
+                          {dayjs(activity.created_at).fromNow()}
+                        </Text>
+                      </Space>
+                    </Timeline.Item>
+                  ))}
+                </Timeline>
+              ) : (
+                <Empty
+                  description="No recent activity"
+                  image={Empty.PRESENTED_IMAGE_SIMPLE}
+                />
+              )}
+            </Card>
+          </Col>
+        </Row>
 
-          <Form.Item
-            name="description"
-            label="Detailed Description"
-            rules={[{ required: true, message: 'Please describe the issue' }]}
-          >
-            <TextArea
-              rows={4}
-              placeholder="Provide detailed information about the issue..."
-            />
-          </Form.Item>
-
-          <Form.Item>
-            <Space style={{ float: 'right' }}>
-              <Button onClick={() => {
-                setTicketModalVisible(false);
-                ticketForm.resetFields();
-              }}>
-                Cancel
+        {/* Quick Requisition Modal */}
+        <Modal
+          title="Create New Requisition"
+          open={requestModalVisible}
+          onCancel={() => {
+            setRequestModalVisible(false);
+            requestForm.resetFields();
+          }}
+          footer={null}
+          width={600}
+        >
+          <Alert
+            message="For full requisition form with all options, click below"
+            type="info"
+            showIcon
+            style={{ marginBottom: 16 }}
+            action={
+              <Button
+                size="small"
+                type="link"
+                onClick={() => {
+                  setRequestModalVisible(false);
+                  navigate('/requisitions/new');
+                }}
+              >
+                Go to Full Form
               </Button>
-              <Button type="primary" htmlType="submit" loading={loading} icon={<SendOutlined />}>
-                Create Ticket
-              </Button>
-            </Space>
-          </Form.Item>
-        </Form>
-      </Modal>
+            }
+          />
+          <Form
+            form={requestForm}
+            layout="vertical"
+            onFinish={handleRequestAsset}
+          >
+            <Form.Item
+              name="purpose"
+              label="Purpose / Justification"
+              rules={[
+                { required: true, message: 'Please provide the purpose' },
+                { min: 20, message: 'Please provide at least 20 characters' }
+              ]}
+            >
+              <TextArea
+                rows={3}
+                placeholder="Explain why you need this asset..."
+              />
+            </Form.Item>
 
-      {/* Detail View Modal */}
-      <Modal
-        title={selectedItem?.assetTag || selectedItem?.requestId || selectedItem?.ticketId}
-        open={detailModalVisible}
-        onCancel={() => {
-          setDetailModalVisible(false);
-          setSelectedItem(null);
-        }}
-        footer={[
-          <Button key="close" onClick={() => setDetailModalVisible(false)}>
-            Close
-          </Button>
-        ]}
-        width={700}
-      >
-        {selectedItem && (
-          <Descriptions bordered column={2} size="small">
-            {Object.entries(selectedItem).map(([key, value]) => (
-              <Descriptions.Item key={key} label={key}>
-                {typeof value === 'string' && value.includes('pending') ? getStatusTag(value) : value}
-              </Descriptions.Item>
-            ))}
-          </Descriptions>
-        )}
-      </Modal>
+            <Row gutter={16}>
+              <Col span={12}>
+                <Form.Item
+                  name="category_id"
+                  label="Category"
+                  rules={[{ required: true, message: 'Required' }]}
+                >
+                  <Select placeholder="Select category">
+                    <Select.Option value={1}>Laptop</Select.Option>
+                    <Select.Option value={2}>Desktop</Select.Option>
+                    <Select.Option value={3}>Monitor</Select.Option>
+                    <Select.Option value={4}>Keyboard</Select.Option>
+                    <Select.Option value={5}>Mouse</Select.Option>
+                    <Select.Option value={6}>Headset</Select.Option>
+                  </Select>
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item
+                  name="product_type_id"
+                  label="Product Type"
+                  rules={[{ required: true, message: 'Required' }]}
+                >
+                  <Select placeholder="Select type">
+                    <Select.Option value={1}>Standard Laptop</Select.Option>
+                    <Select.Option value={2}>Workstation</Select.Option>
+                    <Select.Option value={3}>Monitor 24"</Select.Option>
+                  </Select>
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Row gutter={16}>
+              <Col span={8}>
+                <Form.Item
+                  name="quantity"
+                  label="Quantity"
+                  rules={[{ required: true }]}
+                  initialValue={1}
+                >
+                  <Input type="number" min={1} max={10} />
+                </Form.Item>
+              </Col>
+              <Col span={8}>
+                <Form.Item
+                  name="urgency"
+                  label="Urgency"
+                  rules={[{ required: true }]}
+                  initialValue="medium"
+                >
+                  <Select>
+                    <Select.Option value="low">Low</Select.Option>
+                    <Select.Option value="medium">Medium</Select.Option>
+                    <Select.Option value="high">High</Select.Option>
+                    <Select.Option value="critical">Critical</Select.Option>
+                  </Select>
+                </Form.Item>
+              </Col>
+              <Col span={8}>
+                <Form.Item
+                  name="required_by_date"
+                  label="Required By"
+                  rules={[{ required: true }]}
+                >
+                  <Input type="date" />
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Form.Item style={{ marginBottom: 0 }}>
+              <Space style={{ float: 'right' }}>
+                <Button
+                  onClick={() => {
+                    setRequestModalVisible(false);
+                    requestForm.resetFields();
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  loading={submitting}
+                  icon={<SendOutlined />}
+                >
+                  Submit Requisition
+                </Button>
+              </Space>
+            </Form.Item>
+          </Form>
+        </Modal>
+      </Spin>
     </div>
   );
 };

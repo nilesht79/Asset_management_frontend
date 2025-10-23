@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react'
-import { Table, Button, Input, Space, Modal, message, Tag } from 'antd'
-import { PlusOutlined, EditOutlined, DeleteOutlined, ExclamationCircleOutlined, TeamOutlined } from '@ant-design/icons'
+import { Table, Button, Input, Space, Modal, message, Upload, Progress, Alert } from 'antd'
+import { PlusOutlined, EditOutlined, DeleteOutlined, ExclamationCircleOutlined, TeamOutlined, UploadOutlined, DownloadOutlined, CheckCircleOutlined, CloseCircleOutlined, WarningOutlined } from '@ant-design/icons'
 import DepartmentForm from './DepartmentForm'
 import departmentService from '../../../../services/department'
+import api from '../../../../services/api'
 
 const { Search } = Input
 const { confirm } = Modal
+const { Dragger } = Upload
 
 const DepartmentMaster = () => {
   const [departments, setDepartments] = useState([])
@@ -14,6 +16,11 @@ const DepartmentMaster = () => {
   const [selectedDepartment, setSelectedDepartment] = useState(null)
   const [modalMode, setModalMode] = useState('create')
   const [searchText, setSearchText] = useState('')
+  const [isBulkModalVisible, setIsBulkModalVisible] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
+  const [uploadResult, setUploadResult] = useState(null)
+  const [file, setFile] = useState(null)
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
@@ -35,9 +42,9 @@ const DepartmentMaster = () => {
         limit: pagination.pageSize,
         search: searchText || undefined
       }
-      
+
       const response = await departmentService.getDepartments(params)
-      
+
       if (response.data.success) {
         setDepartments(response.data.data.departments)
         setPagination(prev => ({
@@ -113,6 +120,181 @@ const DepartmentMaster = () => {
       pageSize: paginationInfo.pageSize
     })
   }
+
+  const handleDownloadTemplate = async () => {
+    try {
+      const response = await api.get('/departments/bulk-template', {
+        responseType: 'blob'
+      })
+
+      const url = window.URL.createObjectURL(new Blob([response.data]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', `department_bulk_upload_template_${new Date().toISOString().split('T')[0]}.xlsx`)
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
+      message.success('Template downloaded successfully')
+    } catch (error) {
+      console.error('Error downloading template:', error)
+      message.error('Failed to download template')
+    }
+  }
+
+  const handleExport = async () => {
+    try {
+      const response = await api.get('/departments/export', {
+        params: { format: 'xlsx', search: searchText },
+        responseType: 'blob'
+      })
+
+      const url = window.URL.createObjectURL(new Blob([response.data]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', `departments_export_${new Date().toISOString().split('T')[0]}.xlsx`)
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
+      message.success('Departments exported successfully')
+    } catch (error) {
+      console.error('Error exporting departments:', error)
+      message.error('Failed to export departments')
+    }
+  }
+
+  const handleBulkUpload = async () => {
+    if (!file) {
+      message.error('Please select a file to upload')
+      return
+    }
+
+    setUploading(true)
+    setUploadProgress(0)
+    setUploadResult(null)
+
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+
+      // Simulate progress
+      const progressInterval = setInterval(() => {
+        setUploadProgress(prev => {
+          if (prev >= 90) {
+            clearInterval(progressInterval)
+            return 90
+          }
+          return prev + 10
+        })
+      }, 200)
+
+      const response = await api.post('/departments/bulk-upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      })
+
+      clearInterval(progressInterval)
+      setUploadProgress(100)
+      setUploadResult(response.data.data || response.data)
+
+      if (response.data.data?.failed === 0 || response.data.failed === 0) {
+        message.success('All departments uploaded successfully!')
+        setTimeout(() => {
+          handleCloseBulkModal()
+          loadDepartments()
+        }, 2000)
+      } else {
+        message.warning('Upload completed with some errors')
+      }
+    } catch (error) {
+      console.error('Upload error:', error)
+      message.error(error.response?.data?.message || 'Upload failed')
+      setUploadResult({
+        total: 0,
+        success: 0,
+        failed: 1,
+        errors: [{
+          row: 0,
+          error: error.response?.data?.message || error.message || 'Upload failed'
+        }]
+      })
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const handleCloseBulkModal = () => {
+    setIsBulkModalVisible(false)
+    setFile(null)
+    setUploading(false)
+    setUploadProgress(0)
+    setUploadResult(null)
+  }
+
+  const uploadProps = {
+    beforeUpload: (uploadFile) => {
+      const allowedTypes = [
+        'text/csv',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      ]
+
+      if (!allowedTypes.includes(uploadFile.type)) {
+        message.error('Invalid file type. Please upload CSV or Excel files only.')
+        return false
+      }
+
+      if (uploadFile.size > 10 * 1024 * 1024) {
+        message.error('File size exceeds 10MB limit.')
+        return false
+      }
+
+      setFile(uploadFile)
+      setUploadResult(null)
+      return false // Prevent auto upload
+    },
+    onRemove: () => {
+      setFile(null)
+    },
+    fileList: file ? [file] : [],
+    maxCount: 1,
+  }
+
+  const getAlertType = () => {
+    if (!uploadResult) return 'info'
+    if (uploadResult.failed === 0) return 'success'
+    if (uploadResult.success === 0) return 'error'
+    return 'warning'
+  }
+
+  const getAlertIcon = () => {
+    if (!uploadResult) return null
+    if (uploadResult.failed === 0) return <CheckCircleOutlined />
+    if (uploadResult.success === 0) return <CloseCircleOutlined />
+    return <WarningOutlined />
+  }
+
+  const errorColumns = [
+    {
+      title: 'Row',
+      dataIndex: 'row',
+      key: 'row',
+      width: 80,
+    },
+    {
+      title: 'Department Name',
+      dataIndex: 'department_name',
+      key: 'department_name',
+      width: 200,
+    },
+    {
+      title: 'Error',
+      dataIndex: 'error',
+      key: 'error',
+    },
+  ]
 
   const columns = [
     {
@@ -204,7 +386,7 @@ const DepartmentMaster = () => {
   return (
     <div style={{ padding: '24px', backgroundColor: '#fff' }}>
       {/* Header */}
-      <div style={{ 
+      <div style={{
         marginBottom: '24px',
         borderBottom: '1px solid #f0f0f0',
         paddingBottom: '16px'
@@ -236,15 +418,31 @@ const DepartmentMaster = () => {
             onChange={(e) => !e.target.value && handleSearch('')}
           />
         </div>
-        
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={handleCreate}
-          size="middle"
-        >
-          Add Department
-        </Button>
+
+        <Space>
+          <Button
+            icon={<DownloadOutlined />}
+            onClick={handleExport}
+            size="middle"
+          >
+            Export
+          </Button>
+          <Button
+            icon={<UploadOutlined />}
+            onClick={() => setIsBulkModalVisible(true)}
+            size="middle"
+          >
+            Bulk Upload
+          </Button>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={handleCreate}
+            size="middle"
+          >
+            Add Department
+          </Button>
+        </Space>
       </div>
 
       {/* Table */}
@@ -275,6 +473,121 @@ const DepartmentMaster = () => {
         onClose={handleModalClose}
         onSuccess={handleFormSuccess}
       />
+
+      {/* Bulk Upload Modal */}
+      <Modal
+        title="Bulk Upload Departments"
+        open={isBulkModalVisible}
+        onCancel={handleCloseBulkModal}
+        width={900}
+        footer={[
+          <Button key="close" onClick={handleCloseBulkModal}>
+            {uploadResult ? 'Close' : 'Cancel'}
+          </Button>,
+          !uploadResult && (
+            <Button
+              key="upload"
+              type="primary"
+              onClick={handleBulkUpload}
+              loading={uploading}
+              disabled={!file || uploading}
+            >
+              {uploading ? 'Uploading...' : 'Upload Departments'}
+            </Button>
+          ),
+        ]}
+      >
+        <Space direction="vertical" style={{ width: '100%' }} size="large">
+          {/* Download Template */}
+          <Alert
+            message="Need a template?"
+            description={
+              <Space>
+                <span>Download our Excel template with sample data and required columns</span>
+                <Button
+                  icon={<DownloadOutlined />}
+                  onClick={handleDownloadTemplate}
+                  size="small"
+                >
+                  Download Template
+                </Button>
+              </Space>
+            }
+            type="info"
+            showIcon
+          />
+
+          {/* File Upload */}
+          <Dragger {...uploadProps}>
+            <p className="ant-upload-drag-icon">
+              <UploadOutlined style={{ fontSize: 48, color: '#1890ff' }} />
+            </p>
+            <p className="ant-upload-text">Click or drag file to this area to upload</p>
+            <p className="ant-upload-hint">
+              Supports CSV and Excel files (max 10MB)
+            </p>
+          </Dragger>
+
+          {/* Upload Progress */}
+          {uploading && (
+            <div>
+              <div style={{ marginBottom: 8 }}>
+                <span>Uploading... {uploadProgress}%</span>
+              </div>
+              <Progress percent={uploadProgress} status="active" />
+            </div>
+          )}
+
+          {/* Upload Result */}
+          {uploadResult && (
+            <Space direction="vertical" style={{ width: '100%' }} size="middle">
+              <Alert
+                type={getAlertType()}
+                icon={getAlertIcon()}
+                message={
+                  uploadResult.failed === 0
+                    ? `Successfully uploaded ${uploadResult.success} departments`
+                    : uploadResult.success === 0
+                    ? 'Upload failed - no departments were created'
+                    : `Partial upload: ${uploadResult.success} succeeded, ${uploadResult.failed} failed`
+                }
+                description={
+                  <div>
+                    <div>Total rows: {uploadResult.total}</div>
+                    <div style={{ color: '#52c41a' }}>Success: {uploadResult.success}</div>
+                    <div style={{ color: '#ff4d4f' }}>Failed: {uploadResult.failed}</div>
+                  </div>
+                }
+                showIcon
+              />
+
+              {/* Error List */}
+              {uploadResult.errors && uploadResult.errors.length > 0 && (
+                <div>
+                  <div style={{
+                    backgroundColor: '#fff2f0',
+                    padding: '12px',
+                    borderRadius: '4px 4px 0 0',
+                    borderBottom: '1px solid #ffccc7'
+                  }}>
+                    <strong style={{ color: '#cf1322' }}>
+                      Errors ({uploadResult.errors.length})
+                    </strong>
+                  </div>
+                  <Table
+                    columns={errorColumns}
+                    dataSource={uploadResult.errors}
+                    pagination={false}
+                    scroll={{ y: 240 }}
+                    size="small"
+                    rowKey={(record, index) => index}
+                  />
+                </div>
+              )}
+            </Space>
+          )}
+        </Space>
+      </Modal>
     </div>
   )
 }

@@ -65,6 +65,36 @@ const assetService = {
   // Restore deleted asset
   restoreAsset: (id) => {
     return api.post(`/assets/${id}/restore`)
+  },
+
+  // ============================================================================
+  // Component Management APIs
+  // ============================================================================
+
+  // Get all components installed in an asset
+  getAssetComponents: (assetId, params = {}) => {
+    const queryString = apiUtils.buildQueryString(params)
+    return api.get(`/assets/${assetId}/components${queryString ? `?${queryString}` : ''}`)
+  },
+
+  // Get asset hierarchy tree (recursive)
+  getAssetHierarchy: (assetId) => {
+    return api.get(`/assets/${assetId}/components/hierarchy`)
+  },
+
+  // Install a component into an asset
+  installComponent: (parentAssetId, data) => {
+    return api.post(`/assets/${parentAssetId}/components`, data)
+  },
+
+  // Remove a component from an asset
+  removeComponent: (parentAssetId, componentId, data = {}) => {
+    return api.delete(`/assets/${parentAssetId}/components/${componentId}`, { data })
+  },
+
+  // Reinstall a previously removed component
+  reinstallComponent: (parentAssetId, componentId, data) => {
+    return api.post(`/assets/${parentAssetId}/components/${componentId}/reinstall`, data)
   }
 }
 

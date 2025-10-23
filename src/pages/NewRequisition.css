@@ -1,0 +1,45 @@
+.new-requisition-page {
+  padding: 24px;
+  background: #f0f2f5;
+  min-height: calc(100vh - 64px);
+}
+
+.form-step {
+  min-height: 400px;
+  padding: 24px 0;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 16px;
+}
+
+.review-section {
+  background: #fafafa;
+}
+
+.review-section .ant-card-head {
+  background: #fff;
+}
+
+.urgency-badge {
+  display: inline-block;
+  font-weight: 500;
+  font-size: 12px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .new-requisition-page {
+    padding: 16px;
+  }
+
+  .form-step {
+    padding: 16px 0;
+  }
+
+  .ant-steps {
+    flex-direction: column;
+  }
+}

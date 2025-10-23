@@ -1,0 +1,23 @@
+.delivery-management-page {
+  padding: 24px;
+  background: #f0f2f5;
+  min-height: calc(100vh - 64px);
+}
+
+.tab-badge {
+  display: inline-block;
+  background: #ff4d4f;
+  color: white;
+  border-radius: 10px;
+  padding: 2px 8px;
+  font-size: 12px;
+  margin-left: 8px;
+  font-weight: 600;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .delivery-management-page {
+    padding: 16px;
+  }
+}
