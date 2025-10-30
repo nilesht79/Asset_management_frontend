@@ -122,8 +122,11 @@ const AssetInventory = () => {
     product_id: '',
     category_id: '',
     oem_id: '',
-    board_id: ''
+    board_id: '',
+    serial_number: ''
   })
+  const [serialNumberOptions, setSerialNumberOptions] = useState([])
+  const [serialNumberSearching, setSerialNumberSearching] = useState(false)
 
   // Redux selectors
   const assets = useSelector(selectAssets)
@@ -414,7 +417,8 @@ const AssetInventory = () => {
       product_id: filters?.product_id || '',
       category_id: filters?.category_id || '',
       oem_id: filters?.oem_id || '',
-      board_id: filters?.board_id || ''
+      board_id: filters?.board_id || '',
+      serial_number: filters?.serial_number || ''
     })
     setFilterDrawerVisible(true)
   }
@@ -435,7 +439,8 @@ const AssetInventory = () => {
       product_id: '',
       category_id: '',
       oem_id: '',
-      board_id: ''
+      board_id: '',
+      serial_number: ''
     }
     setTempFilters(clearedFilters)
     dispatch(setAssetFilters(clearedFilters))
@@ -458,8 +463,59 @@ const AssetInventory = () => {
       assigned_to: filters?.assigned_to || '',
       product_id: filters?.product_id || '',
       category_id: filters?.category_id || '',
-      oem_id: filters?.oem_id || ''
+      oem_id: filters?.oem_id || '',
+      board_id: filters?.board_id || '',
+      serial_number: filters?.serial_number || ''
     })
+  }
+
+  // Fetch serial numbers for autocomplete based on search
+  const handleSerialNumberSearch = async (searchText) => {
+    if (!searchText || searchText.length < 2) {
+      setSerialNumberOptions([])
+      setSerialNumberSearching(false)
+      return
+    }
+
+    setSerialNumberSearching(true)
+
+    try {
+      // Fetch assets matching the search text
+      const response = await assetService.getAssets({
+        search: searchText,
+        limit: 100 // Limit to 100 results for performance
+      })
+
+      console.log('Serial number search response:', response.data)
+
+      // Extract unique serial numbers that match the search
+      const serialNumbers = response.data?.data?.assets
+        ?.filter(asset => {
+          if (!asset.serial_number) return false
+          const serialLower = asset.serial_number.toLowerCase()
+          const searchLower = searchText.toLowerCase()
+          return serialLower.includes(searchLower)
+        })
+        .map(asset => ({
+          value: asset.serial_number,
+          label: `${asset.serial_number} (${asset.product_name || 'Unknown'})`
+        })) || []
+
+      console.log('Extracted serial numbers:', serialNumbers)
+
+      // Remove duplicates based on value
+      const uniqueSerialNumbers = Array.from(
+        new Map(serialNumbers.map(item => [item.value, item])).values()
+      )
+
+      console.log('Unique serial numbers:', uniqueSerialNumbers)
+      setSerialNumberOptions(uniqueSerialNumbers)
+    } catch (error) {
+      console.error('Error fetching serial numbers:', error)
+      setSerialNumberOptions([])
+    } finally {
+      setSerialNumberSearching(false)
+    }
   }
 
   // Fetch deleted assets
@@ -2180,6 +2236,30 @@ const AssetInventory = () => {
               value={tempFilters.search || ''}
               onChange={(e) => handleTempFilterChange('search', e.target.value)}
               allowClear
+            />
+          </div>
+
+          {/* Serial Number */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Serial Number</label>
+            <Select
+              placeholder="Type to search serial number (min 2 chars)..."
+              value={tempFilters.serial_number || undefined}
+              onChange={(value) => handleTempFilterChange('serial_number', value)}
+              onSearch={handleSerialNumberSearch}
+              allowClear
+              showSearch
+              filterOption={false}
+              loading={serialNumberSearching}
+              notFoundContent={
+                serialNumberSearching
+                  ? 'Searching...'
+                  : serialNumberOptions.length === 0
+                    ? 'Type at least 2 characters to search'
+                    : 'No serial numbers found'
+              }
+              style={{ width: '100%' }}
+              options={serialNumberOptions}
             />
           </div>
 

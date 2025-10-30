@@ -37,6 +37,8 @@ const initialState = {
     product_id: '',
     category_id: '',
     oem_id: '',
+    board_id: '',
+    serial_number: '',
     warranty_expiring: false
   },
 
