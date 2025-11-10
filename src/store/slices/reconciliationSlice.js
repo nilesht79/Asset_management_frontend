@@ -110,6 +110,36 @@ export const completeReconciliation = createAsyncThunk(
 );
 
 /**
+ * Pause reconciliation
+ */
+export const pauseReconciliation = createAsyncThunk(
+  'reconciliation/pause',
+  async ({ id, data }, { rejectWithValue }) => {
+    try {
+      const response = await reconciliationService.pauseReconciliation(id, data);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to pause reconciliation');
+    }
+  }
+);
+
+/**
+ * Resume reconciliation
+ */
+export const resumeReconciliation = createAsyncThunk(
+  'reconciliation/resume',
+  async ({ id, data }, { rejectWithValue }) => {
+    try {
+      const response = await reconciliationService.resumeReconciliation(id, data);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to resume reconciliation');
+    }
+  }
+);
+
+/**
  * Delete reconciliation
  */
 export const deleteReconciliation = createAsyncThunk(
@@ -285,6 +315,28 @@ const reconciliationSlice = createSlice({
 
       // Complete reconciliation
       .addCase(completeReconciliation.fulfilled, (state, action) => {
+        const index = state.reconciliations.findIndex(r => r.id === action.payload.data.id);
+        if (index !== -1) {
+          state.reconciliations[index] = action.payload.data;
+        }
+        if (state.currentReconciliation?.id === action.payload.data.id) {
+          state.currentReconciliation = action.payload.data;
+        }
+      })
+
+      // Pause reconciliation
+      .addCase(pauseReconciliation.fulfilled, (state, action) => {
+        const index = state.reconciliations.findIndex(r => r.id === action.payload.data.id);
+        if (index !== -1) {
+          state.reconciliations[index] = action.payload.data;
+        }
+        if (state.currentReconciliation?.id === action.payload.data.id) {
+          state.currentReconciliation = action.payload.data;
+        }
+      })
+
+      // Resume reconciliation
+      .addCase(resumeReconciliation.fulfilled, (state, action) => {
         const index = state.reconciliations.findIndex(r => r.id === action.payload.data.id);
         if (index !== -1) {
           state.reconciliations[index] = action.payload.data;

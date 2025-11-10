@@ -21,8 +21,10 @@ import {
   Divider,
   Avatar,
   Collapse,
-  Drawer
+  Drawer,
+  DatePicker
 } from 'antd'
+import dayjs from 'dayjs'
 import {
   PlusOutlined,
   EditOutlined,
@@ -43,7 +45,8 @@ import {
   EyeOutlined,
   SettingOutlined,
   BankOutlined,
-  ApiOutlined
+  ApiOutlined,
+  MinusCircleOutlined
 } from '@ant-design/icons'
 import { Pie } from '@ant-design/plots'
 import { useSelector, useDispatch } from 'react-redux'
@@ -88,6 +91,7 @@ import {
 import BulkAddAssetsModal from './BulkAddAssetsModal'
 import LegacyImportModal from './LegacyImportModal'
 import ComponentManager from './components/ComponentManager'
+import AssetSoftwareView from './AssetSoftwareView'
 
 const { Title, Text } = Typography
 const { Option } = Select
@@ -127,6 +131,8 @@ const AssetInventory = () => {
   })
   const [serialNumberOptions, setSerialNumberOptions] = useState([])
   const [serialNumberSearching, setSerialNumberSearching] = useState(false)
+  const [softwareProducts, setSoftwareProducts] = useState([])
+  const [softwareLoading, setSoftwareLoading] = useState(false)
 
   // Redux selectors
   const assets = useSelector(selectAssets)
@@ -158,6 +164,25 @@ const AssetInventory = () => {
     dispatch(fetchUsers({ limit: 1000 }))
   }, [dispatch])
 
+  // Filter software products from all products
+  useEffect(() => {
+    if (products.data && categories.data) {
+      // Find Software category ID
+      const softwareCategory = categories.data.find(cat => cat.name === 'Software')
+      if (softwareCategory) {
+        // Filter products that belong to Software category or its subcategories
+        const softwareProds = products.data.filter(product => {
+          const productCategory = categories.data.find(cat => cat.id === product.category_id)
+          return productCategory && (
+            productCategory.id === softwareCategory.id ||
+            productCategory.parent_category_id === softwareCategory.id
+          )
+        })
+        setSoftwareProducts(softwareProds)
+      }
+    }
+  }, [products.data, categories.data])
+
   // Clear errors when component unmounts
   useEffect(() => {
     return () => {
@@ -174,6 +199,7 @@ const AssetInventory = () => {
       'under_repair': '#faad14',
       'under repair': '#faad14',
       'discarded': '#f5222d',
+      'disposed': '#f5222d',
       'in_use': '#1890ff',
       'available': '#52c41a',
       'maintenance': '#faad14'
@@ -210,19 +236,49 @@ const AssetInventory = () => {
     dispatch(fetchAssetsDropdown())
   }
 
-  const showEditModal = (asset) => {
+  const showEditModal = async (asset) => {
     setEditingAsset(asset)
     setIsAddModalVisible(true)
+
+    // Fetch software installations for this asset
+    let softwareInstallations = []
+    try {
+      const response = await assetService.getAssetSoftware(asset.id)
+      if (response.success && response.data) {
+        // Transform software data to form format
+        softwareInstallations = response.data.map(software => ({
+          software_product_id: software.software_product_id,
+          software_type: software.software_type,
+          license_key: software.license_key,
+          license_type: software.license_type,
+          activation_date: software.activation_date ? dayjs(software.activation_date) : null,
+          expiration_date: software.expiration_date ? dayjs(software.expiration_date) : null,
+          notes: software.notes
+        }))
+      }
+    } catch (error) {
+      console.error('Error fetching software installations:', error)
+      message.warning('Could not load software installations for this asset')
+    }
+
     form.setFieldsValue({
+      serial_number: asset.serial_number,
       asset_tag: asset.asset_tag,
       product_id: asset.product_id,
       assigned_to: asset.assigned_to,
       status: asset.status,
       condition_status: asset.condition_status,
+      asset_type: asset.asset_type || 'standalone',
+      parent_asset_id: asset.parent_asset_id,
+      installation_notes: asset.installation_notes,
       purchase_date: asset.purchase_date,
-      warranty_end_date: asset.warranty_end_date,
+      warranty_start_date: asset.warranty_start_date ? dayjs(asset.warranty_start_date) : null,
+      warranty_end_date: asset.warranty_end_date ? dayjs(asset.warranty_end_date) : null,
+      eol_date: asset.eol_date ? dayjs(asset.eol_date) : null,
+      eos_date: asset.eos_date ? dayjs(asset.eos_date) : null,
       purchase_cost: asset.purchase_cost,
-      notes: asset.notes
+      notes: asset.notes,
+      software_installations: softwareInstallations
     })
   }
 
@@ -240,12 +296,44 @@ const AssetInventory = () => {
         return
       }
 
+      // Format dates to YYYY-MM-DD for API
+      const formattedValues = { ...values }
+
+      // Format warranty and lifecycle dates
+      if (formattedValues.warranty_start_date) {
+        formattedValues.warranty_start_date = formattedValues.warranty_start_date.format('YYYY-MM-DD')
+      }
+      if (formattedValues.warranty_end_date) {
+        formattedValues.warranty_end_date = formattedValues.warranty_end_date.format('YYYY-MM-DD')
+      }
+      if (formattedValues.eol_date) {
+        formattedValues.eol_date = formattedValues.eol_date.format('YYYY-MM-DD')
+      }
+      if (formattedValues.eos_date) {
+        formattedValues.eos_date = formattedValues.eos_date.format('YYYY-MM-DD')
+      }
+
+      // Format software installation dates
+      if (formattedValues.software_installations && formattedValues.software_installations.length > 0) {
+        formattedValues.software_installations = formattedValues.software_installations.map(software => ({
+          ...software,
+          activation_date: software.activation_date ? software.activation_date.format('YYYY-MM-DD') : null,
+          expiration_date: software.expiration_date ? software.expiration_date.format('YYYY-MM-DD') : null
+        }))
+      }
+
       if (editingAsset) {
-        await dispatch(updateAsset({ id: editingAsset.id, data: values })).unwrap()
+        await dispatch(updateAsset({ id: editingAsset.id, data: formattedValues })).unwrap()
         message.success('Asset updated successfully')
+        // Refresh assets and statistics to show updated data
+        dispatch(fetchAssets({ page: assets.pagination?.page || 1, limit: assets.pagination?.pageSize || 10 }))
+        dispatch(fetchAssetStatistics())
       } else {
-        await dispatch(createAsset(values)).unwrap()
+        await dispatch(createAsset(formattedValues)).unwrap()
         message.success('Asset created successfully')
+        // Refresh assets and statistics to show new asset
+        dispatch(fetchAssets({ page: assets.pagination?.page || 1, limit: assets.pagination?.pageSize || 10 }))
+        dispatch(fetchAssetStatistics())
       }
       setIsAddModalVisible(false)
       form.resetFields()
@@ -577,27 +665,30 @@ const AssetInventory = () => {
     })
   }
 
-  // Status Pie Chart Component
+  // Status Pie Chart Component - Responsive
   const StatusPieChart = ({ data }) => {
     const total = data.reduce((sum, item) => sum + item.count, 0)
     if (total === 0) {
       return (
-        <div className="w-40 h-40 mx-auto flex items-center justify-center">
-          <div className="text-center text-gray-500">No data</div>
+        <div className="w-32 h-32 sm:w-40 sm:h-40 mx-auto flex items-center justify-center">
+          <div className="text-center text-gray-500 text-xs sm:text-sm">No data</div>
         </div>
       )
     }
 
     let cumulativePercentage = 0
-    const radius = 60
-    const strokeWidth = 20
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 640
+    const radius = isMobile ? 50 : 60
+    const strokeWidth = isMobile ? 16 : 20
+    const svgSize = isMobile ? 128 : 160
+    const center = svgSize / 2
 
     return (
-      <div className="relative w-40 h-40 mx-auto">
-        <svg width="160" height="160" className="transform -rotate-90">
+      <div className={`relative ${isMobile ? 'w-32 h-32' : 'w-40 h-40'} mx-auto`}>
+        <svg width={svgSize} height={svgSize} className="transform -rotate-90">
           <circle
-            cx="80"
-            cy="80"
+            cx={center}
+            cy={center}
             r={radius}
             fill="none"
             stroke="#f3f4f6"
@@ -612,8 +703,8 @@ const AssetInventory = () => {
             const result = (
               <circle
                 key={index}
-                cx="80"
-                cy="80"
+                cx={center}
+                cy={center}
                 r={radius}
                 fill="none"
                 stroke={item.color}
@@ -630,7 +721,7 @@ const AssetInventory = () => {
         </svg>
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-center">
-            <div className="text-2xl font-bold">{total}</div>
+            <div className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold`}>{total}</div>
             <div className="text-xs text-gray-500">Total</div>
           </div>
         </div>
@@ -638,13 +729,13 @@ const AssetInventory = () => {
     )
   }
 
-  // Location Pie Chart Component
+  // Location Pie Chart Component - Responsive
   const LocationPieChart = ({ data }) => {
     if (data.length === 0) {
       return (
-        <div className="text-center text-gray-500 py-8">
-          <InfoCircleOutlined className="text-2xl mb-2" />
-          <div>No location data available</div>
+        <div className="text-center text-gray-500 py-6 sm:py-8">
+          <InfoCircleOutlined className="text-xl sm:text-2xl mb-2" />
+          <div className="text-xs sm:text-sm">No location data available</div>
         </div>
       )
     }
@@ -665,7 +756,7 @@ const AssetInventory = () => {
       colorField: 'location',
       radius: 1.1,
       innerRadius: 0.75,
-      height: 320,
+      height: typeof window !== 'undefined' && window.innerWidth < 640 ? 280 : 320,
       label: false,
       appendPadding: [0, 0, 10, 0],
       meta: {
@@ -683,7 +774,7 @@ const AssetInventory = () => {
         layout: 'horizontal',
         itemName: {
           style: {
-            fontSize: 11,
+            fontSize: typeof window !== 'undefined' && window.innerWidth < 640 ? 10 : 11,
           },
         },
         maxRow: 3,
@@ -691,14 +782,14 @@ const AssetInventory = () => {
       statistic: {
         title: {
           style: {
-            fontSize: '14px',
+            fontSize: typeof window !== 'undefined' && window.innerWidth < 640 ? '12px' : '14px',
             color: '#999',
           },
           content: 'Total Assets',
         },
         content: {
           style: {
-            fontSize: '20px',
+            fontSize: typeof window !== 'undefined' && window.innerWidth < 640 ? '18px' : '20px',
             fontWeight: 'bold',
           },
           content: total.toString(),
@@ -708,7 +799,7 @@ const AssetInventory = () => {
     }
 
     return (
-      <div style={{ height: '340px' }}>
+      <div style={{ height: typeof window !== 'undefined' && window.innerWidth < 640 ? '300px' : '340px' }}>
         <Pie {...config} />
       </div>
     )
@@ -1089,39 +1180,44 @@ const AssetInventory = () => {
     }
 
     return (
-      <div className="p-4">
-        <div className="mb-6">
-          <h3 className="text-lg font-semibold mb-3">Asset Distribution by Location, Building & Floor</h3>
+      <div className="p-2 sm:p-4">
+        <div className="mb-4 sm:mb-6">
+          <h3 className="text-base sm:text-lg font-semibold mb-2 sm:mb-3">Asset Distribution</h3>
 
-          {/* Search and Controls */}
-          <div className="mb-4 space-y-3">
+          {/* Search and Controls - Responsive */}
+          <div className="mb-3 sm:mb-4 space-y-2 sm:space-y-3">
             <Input.Search
-              placeholder="Search locations, buildings, or floors..."
+              placeholder="Search locations, buildings..."
               allowClear
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              style={{ maxWidth: 400 }}
+              style={{ maxWidth: '100%' }}
+              size={typeof window !== 'undefined' && window.innerWidth < 640 ? 'middle' : 'large'}
             />
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4 text-sm text-gray-600">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-600">
                 <span className="flex items-center">
                   <EnvironmentOutlined className="mr-1" />
-                  {Object.keys(filteredLocationGroups).length} Location{Object.keys(filteredLocationGroups).length !== 1 ? 's' : ''}
+                  <span className="hidden sm:inline">{Object.keys(filteredLocationGroups).length} Location{Object.keys(filteredLocationGroups).length !== 1 ? 's' : ''}</span>
+                  <span className="inline sm:hidden">{Object.keys(filteredLocationGroups).length} Loc</span>
                 </span>
                 <span className="flex items-center">
                   <TagOutlined className="mr-1" />
-                  {Object.values(filteredLocationGroups).flatMap(b => Object.keys(b)).length} Building{Object.values(filteredLocationGroups).flatMap(b => Object.keys(b)).length !== 1 ? 's' : ''}
+                  <span className="hidden sm:inline">{Object.values(filteredLocationGroups).flatMap(b => Object.keys(b)).length} Building{Object.values(filteredLocationGroups).flatMap(b => Object.keys(b)).length !== 1 ? 's' : ''}</span>
+                  <span className="inline sm:hidden">{Object.values(filteredLocationGroups).flatMap(b => Object.keys(b)).length} Bldg</span>
                 </span>
                 <span className="flex items-center font-medium text-blue-600">
                   {searchTerm ? `${filteredTotalAssets} / ` : ''}{totalAssets} Assets
                 </span>
               </div>
               <Space size="small">
-                <Button size="small" type="link" onClick={expandAll}>
-                  Expand All
+                <Button size="small" type="link" onClick={expandAll} className="text-xs sm:text-sm">
+                  <span className="hidden sm:inline">Expand All</span>
+                  <span className="inline sm:hidden">Expand</span>
                 </Button>
-                <Button size="small" type="link" onClick={collapseAll}>
-                  Collapse All
+                <Button size="small" type="link" onClick={collapseAll} className="text-xs sm:text-sm">
+                  <span className="hidden sm:inline">Collapse All</span>
+                  <span className="inline sm:hidden">Collapse</span>
                 </Button>
               </Space>
             </div>
@@ -1323,17 +1419,17 @@ const AssetInventory = () => {
         <Title level={3} className="mb-0">Asset Inventory</Title>
       </div>
 
-      {/* Statistics Cards - Exact match to design */}
-      <Row gutter={[24, 24]} className="mb-8">
-        <Col xs={24} sm={12} lg={6}>
-          <Card className="text-center border-0 shadow-sm">
+      {/* Statistics Cards - Fully Responsive */}
+      <Row gutter={[{ xs: 12, sm: 16, md: 20, lg: 24 }, { xs: 12, sm: 16, md: 20, lg: 24 }]} className="mb-6 md:mb-8">
+        <Col xs={24} sm={12} md={12} lg={6} xl={6} xxl={6}>
+          <Card className="text-center border-0 shadow-sm h-full">
             <div className="flex items-center justify-center mb-2">
-              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-3">
-                <CheckCircleOutlined className="text-blue-500 text-lg" />
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-100 rounded-full flex items-center justify-center mr-2 sm:mr-3">
+                <CheckCircleOutlined className="text-blue-500 text-base sm:text-lg" />
               </div>
               <div className="text-left">
-                <div className="text-2xl font-bold text-gray-800">{(statistics.data?.totalAssets || 0).toLocaleString()}</div>
-                <div className="text-sm text-gray-500">Total Assets</div>
+                <div className="text-xl sm:text-2xl font-bold text-gray-800">{(statistics.data?.totalAssets || 0).toLocaleString()}</div>
+                <div className="text-xs sm:text-sm text-gray-500">Total Assets</div>
               </div>
             </div>
             <div className="flex items-center justify-center text-green-500 text-xs">
@@ -1342,15 +1438,15 @@ const AssetInventory = () => {
             </div>
           </Card>
         </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <Card className="text-center border-0 shadow-sm">
+        <Col xs={24} sm={12} md={12} lg={6} xl={6} xxl={6}>
+          <Card className="text-center border-0 shadow-sm h-full">
             <div className="flex items-center justify-center mb-2">
-              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mr-3">
-                <CheckCircleOutlined className="text-green-500 text-lg" />
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-green-100 rounded-full flex items-center justify-center mr-2 sm:mr-3">
+                <CheckCircleOutlined className="text-green-500 text-base sm:text-lg" />
               </div>
               <div className="text-left">
-                <div className="text-2xl font-bold text-gray-800">{(statistics.data?.activeAssets || 0).toLocaleString()}</div>
-                <div className="text-sm text-gray-500">Active Assets</div>
+                <div className="text-xl sm:text-2xl font-bold text-gray-800">{(statistics.data?.activeAssets || 0).toLocaleString()}</div>
+                <div className="text-xs sm:text-sm text-gray-500">Active Assets</div>
               </div>
             </div>
             <div className="flex items-center justify-center text-blue-500 text-xs">
@@ -1358,15 +1454,15 @@ const AssetInventory = () => {
             </div>
           </Card>
         </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <Card className="text-center border-0 shadow-sm">
+        <Col xs={24} sm={12} md={12} lg={6} xl={6} xxl={6}>
+          <Card className="text-center border-0 shadow-sm h-full">
             <div className="flex items-center justify-center mb-2">
-              <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center mr-3">
-                <WarningOutlined className="text-yellow-500 text-lg" />
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-yellow-100 rounded-full flex items-center justify-center mr-2 sm:mr-3">
+                <WarningOutlined className="text-yellow-500 text-base sm:text-lg" />
               </div>
               <div className="text-left">
-                <div className="text-2xl font-bold text-gray-800">{(statistics.data?.assetsAtRisk || 0).toLocaleString()}</div>
-                <div className="text-sm text-gray-500">Assets at Risk</div>
+                <div className="text-xl sm:text-2xl font-bold text-gray-800">{(statistics.data?.assetsAtRisk || 0).toLocaleString()}</div>
+                <div className="text-xs sm:text-sm text-gray-500">Assets at Risk</div>
               </div>
             </div>
             <div className="flex items-center justify-center text-yellow-500 text-xs">
@@ -1374,15 +1470,15 @@ const AssetInventory = () => {
             </div>
           </Card>
         </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <Card className="text-center border-0 shadow-sm">
+        <Col xs={24} sm={12} md={12} lg={6} xl={6} xxl={6}>
+          <Card className="text-center border-0 shadow-sm h-full">
             <div className="flex items-center justify-center mb-2">
-              <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center mr-3">
-                <PlusOutlined className="text-purple-500 text-lg" />
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-purple-100 rounded-full flex items-center justify-center mr-2 sm:mr-3">
+                <PlusOutlined className="text-purple-500 text-base sm:text-lg" />
               </div>
               <div className="text-left">
-                <div className="text-2xl font-bold text-gray-800">{(statistics.data?.addedThisMonth || 0).toLocaleString()}</div>
-                <div className="text-sm text-gray-500">Added This Month</div>
+                <div className="text-xl sm:text-2xl font-bold text-gray-800">{(statistics.data?.addedThisMonth || 0).toLocaleString()}</div>
+                <div className="text-xs sm:text-sm text-gray-500">Added This Month</div>
               </div>
             </div>
             <div className="flex items-center justify-center text-green-500 text-xs">
@@ -1393,13 +1489,13 @@ const AssetInventory = () => {
         </Col>
       </Row>
 
-      {/* Charts Row - Exact match to design */}
-      <Row gutter={[24, 24]} className="mb-8">
-        <Col xs={24} lg={8}>
+      {/* Charts Row - Fully Responsive */}
+      <Row gutter={[{ xs: 12, sm: 16, md: 20, lg: 24 }, { xs: 12, sm: 16, md: 20, lg: 24 }]} className="mb-6 md:mb-8">
+        <Col xs={24} sm={24} md={24} lg={8} xl={8} xxl={8}>
           <Card
             title={
               <div className="flex items-center justify-between">
-                <span className="font-medium">Asset Distribution by Location</span>
+                <span className="font-medium text-sm sm:text-base">Asset Distribution</span>
                 <InfoCircleOutlined className="text-gray-400" />
               </div>
             }
@@ -1408,26 +1504,29 @@ const AssetInventory = () => {
             extra={
               <Button
                 type="link"
-                className="text-blue-500"
+                className="text-blue-500 text-xs sm:text-sm"
                 onClick={() => setMapModalVisible(true)}
                 icon={<EnvironmentOutlined />}
+                size="small"
               >
-                View Map
+                <span className="hidden sm:inline">View Map</span>
+                <span className="inline sm:hidden">Map</span>
               </Button>
             }
           >
             <LocationPieChart data={locationDistribution} />
             <div className="mt-4 text-xs text-gray-500 flex items-center">
               <InfoCircleOutlined className="mr-1" />
-              Click on a slice to view details for that location
+              <span className="hidden sm:inline">Click on a slice to view details for that location</span>
+              <span className="inline sm:hidden">Click slice for details</span>
             </div>
           </Card>
         </Col>
-        <Col xs={24} lg={8}>
+        <Col xs={24} sm={24} md={24} lg={8} xl={8} xxl={8}>
           <Card
             title={
               <div className="flex items-center justify-between">
-                <span className="font-medium">Asset Status Overview</span>
+                <span className="font-medium text-sm sm:text-base">Asset Status Overview</span>
                 <InfoCircleOutlined className="text-gray-400" />
               </div>
             }
@@ -1468,69 +1567,87 @@ const AssetInventory = () => {
             )}
           </Card>
         </Col>
-        <Col xs={24} lg={8}>
+        <Col xs={24} sm={24} md={24} lg={8} xl={8} xxl={8}>
           <Card
             title={
               <div className="flex items-center justify-between">
-                <span className="font-medium">Critical Alerts</span>
+                <span className="font-medium text-sm sm:text-base">Critical Alerts</span>
                 <WarningOutlined className="text-red-500" />
               </div>
             }
             loading={statistics.loading}
             className="h-full"
-            extra={<Button type="link" className="text-blue-500">View All</Button>}
+            extra={<Button type="link" className="text-blue-500 text-xs sm:text-sm" size="small">View All</Button>}
           >
-            <div className="space-y-3">
-              <div className="flex justify-between items-center p-3 bg-orange-50 rounded border-l-4 border-orange-400">
-                <div>
-                  <div className="font-medium text-sm">Warranty Expiring Soon</div>
-                  <div className="text-xs text-gray-500">Assets warranty expires within 30 days</div>
-                </div>
-                <Badge count={47} className="bg-orange-400" />
-              </div>
+            <div className="space-y-2 sm:space-y-3">
+              {criticalAlerts.length > 0 ? (
+                criticalAlerts.map((alert, index) => {
+                  const alertConfig = {
+                    'warranty_expiring': { bg: 'bg-orange-50', border: 'border-orange-400', color: 'bg-orange-400', label: 'Warranty Expiring Soon', desc: 'Assets warranty expires within 30 days' },
+                    'warranty_expired': { bg: 'bg-red-50', border: 'border-red-400', color: 'bg-red-400', label: 'Warranty Expired', desc: 'Assets with expired warranty' },
+                    'eol_approaching': { bg: 'bg-yellow-50', border: 'border-yellow-400', color: 'bg-yellow-400', label: 'EOL Approaching', desc: 'Assets reaching end of life within 6 months' },
+                    'eol_reached': { bg: 'bg-red-50', border: 'border-red-500', color: 'bg-red-500', label: 'EOL Reached', desc: 'Assets that reached end of life' },
+                    'eos_approaching': { bg: 'bg-orange-50', border: 'border-orange-500', color: 'bg-orange-500', label: 'EOS Approaching', desc: 'Assets reaching end of support within 3 months' },
+                    'eos_reached': { bg: 'bg-red-50', border: 'border-red-600', color: 'bg-red-600', label: 'EOS Reached', desc: 'Assets that reached end of support' },
+                    'licenses_expiring': { bg: 'bg-purple-50', border: 'border-purple-400', color: 'bg-purple-400', label: 'Licenses Expiring Soon', desc: 'Software licenses expiring within 30 days' },
+                    'licenses_expired': { bg: 'bg-purple-50', border: 'border-purple-500', color: 'bg-purple-500', label: 'Licenses Expired', desc: 'Software licenses that have expired' }
+                  }
+                  const config = alertConfig[alert.type] || { bg: 'bg-gray-50', border: 'border-gray-400', color: 'bg-gray-400', label: alert.type, desc: '' }
 
-              <div className="flex justify-between items-center p-3 bg-yellow-50 rounded border-l-4 border-yellow-400">
-                <div>
-                  <div className="font-medium text-sm">End of Life Approaching</div>
-                  <div className="text-xs text-gray-500">Assets due for replacement within 30 days</div>
+                  return (
+                    <div key={index} className={`flex justify-between items-center p-2 sm:p-3 ${config.bg} rounded border-l-4 ${config.border}`}>
+                      <div className="flex-1 min-w-0 mr-2">
+                        <div className="font-medium text-xs sm:text-sm truncate">{config.label}</div>
+                        <div className="text-xs text-gray-500 hidden sm:block">{config.desc}</div>
+                      </div>
+                      <Badge count={alert.count} className={config.color} />
+                    </div>
+                  )
+                })
+              ) : (
+                <div className="flex justify-center items-center p-4 text-gray-400">
+                  <CheckCircleOutlined className="mr-2" />
+                  <span className="text-xs sm:text-sm">No critical alerts</span>
                 </div>
-                <Badge count={128} className="bg-yellow-400" />
-              </div>
-
-              <div className="flex justify-between items-center p-3 bg-red-50 rounded border-l-4 border-red-400">
-                <div>
-                  <div className="font-medium text-sm">End of Support Due</div>
-                  <div className="text-xs text-gray-500">Support contracts expiring soon</div>
-                </div>
-                <Badge count={23} className="bg-red-400" />
-              </div>
-
-              <div className="flex justify-between items-center p-3 bg-purple-50 rounded border-l-4 border-purple-400">
-                <div>
-                  <div className="font-medium text-sm">Critical Security Updates Required</div>
-                  <div className="text-xs text-gray-500">Urgent recommended action within 30 days</div>
-                </div>
-                <Badge count={56} className="bg-purple-400" />
-              </div>
+              )}
             </div>
           </Card>
         </Col>
       </Row>
 
-      {/* Asset Inventory Table Section - Exact match to design */}
+      {/* Asset Inventory Table Section - Fully Responsive */}
       <Card className="border-0 shadow-sm">
-       
 
-        <div className="flex justify-between items-center mb-4">
-          <Space>
-            <Button type="primary" icon={<PlusOutlined />} onClick={showAddModal} className="bg-blue-500">
-              Add Single Asset
+
+        <div className="mb-4">
+          <Space wrap size={[8, 8]} className="w-full">
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={showAddModal}
+              className="bg-blue-500"
+              size="small"
+            >
+              <span className="hidden sm:inline">Add Single Asset</span>
+              <span className="inline sm:hidden">Add Asset</span>
             </Button>
-            <Button type="default" icon={<PlusOutlined />} onClick={() => setBulkAddModalVisible(true)}>
-              Bulk Add Assets
+            <Button
+              type="default"
+              icon={<PlusOutlined />}
+              onClick={() => setBulkAddModalVisible(true)}
+              size="small"
+            >
+              <span className="hidden md:inline">Bulk Add Assets</span>
+              <span className="inline md:hidden">Bulk Add</span>
             </Button>
-            <Button type="default" icon={<DownloadOutlined />} onClick={() => setLegacyImportModalVisible(true)}>
-              Import Legacy Data
+            <Button
+              type="default"
+              icon={<DownloadOutlined />}
+              onClick={() => setLegacyImportModalVisible(true)}
+              size="small"
+            >
+              <span className="hidden md:inline">Import Legacy Data</span>
+              <span className="inline md:hidden">Import</span>
             </Button>
             <Dropdown
               menu={{
@@ -1539,17 +1656,19 @@ const AssetInventory = () => {
                 ]
               }}
             >
-              <Button icon={<ExportOutlined />}>Export</Button>
+              <Button icon={<ExportOutlined />} size="small">Export</Button>
             </Dropdown>
             <Badge count={Object.values(filters || {}).filter(v => v && v !== '').length} offset={[-5, 5]}>
-              <Button icon={<FilterOutlined />} onClick={showFilterDrawer}>Filters</Button>
+              <Button icon={<FilterOutlined />} onClick={showFilterDrawer} size="small">Filters</Button>
             </Badge>
             <Button
               icon={<DeleteOutlined />}
               onClick={showDeletedAssetsModal}
               className="text-red-500 border-red-500 hover:bg-red-50"
+              size="small"
             >
-              View Deleted Assets
+              <span className="hidden lg:inline">View Deleted Assets</span>
+              <span className="inline lg:hidden">Deleted</span>
             </Button>
           </Space>
         </div>
@@ -1564,14 +1683,19 @@ const AssetInventory = () => {
             pageSize: assets.pagination?.limit || 10,
             total: assets.pagination?.total || 0,
             showSizeChanger: true,
-            showQuickJumper: true,
-            showTotal: (total, range) => `Showing ${range[0]} to ${range[1]} of ${total} entries`,
+            showQuickJumper: typeof window !== 'undefined' && window.innerWidth >= 768,
+            showTotal: (total, range) =>
+              typeof window !== 'undefined' && window.innerWidth >= 640
+                ? `Showing ${range[0]} to ${range[1]} of ${total} entries`
+                : `${range[0]}-${range[1]} of ${total}`,
             className: 'mt-4',
-            pageSizeOptions: ['10', '20', '50', '100']
+            pageSizeOptions: ['10', '20', '50', '100'],
+            simple: typeof window !== 'undefined' && window.innerWidth < 576,
+            responsive: true
           }}
           onChange={handleTableChange}
-          scroll={{ x: 2000, y: 'calc(100vh - 320px)' }}
-          size="middle"
+          scroll={{ x: 1400, y: 'calc(100vh - 400px)' }}
+          size={typeof window !== 'undefined' && window.innerWidth < 768 ? 'small' : 'middle'}
           className="custom-table"
           style={{
             borderRadius: '8px',
@@ -1581,13 +1705,14 @@ const AssetInventory = () => {
         />
       </Card>
 
-      {/* Add/Edit Modal */}
+      {/* Add/Edit Modal - Responsive */}
       <Modal
-        title={editingAsset ? 'Edit Asset' : 'Add New Asset'}
+        title={<span className="text-sm sm:text-base">{editingAsset ? 'Edit Asset' : 'Add New Asset'}</span>}
         open={isAddModalVisible}
         onCancel={handleCancel}
         footer={null}
-        width={600}
+        width={typeof window !== 'undefined' && window.innerWidth < 640 ? '95vw' : 600}
+        className="responsive-modal"
       >
         <Form
           form={form}
@@ -1654,6 +1779,7 @@ const AssetInventory = () => {
                   <Option value="assigned">Assigned</Option>
                   <Option value="in_use">In Use</Option>
                   <Option value="under_repair">Under Repair</Option>
+                  <Option value="maintenance">Maintenance</Option>
                   <Option value="disposed">Disposed</Option>
                 </Select>
               </Form.Item>
@@ -1776,6 +1902,66 @@ const AssetInventory = () => {
             }}
           </Form.Item>
 
+          <Divider orientation="left">Warranty & Lifecycle</Divider>
+
+          <Row gutter={16}>
+            <Col xs={24} sm={12}>
+              <Form.Item
+                name="warranty_start_date"
+                label="Warranty Start Date"
+              >
+                <DatePicker
+                  style={{ width: '100%' }}
+                  format="YYYY-MM-DD"
+                  placeholder="Select warranty start date"
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item
+                name="warranty_end_date"
+                label="Warranty End Date"
+              >
+                <DatePicker
+                  style={{ width: '100%' }}
+                  format="YYYY-MM-DD"
+                  placeholder="Select warranty end date"
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col xs={24} sm={12}>
+              <Form.Item
+                name="eol_date"
+                label="Expected End of Life (EOL)"
+                extra="When product is completely discontinued/retired"
+              >
+                <DatePicker
+                  style={{ width: '100%' }}
+                  format="YYYY-MM-DD"
+                  placeholder="Select expected EOL date"
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item
+                name="eos_date"
+                label="Expected End of Support (EOS)"
+                extra="Must be before or equal to EOL - when manufacturer stops providing support"
+              >
+                <DatePicker
+                  style={{ width: '100%' }}
+                  format="YYYY-MM-DD"
+                  placeholder="Select expected EOS date"
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Divider orientation="left">Purchase Information</Divider>
+
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item
@@ -1794,6 +1980,146 @@ const AssetInventory = () => {
             <Input.TextArea rows={3} placeholder="Enter any additional notes" />
           </Form.Item>
 
+          <Divider orientation="left">Software & Licenses (Optional)</Divider>
+
+          <Form.List name="software_installations">
+            {(fields, { add, remove }) => (
+              <>
+                {fields.map(({ key, name, ...restField }) => (
+                  <div key={key} style={{ marginBottom: 16, padding: 16, border: '1px solid #f0f0f0', borderRadius: 4 }}>
+                    <Row gutter={16}>
+                      <Col xs={24} sm={12}>
+                        <Form.Item
+                          {...restField}
+                          name={[name, 'software_product_id']}
+                          label="Software Product"
+                          rules={[{ required: true, message: 'Please select software' }]}
+                        >
+                          <Select
+                            placeholder="Select software product"
+                            showSearch
+                            optionFilterProp="children"
+                            filterOption={(input, option) =>
+                              (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                            }
+                            options={softwareProducts.map(product => ({
+                              value: product.id,
+                              label: `${product.name}${product.model ? ` - ${product.model}` : ''}`
+                            }))}
+                            loading={products.loading}
+                          />
+                        </Form.Item>
+                      </Col>
+                      <Col xs={24} sm={12}>
+                        <Form.Item
+                          {...restField}
+                          name={[name, 'software_type']}
+                          label="Software Type"
+                          initialValue="application"
+                        >
+                          <Select placeholder="Select type">
+                            <Option value="operating_system">Operating System</Option>
+                            <Option value="application">Application</Option>
+                            <Option value="utility">Utility</Option>
+                            <Option value="driver">Driver</Option>
+                          </Select>
+                        </Form.Item>
+                      </Col>
+                    </Row>
+
+                    <Row gutter={16}>
+                      <Col xs={24} sm={12}>
+                        <Form.Item
+                          {...restField}
+                          name={[name, 'license_key']}
+                          label="License Key"
+                        >
+                          <Input placeholder="Enter license key" />
+                        </Form.Item>
+                      </Col>
+                      <Col xs={24} sm={12}>
+                        <Form.Item
+                          {...restField}
+                          name={[name, 'license_type']}
+                          label="License Type"
+                          initialValue="oem"
+                        >
+                          <Select placeholder="Select license type">
+                            <Option value="oem">OEM</Option>
+                            <Option value="retail">Retail</Option>
+                            <Option value="volume">Volume</Option>
+                            <Option value="subscription">Subscription</Option>
+                          </Select>
+                        </Form.Item>
+                      </Col>
+                    </Row>
+
+                    <Row gutter={16}>
+                      <Col xs={24} sm={12}>
+                        <Form.Item
+                          {...restField}
+                          name={[name, 'activation_date']}
+                          label="Activation Date"
+                        >
+                          <DatePicker
+                            style={{ width: '100%' }}
+                            format="YYYY-MM-DD"
+                            placeholder="Select activation date"
+                          />
+                        </Form.Item>
+                      </Col>
+                      <Col xs={24} sm={12}>
+                        <Form.Item
+                          {...restField}
+                          name={[name, 'expiration_date']}
+                          label="Expiration Date"
+                        >
+                          <DatePicker
+                            style={{ width: '100%' }}
+                            format="YYYY-MM-DD"
+                            placeholder="Select expiration date"
+                          />
+                        </Form.Item>
+                      </Col>
+                    </Row>
+
+                    <Row gutter={16}>
+                      <Col span={24}>
+                        <Form.Item
+                          {...restField}
+                          name={[name, 'notes']}
+                          label="Installation Notes"
+                        >
+                          <Input.TextArea rows={2} placeholder="Enter installation notes" />
+                        </Form.Item>
+                      </Col>
+                    </Row>
+
+                    <Button
+                      type="dashed"
+                      danger
+                      onClick={() => remove(name)}
+                      block
+                      icon={<MinusCircleOutlined />}
+                    >
+                      Remove Software
+                    </Button>
+                  </div>
+                ))}
+                <Form.Item>
+                  <Button
+                    type="dashed"
+                    onClick={() => add()}
+                    block
+                    icon={<PlusOutlined />}
+                  >
+                    Add Software Installation
+                  </Button>
+                </Form.Item>
+              </>
+            )}
+          </Form.List>
+
           <div className="flex justify-end space-x-2">
             <Button onClick={handleCancel}>Cancel</Button>
             <Button type="primary" htmlType="submit" loading={assets.loading}>
@@ -1803,13 +2129,14 @@ const AssetInventory = () => {
         </Form>
       </Modal>
 
-      {/* Deleted Assets Modal */}
+      {/* Deleted Assets Modal - Responsive */}
       <Modal
-        title="Deleted Assets"
+        title={<span className="text-sm sm:text-base">Deleted Assets</span>}
         open={isDeletedModalVisible}
         onCancel={() => setIsDeletedModalVisible(false)}
         footer={null}
-        width={1200}
+        width={typeof window !== 'undefined' && window.innerWidth < 768 ? '95vw' : typeof window !== 'undefined' && window.innerWidth < 1200 ? '90vw' : 1200}
+        className="responsive-modal"
       >
         <div className="mb-4">
           <Text className="text-gray-600">
@@ -1885,25 +2212,25 @@ const AssetInventory = () => {
         />
       </Modal>
 
-      {/* Asset Location Map Modal */}
+      {/* Asset Location Map Modal - Responsive */}
       <Modal
-        title="Asset Distribution Map"
+        title={<span className="text-sm sm:text-base">Asset Distribution Map</span>}
         open={mapModalVisible}
         onCancel={() => setMapModalVisible(false)}
         footer={null}
-        width={1000}
-        className="asset-map-modal"
+        width={typeof window !== 'undefined' && window.innerWidth < 768 ? '95vw' : typeof window !== 'undefined' && window.innerWidth < 1200 ? '90vw' : 1000}
+        className="asset-map-modal responsive-modal"
       >
         <AssetLocationMap data={locationDistribution} />
       </Modal>
 
-      {/* View Details Modal */}
+      {/* View Details Modal - Responsive */}
       <Modal
         title={
-          <Space>
+          <Space size="small" className="flex-wrap">
             <EyeOutlined />
-            <span>Asset Details</span>
-            {viewingAsset && <Tag color="blue">{viewingAsset.asset_tag}</Tag>}
+            <span className="text-sm sm:text-base">Asset Details</span>
+            {viewingAsset && <Tag color="blue" className="text-xs">{viewingAsset.asset_tag}</Tag>}
           </Space>
         }
         open={viewDetailsModalVisible}
@@ -1912,79 +2239,82 @@ const AssetInventory = () => {
           setViewingAsset(null)
         }}
         footer={[
-          <Button key="edit" icon={<EditOutlined />} onClick={() => {
+          <Button key="edit" icon={<EditOutlined />} size="small" onClick={() => {
             setViewDetailsModalVisible(false)
             showEditModal(viewingAsset)
           }}>
-            Edit Asset
+            <span className="hidden sm:inline">Edit Asset</span>
+            <span className="inline sm:hidden">Edit</span>
           </Button>,
           ...(viewingAsset?.asset_type !== 'component' ? [
-            <Button key="assign" type="primary" icon={<UserOutlined />} onClick={() => {
+            <Button key="assign" type="primary" icon={<UserOutlined />} size="small" onClick={() => {
               setViewDetailsModalVisible(false)
               showAssignModal(viewingAsset)
             }}>
-              Assign Asset
+              <span className="hidden sm:inline">Assign Asset</span>
+              <span className="inline sm:hidden">Assign</span>
             </Button>
           ] : []),
-          <Button key="close" onClick={() => {
+          <Button key="close" size="small" onClick={() => {
             setViewDetailsModalVisible(false)
             setViewingAsset(null)
           }}>
             Close
           </Button>
         ]}
-        width={700}
+        width={typeof window !== 'undefined' && window.innerWidth < 640 ? '95vw' : typeof window !== 'undefined' && window.innerWidth < 768 ? '90vw' : 700}
+        className="responsive-modal"
       >
         {viewingAsset && (
           <div className="space-y-4">
-            <Row gutter={[16, 16]}>
-              <Col span={8}>
-                <div className="bg-gray-50 p-3 rounded">
+            <Row gutter={[8, 8]}>
+              <Col xs={24} sm={12} md={8}>
+                <div className="bg-gray-50 p-2 sm:p-3 rounded">
                   <Text type="secondary" className="text-xs">Asset Tag (Auto-generated)</Text>
-                  <div className="font-medium text-lg">{viewingAsset.asset_tag}</div>
+                  <div className="font-medium text-base sm:text-lg">{viewingAsset.asset_tag}</div>
                 </div>
               </Col>
-              <Col span={8}>
-                <div className="bg-gray-50 p-3 rounded">
+              <Col xs={24} sm={12} md={8}>
+                <div className="bg-gray-50 p-2 sm:p-3 rounded">
                   <Text type="secondary" className="text-xs">Serial Number</Text>
-                  <div className="font-medium text-lg">{viewingAsset.serial_number || 'N/A'}</div>
+                  <div className="font-medium text-base sm:text-lg">{viewingAsset.serial_number || 'N/A'}</div>
                 </div>
               </Col>
-              <Col span={8}>
-                <div className="bg-gray-50 p-3 rounded">
+              <Col xs={24} sm={12} md={8}>
+                <div className="bg-gray-50 p-2 sm:p-3 rounded">
                   <Text type="secondary" className="text-xs">Status</Text>
                   <div className="mt-1">
-                    <Tag color={viewingAsset.assigned_to ? 'blue' : 'green'} className="text-sm">
-                      {viewingAsset.assigned_to ? 'Assigned' : 'Available'}
+                    <Tag color={getStatusColor(viewingAsset.status)} className="text-xs sm:text-sm">
+                      {viewingAsset.status ? viewingAsset.status.charAt(0).toUpperCase() + viewingAsset.status.slice(1).replace('_', ' ') : 'N/A'}
                     </Tag>
                   </div>
                 </div>
               </Col>
             </Row>
 
-            <Divider orientation="left">Product Information</Divider>
-            <Row gutter={[16, 16]}>
-              <Col span={12}>
-                <Text type="secondary">Product Name:</Text>
-                <div className="font-medium">{viewingAsset.product_name || 'N/A'}</div>
+            <Divider orientation="left"><span className="text-sm">Product Information</span></Divider>
+            <Row gutter={[8, 8]}>
+              <Col xs={24} sm={12}>
+                <Text type="secondary" className="text-xs sm:text-sm">Product Name:</Text>
+                <div className="font-medium text-sm sm:text-base">{viewingAsset.product_name || 'N/A'}</div>
               </Col>
-              <Col span={12}>
-                <Text type="secondary">Model:</Text>
-                <div className="font-medium">{viewingAsset.product_model || 'N/A'}</div>
+              <Col xs={24} sm={12}>
+                <Text type="secondary" className="text-xs sm:text-sm">Model:</Text>
+                <div className="font-medium text-sm sm:text-base">{viewingAsset.product_model || 'N/A'}</div>
               </Col>
-              <Col span={12}>
-                <Text type="secondary">Category:</Text>
-                <div className="font-medium">{viewingAsset.category_name || 'N/A'}</div>
+              <Col xs={24} sm={12}>
+                <Text type="secondary" className="text-xs sm:text-sm">Category:</Text>
+                <div className="font-medium text-sm sm:text-base">{viewingAsset.category_name || 'N/A'}</div>
               </Col>
-              <Col span={12}>
-                <Text type="secondary">OEM:</Text>
-                <div className="font-medium">{viewingAsset.oem_name || 'N/A'}</div>
+              <Col xs={24} sm={12}>
+                <Text type="secondary" className="text-xs sm:text-sm">OEM:</Text>
+                <div className="font-medium text-sm sm:text-base">{viewingAsset.oem_name || 'N/A'}</div>
               </Col>
             </Row>
 
-            <Divider orientation="left">Asset Type & Hierarchy</Divider>
-            <Row gutter={[16, 16]}>
-              <Col span={12}>
+            <Divider orientation="left"><span className="text-sm">Asset Type & Hierarchy</span></Divider>
+            <Row gutter={[8, 8]}>
+              <Col xs={24} sm={12}>
                 <Text type="secondary">Asset Type:</Text>
                 <div className="font-medium">
                   <Tag color={
@@ -1996,49 +2326,49 @@ const AssetInventory = () => {
                 </div>
               </Col>
               {viewingAsset.asset_type === 'component' && viewingAsset.parent_asset_tag && (
-                <Col span={12}>
-                  <Text type="secondary">Parent Asset:</Text>
-                  <div className="font-medium flex items-center">
+                <Col xs={24} sm={12}>
+                  <Text type="secondary" className="text-xs sm:text-sm">Parent Asset:</Text>
+                  <div className="font-medium text-sm sm:text-base flex items-center">
                     <ApiOutlined className="mr-2" />
                     {viewingAsset.parent_asset_tag}
                   </div>
                 </Col>
               )}
               {viewingAsset.asset_type === 'component' && viewingAsset.installation_date && (
-                <Col span={12}>
-                  <Text type="secondary">Installation Date:</Text>
-                  <div className="font-medium">{new Date(viewingAsset.installation_date).toLocaleDateString()}</div>
+                <Col xs={24} sm={12}>
+                  <Text type="secondary" className="text-xs sm:text-sm">Installation Date:</Text>
+                  <div className="font-medium text-sm sm:text-base">{new Date(viewingAsset.installation_date).toLocaleDateString()}</div>
                 </Col>
               )}
               {viewingAsset.asset_type === 'component' && viewingAsset.installed_by_name && (
-                <Col span={12}>
-                  <Text type="secondary">Installed By:</Text>
-                  <div className="font-medium">{viewingAsset.installed_by_name}</div>
+                <Col xs={24} sm={12}>
+                  <Text type="secondary" className="text-xs sm:text-sm">Installed By:</Text>
+                  <div className="font-medium text-sm sm:text-base">{viewingAsset.installed_by_name}</div>
                 </Col>
               )}
             </Row>
 
             {viewingAsset.asset_type === 'component' && viewingAsset.installation_notes && (
               <>
-                <Divider orientation="left">Installation Notes</Divider>
-                <div className="bg-blue-50 p-3 rounded">
-                  <Text>{viewingAsset.installation_notes}</Text>
+                <Divider orientation="left"><span className="text-sm">Installation Notes</span></Divider>
+                <div className="bg-blue-50 p-2 sm:p-3 rounded">
+                  <Text className="text-xs sm:text-sm">{viewingAsset.installation_notes}</Text>
                 </div>
               </>
             )}
 
-            <Divider orientation="left">Location & Assignment</Divider>
-            <Row gutter={[16, 16]}>
-              <Col span={12}>
-                <Text type="secondary">Location:</Text>
-                <div className="font-medium flex items-center">
+            <Divider orientation="left"><span className="text-sm">Location & Assignment</span></Divider>
+            <Row gutter={[8, 8]}>
+              <Col xs={24} sm={12}>
+                <Text type="secondary" className="text-xs sm:text-sm">Location:</Text>
+                <div className="font-medium text-sm sm:text-base flex items-center">
                   <EnvironmentOutlined className="mr-2" />
                   {viewingAsset.location_name || 'N/A'}
                 </div>
               </Col>
-              <Col span={12}>
-                <Text type="secondary">Assigned To:</Text>
-                <div className="font-medium flex items-center">
+              <Col xs={24} sm={12}>
+                <Text type="secondary" className="text-xs sm:text-sm">Assigned To:</Text>
+                <div className="font-medium text-sm sm:text-base flex items-center">
                   <UserOutlined className="mr-2" />
                   <div>
                     <div>{viewingAsset.assigned_user_name || (viewingAsset.asset_type === 'component' ? 'N/A (Components cannot be assigned)' : 'Unassigned')}</div>
@@ -2050,45 +2380,140 @@ const AssetInventory = () => {
               </Col>
             </Row>
 
-            <Divider orientation="left">Purchase Information</Divider>
-            <Row gutter={[16, 16]}>
-              <Col span={12}>
-                <Text type="secondary">Purchase Date:</Text>
-                <div className="font-medium">{viewingAsset.purchase_date || 'N/A'}</div>
+            <Divider orientation="left"><span className="text-sm">Purchase Information</span></Divider>
+            <Row gutter={[8, 8]}>
+              <Col xs={24} sm={12}>
+                <Text type="secondary" className="text-xs sm:text-sm">Purchase Date:</Text>
+                <div className="font-medium text-sm sm:text-base">
+                  {viewingAsset.purchase_date ? new Date(viewingAsset.purchase_date).toLocaleDateString() : 'N/A'}
+                </div>
               </Col>
-              <Col span={12}>
-                <Text type="secondary">Purchase Cost:</Text>
-                <div className="font-medium">{viewingAsset.purchase_cost ? `₹${viewingAsset.purchase_cost}` : 'N/A'}</div>
+              <Col xs={24} sm={12}>
+                <Text type="secondary" className="text-xs sm:text-sm">Purchase Cost:</Text>
+                <div className="font-medium text-sm sm:text-base">{viewingAsset.purchase_cost ? `₹${viewingAsset.purchase_cost}` : 'N/A'}</div>
               </Col>
-              <Col span={12}>
-                <Text type="secondary">Warranty End:</Text>
-                <div className="font-medium">{viewingAsset.warranty_end_date || 'N/A'}</div>
+              <Col xs={24} sm={12}>
+                <Text type="secondary" className="text-xs sm:text-sm">Condition:</Text>
+                <div className="font-medium text-sm sm:text-base capitalize">{viewingAsset.condition_status || 'N/A'}</div>
               </Col>
-              <Col span={12}>
-                <Text type="secondary">Condition:</Text>
-                <div className="font-medium capitalize">{viewingAsset.condition_status || 'N/A'}</div>
+            </Row>
+
+            <Divider orientation="left"><span className="text-sm">Warranty & Lifecycle</span></Divider>
+            <Row gutter={[8, 8]}>
+              <Col xs={24} sm={12}>
+                <Text type="secondary" className="text-xs sm:text-sm">Warranty Period:</Text>
+                <div className="font-medium text-sm sm:text-base">
+                  {viewingAsset.warranty_start_date && viewingAsset.warranty_end_date ? (
+                    <>
+                      {new Date(viewingAsset.warranty_start_date).toLocaleDateString()} - {new Date(viewingAsset.warranty_end_date).toLocaleDateString()}
+                      {(() => {
+                        const endDate = new Date(viewingAsset.warranty_end_date)
+                        const today = new Date()
+                        const daysLeft = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24))
+                        if (daysLeft < 0) {
+                          return <Tag color="error" style={{ marginLeft: 8 }}>Expired</Tag>
+                        } else if (daysLeft <= 30) {
+                          return <Tag color="warning" style={{ marginLeft: 8 }}>Expiring Soon ({daysLeft}d)</Tag>
+                        } else {
+                          return <Tag color="success" style={{ marginLeft: 8 }}>Active</Tag>
+                        }
+                      })()}
+                    </>
+                  ) : viewingAsset.warranty_end_date ? (
+                    <>
+                      Until {new Date(viewingAsset.warranty_end_date).toLocaleDateString()}
+                      {(() => {
+                        const endDate = new Date(viewingAsset.warranty_end_date)
+                        const today = new Date()
+                        const daysLeft = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24))
+                        if (daysLeft < 0) {
+                          return <Tag color="error" style={{ marginLeft: 8 }}>Expired</Tag>
+                        } else if (daysLeft <= 30) {
+                          return <Tag color="warning" style={{ marginLeft: 8 }}>Expiring Soon ({daysLeft}d)</Tag>
+                        } else {
+                          return <Tag color="success" style={{ marginLeft: 8 }}>Active</Tag>
+                        }
+                      })()}
+                    </>
+                  ) : (
+                    'N/A'
+                  )}
+                </div>
+              </Col>
+              <Col xs={24} sm={12}>
+                <Text type="secondary" className="text-xs sm:text-sm">End of Life (EOL):</Text>
+                <div className="font-medium text-sm sm:text-base">
+                  {viewingAsset.eol_date ? (
+                    <>
+                      {new Date(viewingAsset.eol_date).toLocaleDateString()}
+                      {(() => {
+                        const eolDate = new Date(viewingAsset.eol_date)
+                        const today = new Date()
+                        const daysLeft = Math.ceil((eolDate - today) / (1000 * 60 * 60 * 24))
+                        if (daysLeft < 0) {
+                          return <Tag color="error" style={{ marginLeft: 8 }}>Reached</Tag>
+                        } else if (daysLeft <= 180) {
+                          return <Tag color="warning" style={{ marginLeft: 8 }}>Approaching ({Math.ceil(daysLeft / 30)}mo)</Tag>
+                        }
+                        return null
+                      })()}
+                    </>
+                  ) : (
+                    'N/A'
+                  )}
+                </div>
+              </Col>
+              <Col xs={24} sm={12}>
+                <Text type="secondary" className="text-xs sm:text-sm">End of Support (EOS):</Text>
+                <div className="font-medium text-sm sm:text-base">
+                  {viewingAsset.eos_date ? (
+                    <>
+                      {new Date(viewingAsset.eos_date).toLocaleDateString()}
+                      {(() => {
+                        const eosDate = new Date(viewingAsset.eos_date)
+                        const today = new Date()
+                        const daysLeft = Math.ceil((eosDate - today) / (1000 * 60 * 60 * 24))
+                        if (daysLeft < 0) {
+                          return <Tag color="error" style={{ marginLeft: 8 }}>Reached</Tag>
+                        } else if (daysLeft <= 90) {
+                          return <Tag color="warning" style={{ marginLeft: 8 }}>Approaching ({Math.ceil(daysLeft / 30)}mo)</Tag>
+                        }
+                        return null
+                      })()}
+                    </>
+                  ) : (
+                    'N/A'
+                  )}
+                </div>
               </Col>
             </Row>
 
             {viewingAsset.notes && (
               <>
-                <Divider orientation="left">Notes</Divider>
-                <div className="bg-gray-50 p-3 rounded">
-                  <Text>{viewingAsset.notes}</Text>
+                <Divider orientation="left"><span className="text-sm">Notes</span></Divider>
+                <div className="bg-gray-50 p-2 sm:p-3 rounded">
+                  <Text className="text-xs sm:text-sm">{viewingAsset.notes}</Text>
                 </div>
               </>
+            )}
+
+            <Divider orientation="left"><span className="text-sm">Software Installations</span></Divider>
+            {viewingAsset.id ? (
+              <AssetSoftwareView key={viewingAsset.id} assetId={viewingAsset.id} />
+            ) : (
+              <Alert message="Unable to load software installations" type="warning" />
             )}
           </div>
         )}
       </Modal>
 
-      {/* Assign Asset Modal */}
+      {/* Assign Asset Modal - Responsive */}
       <Modal
         title={
-          <Space>
+          <Space size="small" className="flex-wrap">
             <UserOutlined />
-            <span>Assign Asset</span>
-            {assigningAsset && <Tag color="blue">{assigningAsset.asset_tag}</Tag>}
+            <span className="text-sm sm:text-base">Assign Asset</span>
+            {assigningAsset && <Tag color="blue" className="text-xs">{assigningAsset.asset_tag}</Tag>}
           </Space>
         }
         open={assignModalVisible}
@@ -2098,7 +2523,8 @@ const AssetInventory = () => {
           setAssigningAsset(null)
         }}
         footer={null}
-        width={600}
+        width={typeof window !== 'undefined' && window.innerWidth < 640 ? '95vw' : 600}
+        className="responsive-modal"
       >
         <div className="mb-4">
           {assigningAsset && (
@@ -2205,18 +2631,19 @@ const AssetInventory = () => {
         }}
       />
 
-      {/* Filter Drawer */}
+      {/* Filter Drawer - Responsive */}
       <Drawer
         title={
           <div className="flex items-center justify-between">
-            <span className="text-lg font-semibold">Filter Assets</span>
+            <span className="text-base sm:text-lg font-semibold">Filter Assets</span>
             <Badge count={Object.values(tempFilters).filter(v => v && v !== '').length} showZero={false} />
           </div>
         }
         placement="right"
-        width={400}
+        width={typeof window !== 'undefined' && window.innerWidth < 640 ? '85vw' : typeof window !== 'undefined' && window.innerWidth < 768 ? 350 : 400}
         open={filterDrawerVisible}
         onClose={handleFilterDrawerClose}
+        className="responsive-drawer"
         footer={
           <div className="flex justify-between">
             <Button onClick={handleClearFilters}>Clear All</Button>
@@ -2299,7 +2726,8 @@ const AssetInventory = () => {
               <Option value="assigned">Assigned</Option>
               <Option value="in_use">In Use</Option>
               <Option value="under_repair">Under Repair</Option>
-              <Option value="discarded">Discarded</Option>
+              <Option value="maintenance">Maintenance</Option>
+              <Option value="disposed">Disposed</Option>
             </Select>
           </div>
 
@@ -2432,14 +2860,14 @@ const AssetInventory = () => {
         </div>
       </Drawer>
 
-      {/* Component Manager Drawer */}
+      {/* Component Manager Drawer - Responsive */}
       <Drawer
         title={
-          <Space>
+          <Space size="small" className="flex-wrap">
             <ApiOutlined className="text-blue-600" />
-            <span>Component Manager</span>
+            <span className="text-sm sm:text-base">Component Manager</span>
             {managingComponentsAsset && (
-              <Tag color="blue">{managingComponentsAsset.asset_tag}</Tag>
+              <Tag color="blue" className="text-xs">{managingComponentsAsset.asset_tag}</Tag>
             )}
           </Space>
         }
@@ -2448,8 +2876,9 @@ const AssetInventory = () => {
           setComponentDrawerVisible(false)
           setManagingComponentsAsset(null)
         }}
-        width={1200}
+        width={typeof window !== 'undefined' && window.innerWidth < 768 ? '95vw' : typeof window !== 'undefined' && window.innerWidth < 1200 ? '90vw' : 1200}
         destroyOnClose
+        className="responsive-drawer"
       >
         {managingComponentsAsset && (
           <ComponentManager

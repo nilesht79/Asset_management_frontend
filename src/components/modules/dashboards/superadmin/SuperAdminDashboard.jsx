@@ -1,9 +1,9 @@
 import { useState, useEffect, useMemo } from 'react'
-import { 
-  Card, 
-  Row, 
-  Col, 
-  Statistic, 
+import {
+  Card,
+  Row,
+  Col,
+  Statistic,
   message,
   Typography,
   List,
@@ -14,10 +14,13 @@ import {
   Tag,
   Progress,
   Alert,
-  Divider
+  Divider,
+  Drawer,
+  Button,
+  Space
 } from 'antd'
-import { 
-  UserOutlined, 
+import {
+  UserOutlined,
   ToolOutlined,
   AlertOutlined,
   SettingOutlined,
@@ -32,6 +35,14 @@ import {
   BarChartOutlined,
   PieChartOutlined,
   DashboardOutlined,
+  ExportOutlined,
+  PlusOutlined,
+  LineChartOutlined,
+  TagsOutlined,
+  ShoppingOutlined,
+  EnvironmentOutlined,
+  ArrowRightOutlined,
+  DownloadOutlined
 } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import ReactECharts from 'echarts-for-react'
@@ -72,6 +83,7 @@ const SuperAdminDashboard = () => {
   })
   const [systemHealth, setSystemHealth] = useState({})
   const [recentActivities, setRecentActivities] = useState([])
+  const [ciDrawerVisible, setCiDrawerVisible] = useState(false)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -145,30 +157,31 @@ const SuperAdminDashboard = () => {
       },
       legend: {
         data: ['Total Records', 'Active Records', 'Pending Records'],
-        bottom: 0,
-        textStyle: { color: THEME.gray }
+        bottom: 3,
+        textStyle: { color: THEME.gray, fontSize: 10 }
       },
-      grid: { left: 60, right: 60, bottom: 60, top: 40, containLabel: true },
+      grid: { left: '3%', right: '3%', bottom: '18%', top: '3%', containLabel: true },
       xAxis: {
         type: 'category',
         data: data.map(item => item.name),
         axisLine: { lineStyle: { color: THEME.border } },
         axisTick: { lineStyle: { color: THEME.border } },
-        axisLabel: { color: THEME.gray, fontSize: 12 }
+        axisLabel: { color: THEME.gray, fontSize: 11 }
       },
       yAxis: {
         type: 'value',
         name: 'Records',
+        nameTextStyle: { color: THEME.gray, fontSize: 11 },
         axisLine: { lineStyle: { color: THEME.border } },
         axisTick: { lineStyle: { color: THEME.border } },
-        axisLabel: { color: THEME.gray, fontSize: 11 },
-        splitLine: { lineStyle: { color: THEME.border, type: 'dashed' } }
+        axisLabel: { color: THEME.gray, fontSize: 10 },
+        splitLine: { lineStyle: { color: THEME.border, type: 'dashed', opacity: 0.3 } }
       },
       series: [
         {
           name: 'Total Records',
           type: 'bar',
-          barWidth: '20%',
+          barWidth: '22%',
           data: data.map(item => item.total),
           itemStyle: {
             color: {
@@ -178,13 +191,14 @@ const SuperAdminDashboard = () => {
                 { offset: 0, color: '#3b82f6' },
                 { offset: 1, color: '#1d4ed8' }
               ]
-            }
+            },
+            borderRadius: [4, 4, 0, 0]
           }
         },
         {
           name: 'Active Records',
           type: 'bar',
-          barWidth: '20%',
+          barWidth: '22%',
           data: data.map(item => item.active),
           itemStyle: {
             color: {
@@ -194,13 +208,14 @@ const SuperAdminDashboard = () => {
                 { offset: 0, color: '#10b981' },
                 { offset: 1, color: '#059669' }
               ]
-            }
+            },
+            borderRadius: [4, 4, 0, 0]
           }
         },
         {
           name: 'Pending Records',
           type: 'bar',
-          barWidth: '20%',
+          barWidth: '22%',
           data: data.map(item => item.pending),
           itemStyle: {
             color: {
@@ -210,7 +225,8 @@ const SuperAdminDashboard = () => {
                 { offset: 0, color: '#f59e0b' },
                 { offset: 1, color: '#d97706' }
               ]
-            }
+            },
+            borderRadius: [4, 4, 0, 0]
           }
         },
       ]
@@ -236,13 +252,13 @@ const SuperAdminDashboard = () => {
       },
       legend: {
         orient: 'horizontal',
-        bottom: -5,
-        textStyle: { color: THEME.gray }
+        bottom: 5,
+        textStyle: { color: THEME.gray, fontSize: 10 }
       },
       series: [{
         type: 'pie',
-        radius: ['40%', '80%'],
-        center: ['50%', '45%'],
+        radius: ['32%', '58%'],
+        center: ['50%', '48%'],
         data: data,
         emphasis: {
           itemStyle: {
@@ -252,24 +268,38 @@ const SuperAdminDashboard = () => {
           }
         },
         label: {
-          formatter: '{b}\\n{c} ({d}%)',
-          fontSize: 12,
-          color: THEME.dark
+          formatter: (params) => {
+            const percentage = params.percent || 0
+            const value = params.value || 0
+            return `${params.name}\n${value} (${percentage.toFixed(1)}%)`
+          },
+          fontSize: 10,
+          color: THEME.dark,
+          lineHeight: 14
         },
         labelLine: {
-          length: 15,
-          length2: 10
+          length: 8,
+          length2: 6,
+          smooth: true
         }
       }]
     }
   }
 
   const getUserEngagementConfig = () => {
+    // Ensure we have valid data and calculate accurate percentages
+    const activeUsers = dashboardData.users.active || 0
+    const inactiveUsers = dashboardData.users.inactive || 0
+    const totalUsers = dashboardData.users.total || 0
+
+    // Verify data consistency - inactive should be total - active if not provided correctly
+    const calculatedInactive = totalUsers > 0 ? totalUsers - activeUsers : inactiveUsers
+
     const data = [
-      { 
-        name: 'Active Users', 
-        value: dashboardData.users.active, 
-        itemStyle: { 
+      {
+        name: 'Active Users',
+        value: activeUsers,
+        itemStyle: {
           color: {
             type: 'radial',
             x: 0.5, y: 0.5, r: 0.8,
@@ -280,10 +310,10 @@ const SuperAdminDashboard = () => {
           }
         }
       },
-      { 
-        name: 'Inactive Users', 
-        value: dashboardData.users.inactive, 
-        itemStyle: { 
+      {
+        name: 'Inactive Users',
+        value: calculatedInactive,
+        itemStyle: {
           color: {
             type: 'radial',
             x: 0.5, y: 0.5, r: 0.8,
@@ -294,25 +324,30 @@ const SuperAdminDashboard = () => {
           }
         }
       }
-    ]
+    ].filter(item => item.value > 0) // Only show segments with actual values
 
     return {
       tooltip: {
         trigger: 'item',
-        formatter: '{b}: {c} users ({d}%)',
+        formatter: (params) => {
+          const percentage = params.percent || 0
+          const value = params.value || 0
+          return `${params.name}: ${value} users (${percentage.toFixed(1)}%)`
+        },
         backgroundColor: 'rgba(255, 255, 255, 0.95)',
         borderColor: THEME.border,
+        borderWidth: 1,
         textStyle: { color: THEME.dark }
       },
       legend: {
         orient: 'horizontal',
-        bottom: -5,
-        textStyle: { color: THEME.gray }
+        bottom: 5,
+        textStyle: { color: THEME.gray, fontSize: 10 }
       },
       series: [{
         type: 'pie',
-        radius: ['30%', '75%'],
-        center: ['50%', '45%'],
+        radius: ['45%', '75%'],
+        center: ['50%', '48%'],
         data: data,
         emphasis: {
           itemStyle: {
@@ -321,10 +356,20 @@ const SuperAdminDashboard = () => {
           }
         },
         label: {
-          formatter: '{b}\\n{c} ({d}%)',
+          formatter: (params) => {
+            const percentage = params.percent || 0
+            const value = params.value || 0
+            return `${params.name}\n${value} (${percentage.toFixed(1)}%)`
+          },
           fontSize: 12,
           color: THEME.dark,
-          fontWeight: 'bold'
+          fontWeight: 'bold',
+          lineHeight: 16
+        },
+        labelLine: {
+          length: 15,
+          length2: 10,
+          smooth: true
         }
       }]
     }
@@ -373,6 +418,69 @@ const SuperAdminDashboard = () => {
 
   // Memoize current time to prevent constant re-renders
   const [currentTime] = useState(() => new Date().toLocaleString())
+
+  // Filter recent activities for CI-related events
+  const ciRecentActivities = useMemo(() =>
+    recentActivities.filter(activity =>
+      ['oem_created', 'category_created', 'product_created', 'location_created', 'master_data_updated'].includes(activity.type)
+    ).slice(0, 5),
+    [recentActivities]
+  )
+
+  // Get health status color based on percentage
+  const getHealthStatus = (active, total) => {
+    if (total === 0) return { color: THEME.gray, status: 'No Data', icon: '⚫' }
+    const percentage = (active / total) * 100
+    if (percentage >= 85) return { color: THEME.success, status: 'Healthy', icon: '✅' }
+    if (percentage >= 70) return { color: THEME.warning, status: 'Needs Attention', icon: '⚠️' }
+    return { color: THEME.danger, status: 'Critical', icon: '❌' }
+  }
+
+  // CI Category data for drawer
+  const ciCategories = [
+    {
+      key: 'oems',
+      title: 'OEMs',
+      subtitle: 'Original Equipment Makers',
+      icon: BankOutlined,
+      data: dashboardData.oems,
+      route: '/masters/oem',
+      color: THEME.primary,
+      metricLabel: 'Pending'
+    },
+    {
+      key: 'categories',
+      title: 'Product Categories',
+      subtitle: 'Configuration Categories',
+      icon: TagsOutlined,
+      data: dashboardData.categories,
+      route: '/masters/products?tab=category',
+      color: THEME.success,
+      metricLabel: 'Hierarchical',
+      metricValue: dashboardData.categories.hierarchical
+    },
+    {
+      key: 'products',
+      title: 'Products',
+      subtitle: 'Product Configurations',
+      icon: ShoppingOutlined,
+      data: dashboardData.products,
+      route: '/masters/products',
+      color: THEME.warning,
+      metricLabel: 'Draft',
+      metricValue: dashboardData.products.draft
+    },
+    {
+      key: 'locations',
+      title: 'Locations',
+      subtitle: 'Location Registry',
+      icon: EnvironmentOutlined,
+      data: dashboardData.locations,
+      route: '/masters/locations',
+      color: THEME.purple,
+      metricLabel: 'Pending'
+    }
+  ]
 
   return (
     <div style={{ 
@@ -431,12 +539,26 @@ const SuperAdminDashboard = () => {
         {/* Service Metrics Cards */}
         <Row gutter={[24, 24]} style={{ marginBottom: '32px' }}>
           <Col xs={24} sm={12} lg={6}>
-            <Card style={{ 
-              borderRadius: '16px', 
-              border: 'none',
-              boxShadow: `0 8px 25px ${THEME.shadow}`,
-              background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)'
-            }}>
+            <Card
+              hoverable
+              onClick={() => setCiDrawerVisible(true)}
+              style={{
+                borderRadius: '16px',
+                border: 'none',
+                boxShadow: `0 8px 25px ${THEME.shadow}`,
+                background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-4px)'
+                e.currentTarget.style.boxShadow = `0 12px 35px ${THEME.shadow}`
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0px)'
+                e.currentTarget.style.boxShadow = `0 8px 25px ${THEME.shadow}`
+              }}
+            >
               <div style={{ position: 'relative' }}>
                 <Statistic
                   title={<span style={{ fontSize: '14px', fontWeight: 500, color: THEME.dark }}>Configuration Items</span>}
@@ -455,8 +577,11 @@ const SuperAdminDashboard = () => {
                     size={8}
                     showInfo={false}
                   />
-                  <Text style={{ fontSize: '14px', color: THEME.gray, marginTop: '8px' }}>
+                  <Text style={{ fontSize: '14px', color: THEME.gray, marginTop: '8px', display: 'block' }}>
                     {totalActiveMasterData} active of {totalMasterDataRecords} total
+                  </Text>
+                  <Text style={{ fontSize: '12px', color: THEME.primary, marginTop: '8px', display: 'block', fontWeight: 500 }}>
+                    Click for details <ArrowRightOutlined style={{ fontSize: '10px' }} />
                   </Text>
                 </div>
               </div>
@@ -464,12 +589,26 @@ const SuperAdminDashboard = () => {
           </Col>
           
           <Col xs={24} sm={12} lg={6}>
-            <Card style={{ 
-              borderRadius: '16px', 
-              border: 'none',
-              boxShadow: `0 8px 25px ${THEME.shadow}`,
-              background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)'
-            }}>
+            <Card
+              hoverable
+              onClick={() => navigate('/users')}
+              style={{
+                borderRadius: '16px',
+                border: 'none',
+                boxShadow: `0 8px 25px ${THEME.shadow}`,
+                background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-4px)'
+                e.currentTarget.style.boxShadow = `0 12px 35px ${THEME.shadow}`
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0px)'
+                e.currentTarget.style.boxShadow = `0 8px 25px ${THEME.shadow}`
+              }}
+            >
               <div style={{ position: 'relative' }}>
                 <Statistic
                   title={<span style={{ fontSize: '14px', fontWeight: 500, color: THEME.dark }}>Active Users</span>}
@@ -489,8 +628,11 @@ const SuperAdminDashboard = () => {
                     size={8}
                     showInfo={false}
                   />
-                  <Text style={{ fontSize: '14px', color: THEME.gray, marginTop: '8px' }}>
+                  <Text style={{ fontSize: '14px', color: THEME.gray, marginTop: '8px', display: 'block' }}>
                     {dashboardData.users.active} active of {dashboardData.users.total} users
+                  </Text>
+                  <Text style={{ fontSize: '12px', color: THEME.success, marginTop: '8px', display: 'block', fontWeight: 500 }}>
+                    Click for details <ArrowRightOutlined style={{ fontSize: '10px' }} />
                   </Text>
                 </div>
               </div>
@@ -502,11 +644,11 @@ const SuperAdminDashboard = () => {
         <Row gutter={[24, 24]} style={{ marginBottom: '32px' }}>
           {/* Configuration Item Analytics */}
           <Col xs={24} lg={16}>
-            <Card 
+            <Card
               title={
-                <div style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
                   justifyContent: 'space-between',
                   paddingBottom: '12px',
                   borderBottom: `1px solid ${THEME.border}`
@@ -517,43 +659,48 @@ const SuperAdminDashboard = () => {
                       Configuration Item Status
                     </span>
                   </div>
-                  <Tag color={THEME.primary} style={{ fontSize: '11px', fontWeight: 500 }}>
+                  <Tag color={THEME.danger} style={{ fontSize: '11px', fontWeight: 500 }}>
                     LIVE
                   </Tag>
                 </div>
               }
-              style={{ 
-                borderRadius: '12px', 
+              style={{
+                borderRadius: '12px',
                 border: 'none',
-                boxShadow: `0 4px 12px ${THEME.shadow}`
+                boxShadow: `0 4px 12px ${THEME.shadow}`,
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column'
               }}
-              bodyStyle={{ padding: '20px' }}
+              bodyStyle={{ padding: '20px', flex: 1, display: 'flex', flexDirection: 'column' }}
             >
-              <Alert 
-                message="CMDB Health" 
+              <Alert
+                message="CMDB Health"
                 description="Track configuration item completion rates. Red trend line highlights CIs requiring attention to maintain service quality."
-                type="info" 
-                showIcon 
-                style={{ 
-                  marginBottom: '16px',
+                type="info"
+                showIcon
+                style={{
+                  marginBottom: '12px',
                   borderRadius: '8px',
                   border: `1px solid ${THEME.info}20`
                 }}
               />
-              <ReactECharts 
-                option={getMasterDataOverviewConfig()} 
-                style={{ height: '350px', width: '100%' }}
-                opts={{ renderer: 'svg' }}
-              />
+              <div style={{ width: '100%', height: '280px', overflow: 'hidden' }}>
+                <ReactECharts
+                  option={getMasterDataOverviewConfig()}
+                  style={{ height: '280px', width: '100%' }}
+                  opts={{ renderer: 'svg' }}
+                />
+              </div>
             </Card>
           </Col>
 
           {/* CI Distribution */}
           <Col xs={24} lg={8}>
-            <Card 
+            <Card
               title={
-                <div style={{ 
-                  display: 'flex', 
+                <div style={{
+                  display: 'flex',
                   alignItems: 'center',
                   paddingBottom: '12px',
                   borderBottom: `1px solid ${THEME.border}`
@@ -564,30 +711,26 @@ const SuperAdminDashboard = () => {
                   </span>
                 </div>
               }
-              style={{ 
-                borderRadius: '12px', 
+              style={{
+                borderRadius: '12px',
                 border: 'none',
                 boxShadow: `0 4px 12px ${THEME.shadow}`,
-                height: '100%'
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column'
               }}
-              bodyStyle={{ padding: '20px' }}
+              bodyStyle={{ padding: '20px', flex: 1, display: 'flex', flexDirection: 'column' }}
             >
-              <div style={{ marginBottom: '16px' }}>
+              <div style={{ marginBottom: '8px' }}>
                 <Text style={{ fontSize: '13px', color: THEME.gray, fontWeight: 400 }}>
                   Configuration item distribution across categories
                 </Text>
               </div>
-              <ReactECharts 
-                option={getMasterDataDistributionConfig()} 
-                style={{ height: '280px', width: '100%' }}
-                opts={{ renderer: 'svg' }}
-              />
-              <Divider style={{ margin: '16px 0' }} />
-              <div style={{ textAlign: 'center' }}>
-                <Statistic
-                  title="Total CIs"
-                  value={totalMasterDataRecords}
-                  valueStyle={{ color: THEME.primary, fontSize: '20px', fontWeight: 600 }}
+              <div style={{ width: '100%', height: '280px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <ReactECharts
+                  option={getMasterDataDistributionConfig()}
+                  style={{ height: '280px', width: '100%' }}
+                  opts={{ renderer: 'svg' }}
                 />
               </div>
             </Card>
@@ -598,11 +741,11 @@ const SuperAdminDashboard = () => {
         <Row gutter={[24, 24]} style={{ marginBottom: '32px' }}>
           {/* User Adoption Metrics */}
           <Col xs={24} lg={12}>
-            <Card 
+            <Card
               title={
-                <div style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
                   justifyContent: 'space-between',
                   paddingBottom: '12px',
                   borderBottom: `1px solid ${THEME.border}`
@@ -613,41 +756,43 @@ const SuperAdminDashboard = () => {
                       User Account Status
                     </span>
                   </div>
-                  <Badge 
-                    status={userEngagementRate > 80 ? "success" : "warning"} 
+                  <Badge
+                    status={userEngagementRate > 80 ? "success" : "warning"}
                     text={`${userEngagementRate}% Active`}
                     style={{ fontSize: '12px', fontWeight: 500 }}
                   />
                 </div>
               }
-              style={{ 
-                borderRadius: '12px', 
+              style={{
+                borderRadius: '12px',
                 border: 'none',
-                boxShadow: `0 4px 12px ${THEME.shadow}`
+                boxShadow: `0 4px 12px ${THEME.shadow}`,
+                display: 'flex',
+                flexDirection: 'column'
               }}
-              bodyStyle={{ padding: '20px' }}
+              bodyStyle={{ padding: '20px', flex: 1, display: 'flex', flexDirection: 'column' }}
             >
-              <div style={{ marginTop: '-12px' }}>
-                <Alert 
-                  message={`${userEngagementRate}% Active Accounts`}
-                  description={
-                    userEngagementRate > 80 
-                      ? "Most user accounts are active and available for service access."
-                      : "Consider reviewing inactive user accounts for security and license optimization."
-                  }
-                  type={userEngagementRate > 80 ? "success" : "warning"}
-                  showIcon 
-                  style={{ 
-                    marginBottom: '8px',
-                    borderRadius: '8px'
-                  }}
+              <Alert
+                message={`${userEngagementRate}% Active Accounts`}
+                description={
+                  userEngagementRate > 80
+                    ? "Most user accounts are active and available for service access."
+                    : "Consider reviewing inactive user accounts for security and license optimization."
+                }
+                type={userEngagementRate > 80 ? "success" : "warning"}
+                showIcon
+                style={{
+                  marginBottom: '16px',
+                  borderRadius: '8px'
+                }}
+              />
+              <div style={{ width: '100%', height: '340px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <ReactECharts
+                  option={getUserEngagementConfig()}
+                  style={{ height: '340px', width: '100%' }}
+                  opts={{ renderer: 'svg' }}
                 />
               </div>
-              <ReactECharts 
-                option={getUserEngagementConfig()} 
-                style={{ height: '240px', width: '100%' }}
-                opts={{ renderer: 'svg' }}
-              />
             </Card>
           </Col>
         </Row>
@@ -693,15 +838,15 @@ const SuperAdminDashboard = () => {
                     }}>
                       <List.Item.Meta
                         avatar={
-                          <div style={{ 
-                            width: '40px', 
-                            height: '40px', 
-                            borderRadius: '50%', 
+                          <div style={{
+                            width: typeof window !== 'undefined' && window.innerWidth < 576 ? '32px' : '40px',
+                            height: typeof window !== 'undefined' && window.innerWidth < 576 ? '32px' : '40px',
+                            borderRadius: '50%',
                             background: `linear-gradient(135deg, ${getActivityColor(activity.severity)}20 0%, ${getActivityColor(activity.severity)}10 100%)`,
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            fontSize: '16px',
+                            fontSize: typeof window !== 'undefined' && window.innerWidth < 576 ? '14px' : '16px',
                             color: getActivityColor(activity.severity),
                             border: `2px solid ${getActivityColor(activity.severity)}30`
                           }}>
@@ -773,111 +918,368 @@ const SuperAdminDashboard = () => {
           </Col>
         </Row>
 
-        {/* Service Management Actions */}
-        <Card 
+        {/* Configuration Items Details Drawer */}
+        <Drawer
           title={
-            <div style={{ 
-              display: 'flex', 
-              alignItems: 'center',
-              paddingBottom: '12px',
-              borderBottom: `1px solid ${THEME.border}`
-            }}>
-              <AppstoreOutlined style={{ marginRight: '8px', color: THEME.primary, fontSize: '16px' }} />
-              <span style={{ fontSize: '16px', fontWeight: 600, color: THEME.dark }}>
-                Service Management
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <DatabaseOutlined style={{ color: THEME.primary, fontSize: '20px' }} />
+              <span style={{ fontSize: '18px', fontWeight: 600, color: THEME.dark }}>
+                Configuration Item Details
               </span>
             </div>
           }
-          style={{ 
-            borderRadius: '12px', 
-            border: 'none',
-            boxShadow: `0 4px 12px ${THEME.shadow}`
+          placement="right"
+          width={typeof window !== 'undefined' && window.innerWidth < 768 ? '100%' : (window.innerWidth < 1024 ? '90%' : 720)}
+          onClose={() => setCiDrawerVisible(false)}
+          open={ciDrawerVisible}
+          styles={{
+            body: { padding: '24px', background: THEME.light }
           }}
-          bodyStyle={{ padding: '20px' }}
         >
-          <Row gutter={[16, 16]}>
-            {[
-              { key: '/users', icon: TeamOutlined, title: 'User Management', desc: 'Manage users & access', color: THEME.primary },
-              { key: '/masters/oem', icon: DatabaseOutlined, title: 'Configuration Items', desc: 'CMDB management', color: THEME.success },
-              { key: '/assets', icon: AppstoreOutlined, title: 'Asset Registry', desc: 'IT asset tracking', color: THEME.warning },
-              { key: '/masters/locations', icon: GlobalOutlined, title: 'Location Management', desc: 'Site & facility data', color: THEME.purple },
-              { key: '/departments', icon: BankOutlined, title: 'Service Catalog', desc: 'Department services', color: THEME.info },
-              { key: '/settings', icon: SettingOutlined, title: 'System Settings', desc: 'Service configuration', color: THEME.gray }
-            ].map(item => (
-              <Col xs={12} sm={8} lg={4} key={item.key}>
-                <Card 
-                  hoverable
-                  style={{ 
-                    textAlign: 'center', 
-                    cursor: 'pointer',
-                    border: 'none',
-                    borderRadius: '8px',
-                    background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
-                    boxShadow: `0 2px 8px ${THEME.shadow}`,
-                    transition: 'all 0.2s ease',
-                    height: '120px'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-4px)'
-                    e.currentTarget.style.boxShadow = `0 8px 25px ${THEME.shadow}`
-                    const icon = e.currentTarget.querySelector('.action-icon')
-                    if (icon) {
-                      icon.style.transform = 'scale(1.1)'
-                      icon.style.background = `linear-gradient(135deg, ${item.color}30 0%, ${item.color}20 100%)`
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'translateY(0px)'
-                    e.currentTarget.style.boxShadow = `0 2px 8px ${THEME.shadow}`
-                    const icon = e.currentTarget.querySelector('.action-icon')
-                    if (icon) {
-                      icon.style.transform = 'scale(1)'
-                      icon.style.background = `linear-gradient(135deg, ${item.color}20 0%, ${item.color}10 100%)`
-                    }
-                  }}
-                  onClick={() => navigate(item.key)}
-                  bodyStyle={{ padding: '16px 12px' }}
-                >
-                  <div 
-                    className="action-icon"
-                    style={{
-                      width: '48px',
-                      height: '48px',
-                      borderRadius: '50%',
-                      background: `linear-gradient(135deg, ${item.color}20 0%, ${item.color}10 100%)`,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      margin: '0 auto 8px',
-                      border: `2px solid ${item.color}30`,
-                      transition: 'all 0.2s ease'
-                    }}
-                  >
-                    <item.icon style={{ 
-                      fontSize: '20px', 
-                      color: item.color
-                    }} />
-                  </div>
-                  <div style={{ 
-                    fontSize: '13px', 
-                    fontWeight: 500, 
-                    color: THEME.dark,
-                    marginBottom: '4px'
-                  }}>
-                    {item.title}
-                  </div>
-                  <div style={{ 
-                    fontSize: '11px', 
-                    color: THEME.gray,
-                    lineHeight: '1.2'
-                  }}>
-                    {item.desc}
-                  </div>
-                </Card>
+          {/* Summary Header */}
+          <Card
+            style={{
+              borderRadius: '12px',
+              border: 'none',
+              boxShadow: `0 4px 12px ${THEME.shadow}`,
+              marginBottom: '24px',
+              background: `linear-gradient(135deg, ${THEME.primary}15 0%, ${THEME.success}10 100%)`
+            }}
+          >
+            <Row align="middle" justify="space-between">
+              <Col>
+                <Statistic
+                  title={<span style={{ fontSize: '14px', fontWeight: 500, color: THEME.dark }}>Total Configuration Items</span>}
+                  value={totalMasterDataRecords}
+                  valueStyle={{ color: THEME.primary, fontSize: '32px', fontWeight: 600 }}
+                />
               </Col>
-            ))}
-          </Row>
-        </Card>
+              <Col>
+                <Statistic
+                  title={<span style={{ fontSize: '14px', fontWeight: 500, color: THEME.dark }}>Active Rate</span>}
+                  value={totalMasterDataRecords ? Math.round((totalActiveMasterData / totalMasterDataRecords) * 100) : 0}
+                  suffix="%"
+                  valueStyle={{ color: THEME.success, fontSize: '32px', fontWeight: 600 }}
+                />
+              </Col>
+            </Row>
+          </Card>
+
+          {/* CI Category Breakdown */}
+          <div style={{ marginBottom: '24px' }}>
+            <Title level={5} style={{ color: THEME.dark, marginBottom: '16px', fontSize: '16px', fontWeight: 600 }}>
+              <BarChartOutlined style={{ marginRight: '8px', color: THEME.primary }} />
+              Category Breakdown
+            </Title>
+            <Row gutter={[16, 16]}>
+              {ciCategories.map(category => {
+                const Icon = category.icon
+                const healthStatus = getHealthStatus(category.data.active, category.data.total)
+                const activePercent = category.data.total ? Math.round((category.data.active / category.data.total) * 100) : 0
+                const metricValue = category.metricValue !== undefined ? category.metricValue : (category.data.pending || 0)
+
+                return (
+                  <Col xs={24} sm={12} key={category.key}>
+                    <Card
+                      hoverable
+                      onClick={() => {
+                        setCiDrawerVisible(false)
+                        navigate(category.route)
+                      }}
+                      style={{
+                        borderRadius: '12px',
+                        border: `2px solid ${category.color}20`,
+                        boxShadow: `0 2px 8px ${THEME.shadow}`,
+                        cursor: 'pointer',
+                        transition: 'all 0.3s ease',
+                        height: '100%'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'translateY(-4px)'
+                        e.currentTarget.style.boxShadow = `0 8px 20px ${category.color}30`
+                        e.currentTarget.style.borderColor = category.color
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'translateY(0px)'
+                        e.currentTarget.style.boxShadow = `0 2px 8px ${THEME.shadow}`
+                        e.currentTarget.style.borderColor = `${category.color}20`
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', marginBottom: '12px' }}>
+                        <div
+                          style={{
+                            width: '40px',
+                            height: '40px',
+                            borderRadius: '10px',
+                            background: `linear-gradient(135deg, ${category.color}20 0%, ${category.color}10 100%)`,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            marginRight: '12px',
+                            border: `2px solid ${category.color}30`
+                          }}
+                        >
+                          <Icon style={{ fontSize: '20px', color: category.color }} />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: '15px', fontWeight: 600, color: THEME.dark, marginBottom: '2px' }}>
+                            {category.title}
+                          </div>
+                          <div style={{ fontSize: '11px', color: THEME.gray }}>
+                            {category.subtitle}
+                          </div>
+                        </div>
+                      </div>
+
+                      <Divider style={{ margin: '12px 0' }} />
+
+                      <Row gutter={[8, 8]} style={{ marginBottom: '12px' }}>
+                        <Col span={12}>
+                          <div style={{ fontSize: '11px', color: THEME.gray, marginBottom: '4px' }}>Total</div>
+                          <div style={{ fontSize: '20px', fontWeight: 600, color: category.color }}>
+                            {category.data.total}
+                          </div>
+                        </Col>
+                        <Col span={12}>
+                          <div style={{ fontSize: '11px', color: THEME.gray, marginBottom: '4px' }}>Active</div>
+                          <div style={{ fontSize: '20px', fontWeight: 600, color: THEME.success }}>
+                            {category.data.active}
+                          </div>
+                        </Col>
+                        <Col span={12}>
+                          <div style={{ fontSize: '11px', color: THEME.gray, marginBottom: '4px' }}>{category.metricLabel}</div>
+                          <div style={{ fontSize: '16px', fontWeight: 600, color: THEME.warning }}>
+                            {metricValue}
+                          </div>
+                        </Col>
+                        <Col span={12}>
+                          <div style={{ fontSize: '11px', color: THEME.gray, marginBottom: '4px' }}>Health</div>
+                          <div style={{ fontSize: '16px', fontWeight: 600, color: healthStatus.color }}>
+                            {healthStatus.icon} {activePercent}%
+                          </div>
+                        </Col>
+                      </Row>
+
+                      <Progress
+                        percent={activePercent}
+                        strokeColor={{
+                          '0%': category.color,
+                          '100%': THEME.success
+                        }}
+                        trailColor={THEME.border}
+                        size="small"
+                        showInfo={false}
+                      />
+
+                      <div style={{
+                        marginTop: '12px',
+                        textAlign: 'center',
+                        fontSize: '12px',
+                        color: category.color,
+                        fontWeight: 500
+                      }}>
+                        View Details <ArrowRightOutlined style={{ fontSize: '10px' }} />
+                      </div>
+                    </Card>
+                  </Col>
+                )
+              })}
+            </Row>
+          </div>
+
+          {/* Status Summary Table */}
+          <Card
+            title={
+              <span style={{ fontSize: '16px', fontWeight: 600, color: THEME.dark }}>
+                <PieChartOutlined style={{ marginRight: '8px', color: THEME.primary }} />
+                Status Summary
+              </span>
+            }
+            style={{
+              borderRadius: '12px',
+              border: 'none',
+              boxShadow: `0 4px 12px ${THEME.shadow}`,
+              marginBottom: '24px'
+            }}
+          >
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ borderBottom: `2px solid ${THEME.border}` }}>
+                    <th style={{ padding: '12px 8px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: THEME.gray }}>Category</th>
+                    <th style={{ padding: '12px 8px', textAlign: 'center', fontSize: '12px', fontWeight: 600, color: THEME.gray }}>Total</th>
+                    <th style={{ padding: '12px 8px', textAlign: 'center', fontSize: '12px', fontWeight: 600, color: THEME.gray }}>Active</th>
+                    <th style={{ padding: '12px 8px', textAlign: 'center', fontSize: '12px', fontWeight: 600, color: THEME.gray }}>Pending</th>
+                    <th style={{ padding: '12px 8px', textAlign: 'center', fontSize: '12px', fontWeight: 600, color: THEME.gray }}>Health</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ciCategories.map(category => {
+                    const healthStatus = getHealthStatus(category.data.active, category.data.total)
+                    const activePercent = category.data.total ? Math.round((category.data.active / category.data.total) * 100) : 0
+                    const pendingValue = category.data.pending || 0
+
+                    return (
+                      <tr key={category.key} style={{ borderBottom: `1px solid ${THEME.border}` }}>
+                        <td style={{ padding: '12px 8px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <div
+                              style={{
+                                width: '8px',
+                                height: '8px',
+                                borderRadius: '50%',
+                                background: category.color
+                              }}
+                            />
+                            <span style={{ fontSize: '13px', fontWeight: 500, color: THEME.dark }}>
+                              {category.title}
+                            </span>
+                          </div>
+                        </td>
+                        <td style={{ padding: '12px 8px', textAlign: 'center', fontSize: '14px', fontWeight: 600, color: THEME.dark }}>
+                          {category.data.total}
+                        </td>
+                        <td style={{ padding: '12px 8px', textAlign: 'center', fontSize: '14px', fontWeight: 600, color: THEME.success }}>
+                          {category.data.active}
+                        </td>
+                        <td style={{ padding: '12px 8px', textAlign: 'center', fontSize: '14px', fontWeight: 600, color: THEME.warning }}>
+                          {pendingValue}
+                        </td>
+                        <td style={{ padding: '12px 8px', textAlign: 'center' }}>
+                          <Tag color={healthStatus.color} style={{ fontSize: '11px', fontWeight: 600, margin: 0 }}>
+                            {healthStatus.icon} {activePercent}%
+                          </Tag>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+
+          {/* Quick Actions */}
+          <Card
+            title={
+              <span style={{ fontSize: '16px', fontWeight: 600, color: THEME.dark }}>
+                <SettingOutlined style={{ marginRight: '8px', color: THEME.primary }} />
+                Quick Actions
+              </span>
+            }
+            style={{
+              borderRadius: '12px',
+              border: 'none',
+              boxShadow: `0 4px 12px ${THEME.shadow}`,
+              marginBottom: '24px'
+            }}
+          >
+            <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+              <Button
+                icon={<DatabaseOutlined />}
+                onClick={() => {
+                  setCiDrawerVisible(false)
+                  navigate('/masters/oem')
+                }}
+                block
+                size="large"
+                style={{
+                  height: '44px',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  textAlign: 'left'
+                }}
+              >
+                Manage Configuration Items
+              </Button>
+              <Button
+                icon={<DownloadOutlined />}
+                onClick={() => message.info('Export functionality coming soon')}
+                block
+                size="large"
+                style={{
+                  height: '44px',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  textAlign: 'left'
+                }}
+              >
+                Export CI Report
+              </Button>
+            </Space>
+          </Card>
+
+          {/* Recent CI Activities */}
+          {ciRecentActivities.length > 0 && (
+            <Card
+              title={
+                <span style={{ fontSize: '16px', fontWeight: 600, color: THEME.dark }}>
+                  <ClockCircleOutlined style={{ marginRight: '8px', color: THEME.primary }} />
+                  Recent Configuration Updates
+                </span>
+              }
+              style={{
+                borderRadius: '12px',
+                border: 'none',
+                boxShadow: `0 4px 12px ${THEME.shadow}`
+              }}
+            >
+              <List
+                dataSource={ciRecentActivities}
+                renderItem={(activity) => (
+                  <List.Item style={{ padding: '12px 0', borderBottom: `1px solid ${THEME.border}` }}>
+                    <List.Item.Meta
+                      avatar={
+                        <div
+                          style={{
+                            width: '36px',
+                            height: '36px',
+                            borderRadius: '50%',
+                            background: `linear-gradient(135deg, ${getActivityColor(activity.severity)}20 0%, ${getActivityColor(activity.severity)}10 100%)`,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '14px',
+                            color: getActivityColor(activity.severity),
+                            border: `2px solid ${getActivityColor(activity.severity)}30`
+                          }}
+                        >
+                          {getActivityIcon(activity.type)}
+                        </div>
+                      }
+                      title={
+                        <div style={{ fontSize: '13px', fontWeight: 500, color: THEME.dark }}>
+                          {activity.description}
+                        </div>
+                      }
+                      description={
+                        <div style={{ fontSize: '11px', color: THEME.gray }}>
+                          {activity.details && <div>{activity.details}</div>}
+                          <div style={{ marginTop: '4px' }}>
+                            <ClockCircleOutlined style={{ fontSize: '10px', marginRight: '4px' }} />
+                            {activity.time}
+                          </div>
+                        </div>
+                      }
+                    />
+                    <Tag
+                      color={getActivityColor(activity.severity)}
+                      style={{
+                        fontSize: '10px',
+                        fontWeight: 500,
+                        borderRadius: '8px',
+                        textTransform: 'uppercase'
+                      }}
+                    >
+                      {activity.severity}
+                    </Tag>
+                  </List.Item>
+                )}
+              />
+            </Card>
+          )}
+        </Drawer>
       </Spin>
     </div>
   )

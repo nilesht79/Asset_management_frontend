@@ -121,21 +121,46 @@ const BulkAddAssetsModal = ({ visible, onClose, onSuccess, products, locations, 
     { title: 'Condition', dataIndex: 'condition_status', key: 'condition', width: 100 },
     { title: 'Purchase Date', dataIndex: 'purchase_date', key: 'purchase_date', width: 120 },
     { title: 'Purchase Cost', dataIndex: 'purchase_cost', key: 'cost', width: 120 },
+    { title: 'Warranty Start', dataIndex: 'warranty_start_date', key: 'warranty_start', width: 120 },
+    { title: 'Warranty End', dataIndex: 'warranty_end_date', key: 'warranty_end', width: 120 },
+    { title: 'EOL Date', dataIndex: 'eol_date', key: 'eol_date', width: 120 },
+    { title: 'EOS Date', dataIndex: 'eos_date', key: 'eos_date', width: 120 },
+    { title: 'OS Name', dataIndex: 'os_name', key: 'os_name', width: 150 },
+    { title: 'OS License Key', dataIndex: 'os_license_key', key: 'os_license', width: 150 },
+    { title: 'Office Name', dataIndex: 'office_name', key: 'office_name', width: 150 },
+    { title: 'Office License Key', dataIndex: 'office_license_key', key: 'office_license', width: 150 },
+    {
+      title: 'Additional Software',
+      dataIndex: 'additional_software',
+      key: 'additional_software',
+      width: 150,
+      render: (software) => software && software.length > 0 ? `${software.length} software(s)` : 'None'
+    },
     { title: 'Notes', dataIndex: 'notes', key: 'notes', ellipsis: true }
   ]
 
   return (
     <Modal
-      title="Bulk Add Assets"
+      title={<span className="text-sm sm:text-base">Bulk Add Assets</span>}
       open={visible}
       onCancel={handleClose}
-      width={900}
+      width={typeof window !== 'undefined' && window.innerWidth < 768 ? '95vw' : typeof window !== 'undefined' && window.innerWidth < 1024 ? '90vw' : 900}
       footer={null}
+      className="responsive-modal"
     >
-      <Steps current={currentStep} className="mb-6">
-        <Step title="Product Details" description="Select product & quantity" />
-        <Step title="Download & Fill" description="Add serial numbers" />
-        <Step title="Preview" description="Review before saving" />
+      <Steps current={currentStep} className="mb-4 sm:mb-6" size={typeof window !== 'undefined' && window.innerWidth < 640 ? 'small' : 'default'}>
+        <Step
+          title={<span className="text-xs sm:text-sm">Product Details</span>}
+          description={<span className="hidden sm:inline text-xs">Select product & quantity</span>}
+        />
+        <Step
+          title={<span className="text-xs sm:text-sm">Download & Fill</span>}
+          description={<span className="hidden sm:inline text-xs">Add serial numbers</span>}
+        />
+        <Step
+          title={<span className="text-xs sm:text-sm">Preview</span>}
+          description={<span className="hidden sm:inline text-xs">Review before saving</span>}
+        />
       </Steps>
 
       {currentStep === 0 && (
@@ -177,8 +202,9 @@ const BulkAddAssetsModal = ({ visible, onClose, onSuccess, products, locations, 
           <div className="mb-4 p-4 bg-blue-50 rounded">
             <h4 className="font-semibold mb-2">Instructions:</h4>
             <ol className="list-decimal list-inside space-y-1 text-sm">
-              <li>Click "Download Template" to get the Excel file</li>
-              <li>Fill in the "Serial Number" column for all {assetData?.quantity} rows</li>
+              <li>Click "Download Template" to get the Excel file (2 sheets: Assets + Additional Software)</li>
+              <li><strong>Sheet 1 (Assets):</strong> Fill in Serial Number, Warranty dates, EOL/EOS dates, OS & Office software with license keys</li>
+              <li><strong>Sheet 2 (Additional Software):</strong> Add unlimited software installations by matching Serial Number</li>
               <li>Optionally, set "Asset Type" to "component" and specify "Parent Asset Tag" to create components</li>
               <li>You can also update Purchase Date, Cost, Installation Notes, and other fields</li>
               <li>Upload the completed file below</li>
@@ -219,8 +245,8 @@ const BulkAddAssetsModal = ({ visible, onClose, onSuccess, products, locations, 
           <Table
             columns={previewColumns}
             dataSource={uploadedData}
-            pagination={{ pageSize: 10 }}
-            scroll={{ x: 800, y: 400 }}
+            pagination={{ pageSize: 10, simple: typeof window !== 'undefined' && window.innerWidth < 576 }}
+            scroll={{ x: 600, y: typeof window !== 'undefined' && window.innerWidth < 640 ? 300 : 400 }}
             size="small"
             rowKey="Row"
           />

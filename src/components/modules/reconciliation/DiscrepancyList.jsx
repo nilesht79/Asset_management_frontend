@@ -24,10 +24,12 @@ import {
   FilterOutlined,
   ReloadOutlined,
   EyeOutlined,
-  CheckOutlined
+  CheckOutlined,
+  DownloadOutlined
 } from '@ant-design/icons';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
+import reconciliationService from '../../../services/reconciliation';
 import ResolveDiscrepancyModal from './ResolveDiscrepancyModal';
 import DiscrepancyDetailsModal from './DiscrepancyDetailsModal';
 
@@ -119,6 +121,48 @@ const DiscrepancyList = () => {
   const handleFilterChange = (key, value) => {
     setFilters({ ...filters, [key]: value });
     setPagination({ ...pagination, current: 1 }); // Reset to first page
+  };
+
+  const handleDownloadReport = async () => {
+    try {
+      setLoading(true);
+      message.loading({ content: 'Generating report...', key: 'download', duration: 0 });
+
+      const response = await reconciliationService.exportDiscrepancies(reconciliationId, 'csv');
+
+      // Create blob from response
+      const blob = new Blob([response.data], { type: 'text/csv' });
+
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+
+      // Extract filename from content-disposition header or use default
+      const contentDisposition = response.headers['content-disposition'];
+      let filename = 'discrepancies_report.csv';
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+        if (filenameMatch && filenameMatch[1]) {
+          filename = filenameMatch[1];
+        }
+      }
+
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+
+      // Cleanup
+      link.parentNode.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      message.success({ content: 'Report downloaded successfully', key: 'download', duration: 2 });
+    } catch (error) {
+      console.error('Download error:', error);
+      message.error({ content: error.response?.data?.message || 'Failed to download report', key: 'download', duration: 3 });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleResetFilters = () => {
@@ -339,8 +383,9 @@ const DiscrepancyList = () => {
 
       {/* Filters */}
       <Card style={{ marginBottom: 16 }}>
-        <Row gutter={16}>
-          <Col span={6}>
+        <Row gutter={[16, 16]}>
+          {/* First Row - Filter Inputs */}
+          <Col xs={24} sm={12} md={6} lg={6}>
             <Search
               placeholder="Search by asset tag or notes..."
               value={filters.search}
@@ -349,7 +394,7 @@ const DiscrepancyList = () => {
               prefix={<SearchOutlined />}
             />
           </Col>
-          <Col span={4}>
+          <Col xs={12} sm={6} md={4} lg={4}>
             <Select
               placeholder="Severity"
               value={filters.severity}
@@ -362,7 +407,7 @@ const DiscrepancyList = () => {
               <Option value="minor">Minor</Option>
             </Select>
           </Col>
-          <Col span={5}>
+          <Col xs={12} sm={6} md={6} lg={6}>
             <Select
               placeholder="Type"
               value={filters.discrepancy_type}
@@ -379,7 +424,7 @@ const DiscrepancyList = () => {
               <Option value="asset_damaged">Asset Damaged</Option>
             </Select>
           </Col>
-          <Col span={4}>
+          <Col xs={12} sm={6} md={4} lg={4}>
             <Select
               placeholder="Status"
               value={filters.is_resolved}
@@ -391,8 +436,18 @@ const DiscrepancyList = () => {
               <Option value="true">Resolved</Option>
             </Select>
           </Col>
-          <Col span={5}>
-            <Space>
+
+          {/* Second Row - Action Buttons */}
+          <Col xs={24} sm={24} md={24} lg={24}>
+            <Space wrap>
+              <Button
+                type="primary"
+                icon={<DownloadOutlined />}
+                onClick={handleDownloadReport}
+                disabled={!discrepancies || discrepancies.length === 0}
+              >
+                Download CSV
+              </Button>
               <Button icon={<ReloadOutlined />} onClick={loadDiscrepancies}>
                 Refresh
               </Button>

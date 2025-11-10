@@ -283,6 +283,7 @@ const userService = {
     if (filters.department_id) params.department_id = filters.department_id
     if (filters.location_id) params.location_id = filters.location_id
     if (filters.parent_id !== undefined) params.parent_id = filters.parent_id
+    if (filters.employeeId) params.employeeId = filters.employeeId
 
     // Add pagination
     if (pagination.page) params.page = pagination.page

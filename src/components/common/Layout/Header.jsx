@@ -128,18 +128,22 @@ const Header = () => {
       </div>
 
       {/* Right side - Role indicator, notifications and user menu */}
-      <div className="flex items-center space-x-4">
+      <div className="flex items-center space-x-6">
 
         {/* Notifications */}
         <Tooltip title="Notifications">
-          <Badge count={5} size="small" color={theme.accent}>
+          <Badge count={5} size="small" color={theme.accent} offset={[-6, 4]}>
             <Button
               type="text"
               icon={<BellOutlined />}
               className="text-gray-600 hover:text-current transition-colors duration-200"
               style={{
                 color: theme.accent,
-                fontSize: '16px'
+                fontSize: '18px',
+                padding: '4px 8px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
               }}
             />
           </Badge>

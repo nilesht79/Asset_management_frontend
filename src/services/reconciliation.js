@@ -41,6 +41,20 @@ const reconciliationService = {
   },
 
   /**
+   * Pause a reconciliation process
+   */
+  pauseReconciliation: (id, data = {}) => {
+    return api.put(`/reconciliations/${id}/pause`, data);
+  },
+
+  /**
+   * Resume a paused reconciliation process
+   */
+  resumeReconciliation: (id, data = {}) => {
+    return api.put(`/reconciliations/${id}/resume`, data);
+  },
+
+  /**
    * Delete a reconciliation process
    */
   deleteReconciliation: (id) => {
@@ -89,6 +103,20 @@ const reconciliationService = {
    */
   getReconciliationStatistics: (reconciliationId) => {
     return api.get(`/reconciliations/${reconciliationId}/statistics`);
+  },
+
+  // ============================================================================
+  // Discrepancy Export APIs
+  // ============================================================================
+
+  /**
+   * Export discrepancies to CSV
+   */
+  exportDiscrepancies: (reconciliationId, format = 'csv') => {
+    return api.get(`/reconciliations/${reconciliationId}/discrepancies/export`, {
+      params: { format },
+      responseType: 'blob' // Important for file download
+    });
   }
 };
 

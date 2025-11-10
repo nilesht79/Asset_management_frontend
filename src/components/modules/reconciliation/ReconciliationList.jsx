@@ -14,7 +14,8 @@ import {
   Select,
   Row,
   Col,
-  Statistic
+  Statistic,
+  Dropdown
 } from 'antd';
 import {
   PlusOutlined,
@@ -25,7 +26,10 @@ import {
   SearchOutlined,
   FilterOutlined,
   ReloadOutlined,
-  FileTextOutlined
+  FileTextOutlined,
+  PauseCircleOutlined,
+  CaretRightOutlined,
+  MoreOutlined
 } from '@ant-design/icons';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
@@ -33,6 +37,8 @@ import {
   fetchReconciliations,
   startReconciliation,
   completeReconciliation,
+  pauseReconciliation,
+  resumeReconciliation,
   deleteReconciliation,
   setFilters,
   clearFilters,
@@ -43,6 +49,7 @@ import {
   selectReconciliationFilters
 } from '../../../store/slices/reconciliationSlice';
 import CreateReconciliationModal from './CreateReconciliationModal';
+import ForceCompleteModal from './ForceCompleteModal';
 
 const { Title, Text } = Typography;
 const { Search } = Input;
@@ -61,6 +68,8 @@ const ReconciliationList = () => {
 
   const [isCreateModalVisible, setIsCreateModalVisible] = useState(false);
   const [selectedReconciliation, setSelectedReconciliation] = useState(null);
+  const [isForceCompleteModalVisible, setIsForceCompleteModalVisible] = useState(false);
+  const [forceCompleteData, setForceCompleteData] = useState(null);
 
   // Check if user can create reconciliation (admin/superadmin only)
   const canCreate = ['admin', 'superadmin'].includes(user?.role);
@@ -123,20 +132,82 @@ const ReconciliationList = () => {
     });
   };
 
-  const handleComplete = (record) => {
+  const handleComplete = async (record) => {
+    try {
+      // Try to complete normally first
+      await dispatch(completeReconciliation({ id: record.id, data: {} })).unwrap();
+      message.success('Reconciliation completed successfully');
+      loadReconciliations();
+    } catch (error) {
+      // Check if error is due to pending assets
+      if (error && error.includes('pending')) {
+        // Extract pending count from error message
+        const match = error.match(/(\d+)\s+asset/);
+        const pendingCount = match ? parseInt(match[1]) : 0;
+
+        // Show force complete modal
+        setForceCompleteData({
+          record,
+          pendingCount
+        });
+        setIsForceCompleteModalVisible(true);
+      } else {
+        message.error(error || 'Failed to complete reconciliation');
+      }
+    }
+  };
+
+  const handleForceComplete = async () => {
+    if (!forceCompleteData) return;
+
+    try {
+      await dispatch(completeReconciliation({
+        id: forceCompleteData.record.id,
+        data: { force: true }
+      })).unwrap();
+      message.success('Reconciliation force-completed successfully');
+      loadReconciliations();
+      setIsForceCompleteModalVisible(false);
+      setForceCompleteData(null);
+    } catch (error) {
+      message.error(error || 'Failed to force complete reconciliation');
+      throw error;
+    }
+  };
+
+  const handlePause = (record) => {
     confirm({
-      title: 'Complete Reconciliation',
-      content: `Are you sure you want to mark "${record.reconciliation_name}" as completed? This action cannot be undone.`,
-      okText: 'Yes, Complete',
+      title: 'Pause Reconciliation',
+      content: `Are you sure you want to pause "${record.reconciliation_name}"? You can resume it later.`,
+      okText: 'Yes, Pause',
+      okType: 'default',
+      cancelText: 'Cancel',
+      onOk: async () => {
+        try {
+          await dispatch(pauseReconciliation({ id: record.id, data: {} })).unwrap();
+          message.success('Reconciliation paused successfully');
+          loadReconciliations();
+        } catch (error) {
+          message.error(error || 'Failed to pause reconciliation');
+        }
+      }
+    });
+  };
+
+  const handleResume = (record) => {
+    confirm({
+      title: 'Resume Reconciliation',
+      content: `Are you sure you want to resume "${record.reconciliation_name}"?`,
+      okText: 'Yes, Resume',
       okType: 'primary',
       cancelText: 'Cancel',
       onOk: async () => {
         try {
-          await dispatch(completeReconciliation({ id: record.id, data: {} })).unwrap();
-          message.success('Reconciliation completed successfully');
+          await dispatch(resumeReconciliation({ id: record.id, data: {} })).unwrap();
+          message.success('Reconciliation resumed successfully');
           loadReconciliations();
         } catch (error) {
-          message.error(error || 'Failed to complete reconciliation');
+          message.error(error || 'Failed to resume reconciliation');
         }
       }
     });
@@ -165,6 +236,7 @@ const ReconciliationList = () => {
     const configs = {
       draft: { color: 'default', label: 'Draft', icon: <FileTextOutlined /> },
       in_progress: { color: 'processing', label: 'In Progress', icon: <PlayCircleOutlined spin /> },
+      paused: { color: 'warning', label: 'Paused', icon: <PauseCircleOutlined /> },
       completed: { color: 'success', label: 'Completed', icon: <CheckCircleOutlined /> },
       cancelled: { color: 'error', label: 'Cancelled', icon: <DeleteOutlined /> }
     };
@@ -286,59 +358,82 @@ const ReconciliationList = () => {
       title: 'Actions',
       key: 'actions',
       fixed: 'right',
-      width: 200,
+      width: 100,
       align: 'center',
-      render: (_, record) => (
-        <Space size="small">
-          <Tooltip title="View Assets">
-            <Button
-              type="link"
-              size="small"
-              icon={<EyeOutlined />}
-              onClick={() => handleViewAssets(record)}
-            >
-              View
-            </Button>
-          </Tooltip>
+      render: (_, record) => {
+        // Build menu items for dropdown
+        const menuItems = [];
 
-          {record.status === 'draft' && canStart && (
-            <Tooltip title="Start Reconciliation">
-              <Button
-                type="primary"
-                size="small"
-                icon={<PlayCircleOutlined />}
-                onClick={() => handleStart(record)}
-              >
-                Start
-              </Button>
-            </Tooltip>
-          )}
+        // Add status-specific actions
+        if (record.status === 'draft' && canStart) {
+          menuItems.push({
+            key: 'start',
+            label: 'Start',
+            icon: <PlayCircleOutlined />,
+            onClick: () => handleStart(record)
+          });
+        }
 
-          {record.status === 'in_progress' && canStart && (
-            <Tooltip title="Mark as Complete">
-              <Button
-                type="primary"
-                size="small"
-                icon={<CheckCircleOutlined />}
-                onClick={() => handleComplete(record)}
-              >
-                Complete
-              </Button>
-            </Tooltip>
-          )}
+        if (record.status === 'in_progress' && canStart) {
+          menuItems.push({
+            key: 'pause',
+            label: 'Pause',
+            icon: <PauseCircleOutlined />,
+            onClick: () => handlePause(record)
+          });
+          menuItems.push({
+            key: 'complete',
+            label: 'Complete',
+            icon: <CheckCircleOutlined />,
+            onClick: () => handleComplete(record)
+          });
+        }
 
-          {canCreate && record.status !== 'completed' && (
-            <Tooltip title="Delete">
+        if (record.status === 'paused' && canStart) {
+          menuItems.push({
+            key: 'resume',
+            label: 'Resume',
+            icon: <CaretRightOutlined />,
+            onClick: () => handleResume(record)
+          });
+        }
+
+        if (canCreate && record.status !== 'completed') {
+          menuItems.push({
+            key: 'delete',
+            label: 'Delete',
+            icon: <DeleteOutlined />,
+            danger: true,
+            onClick: () => handleDelete(record)
+          });
+        }
+
+        return (
+          <Space size="small">
+            <Tooltip title="View Assets">
               <Button
-                danger
+                type="link"
                 size="small"
-                icon={<DeleteOutlined />}
-                onClick={() => handleDelete(record)}
+                icon={<EyeOutlined />}
+                onClick={() => handleViewAssets(record)}
               />
             </Tooltip>
-          )}
-        </Space>
-      )
+
+            {menuItems.length > 0 && (
+              <Dropdown
+                menu={{ items: menuItems }}
+                trigger={['click']}
+                placement="bottomRight"
+              >
+                <Button
+                  size="small"
+                  icon={<MoreOutlined />}
+                />
+              </Dropdown>
+            )}
+          </Space>
+        );
+      }
     }
   ];
 
@@ -449,6 +544,18 @@ const ReconciliationList = () => {
           }}
         />
       )}
+
+      {/* Force Complete Modal */}
+      <ForceCompleteModal
+        visible={isForceCompleteModalVisible}
+        onConfirm={handleForceComplete}
+        onCancel={() => {
+          setIsForceCompleteModalVisible(false);
+          setForceCompleteData(null);
+        }}
+        pendingCount={forceCompleteData?.pendingCount || 0}
+        reconciliation={forceCompleteData?.record}
+      />
     </div>
   );
 };

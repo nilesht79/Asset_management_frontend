@@ -1,35 +1,41 @@
 import React, { useState, useEffect } from 'react'
-import { 
-  Card, 
-  Table, 
-  Button, 
-  Input, 
-  Select, 
-  Space, 
-  Tag, 
-  Modal, 
-  Form, 
-  message, 
-  Dropdown, 
+import {
+  Card,
+  Table,
+  Button,
+  Input,
+  Select,
+  Space,
+  Tag,
+  Modal,
+  Form,
+  message,
+  Dropdown,
   Tooltip,
   Row,
   Col,
   Statistic,
   Avatar,
-  Drawer
+  Drawer,
+  Divider,
+  Badge,
+  Typography
 } from 'antd'
-import { 
-  UserOutlined, 
-  PlusOutlined, 
-  EditOutlined, 
-  DeleteOutlined, 
-  LockOutlined, 
+import {
+  UserOutlined,
+  PlusOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  LockOutlined,
   UnlockOutlined,
   MoreOutlined,
   SearchOutlined,
   DownloadOutlined,
   UploadOutlined,
-  ReloadOutlined
+  ReloadOutlined,
+  FilterOutlined,
+  CloseCircleOutlined,
+  ClearOutlined
 } from '@ant-design/icons'
 import { useSelector, useDispatch } from 'react-redux'
 import userService from '../services/user'
@@ -40,6 +46,7 @@ import PasswordInput from '../components/common/PasswordInput'
 const { Search } = Input
 const { Option } = Select
 const { confirm } = Modal
+const { Title } = Typography
 
 const Users = () => {
   const [loading, setLoading] = useState(false)
@@ -50,7 +57,9 @@ const Users = () => {
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
-    total: 0
+    total: 0,
+    sortBy: 'created_at',
+    sortOrder: 'desc'
   })
   const [filters, setFilters] = useState({
     search: '',
@@ -58,8 +67,11 @@ const Users = () => {
     role: '',
     board_id: '',
     department_id: '',
-    location_id: ''
+    location_id: '',
+    employeeId: ''
   })
+  const [tempFilters, setTempFilters] = useState({ ...filters })
+  const [filterDrawerVisible, setFilterDrawerVisible] = useState(false)
   const [selectedUsers, setSelectedUsers] = useState([])
   const [userModalVisible, setUserModalVisible] = useState(false)
   const [editingUser, setEditingUser] = useState(null)
@@ -103,7 +115,9 @@ const Users = () => {
     try {
       const params = userService.buildSearchParams(filters, {
         page: pagination.current,
-        limit: pagination.pageSize
+        limit: pagination.pageSize,
+        sortBy: pagination.sortBy,
+        sortOrder: pagination.sortOrder
       })
 
       const response = await userService.getUsers(params)
@@ -212,11 +226,41 @@ const Users = () => {
   }
 
   const handleTableChange = (paginationInfo, tableFilters, sorter) => {
-    setPagination(prev => ({
-      ...prev,
-      current: paginationInfo.current,
-      pageSize: paginationInfo.pageSize
-    }))
+    console.log('Table change:', { paginationInfo, tableFilters, sorter })
+
+    setPagination(prev => {
+      const newPagination = {
+        ...prev,
+        current: paginationInfo.current,
+        pageSize: paginationInfo.pageSize
+      }
+
+      // Handle sorting
+      if (sorter && sorter.columnKey) {
+        // Map frontend column keys to backend field names
+        const fieldMapping = {
+          'user': 'first_name',
+          'employeeId': 'employee_id',
+          'role': 'role',
+          'status': 'is_active',
+          'lastLogin': 'last_login'
+        }
+
+        const backendField = fieldMapping[sorter.columnKey] || sorter.columnKey
+
+        // Only update if we have a valid order
+        if (sorter.order) {
+          newPagination.sortBy = backendField
+          newPagination.sortOrder = sorter.order === 'ascend' ? 'asc' : 'desc'
+        } else {
+          // Reset to default when sorting is cleared
+          newPagination.sortBy = 'created_at'
+          newPagination.sortOrder = 'desc'
+        }
+      }
+
+      return newPagination
+    })
   }
 
   const handleFilterChange = (key, value) => {
@@ -578,6 +622,70 @@ const Users = () => {
     setUploadProgress(0)
   }
 
+  const handleOpenFilterDrawer = () => {
+    setTempFilters({ ...filters })
+    setFilterDrawerVisible(true)
+  }
+
+  const handleApplyFilters = () => {
+    setFilters({ ...tempFilters })
+    setPagination(prev => ({ ...prev, current: 1 }))
+    setFilterDrawerVisible(false)
+    message.success('Filters applied')
+  }
+
+  const handleClearFilters = () => {
+    const clearedFilters = {
+      search: '',
+      status: 'active',
+      role: '',
+      board_id: '',
+      department_id: '',
+      location_id: '',
+      employeeId: ''
+    }
+    setTempFilters(clearedFilters)
+    setFilters(clearedFilters)
+    setPagination(prev => ({ ...prev, current: 1 }))
+    setFilterDrawerVisible(false)
+    message.success('Filters cleared')
+  }
+
+  const handleRemoveFilter = (filterKey) => {
+    const newFilters = { ...filters }
+    if (filterKey === 'status') {
+      newFilters[filterKey] = 'active'
+    } else {
+      newFilters[filterKey] = ''
+    }
+    setFilters(newFilters)
+    setPagination(prev => ({ ...prev, current: 1 }))
+  }
+
+  const getActiveFilters = () => {
+    const activeFilters = []
+    if (filters.search) activeFilters.push({ key: 'search', label: `Search: ${filters.search}` })
+    if (filters.status !== 'active') activeFilters.push({ key: 'status', label: `Status: ${filters.status === 'inactive' ? 'Inactive' : 'All'}` })
+    if (filters.role) {
+      const roleObj = availableRoles.find(r => r.value === filters.role)
+      activeFilters.push({ key: 'role', label: `Role: ${roleObj?.label || filters.role}` })
+    }
+    if (filters.board_id) {
+      const board = boards.find(b => b.id === filters.board_id)
+      activeFilters.push({ key: 'board_id', label: `Board: ${board?.name || 'Unknown'}` })
+    }
+    if (filters.department_id) {
+      const dept = departments.find(d => d.id === filters.department_id)
+      activeFilters.push({ key: 'department_id', label: `Department: ${dept?.name || 'Unknown'}` })
+    }
+    if (filters.location_id) {
+      const loc = locations.find(l => l.id === filters.location_id)
+      activeFilters.push({ key: 'location_id', label: `Location: ${loc?.name || 'Unknown'}` })
+    }
+    if (filters.employeeId) activeFilters.push({ key: 'employeeId', label: `Employee ID: ${filters.employeeId}` })
+    return activeFilters
+  }
+
   const getActionMenu = (user) => ({
     items: [
       {
@@ -625,33 +733,35 @@ const Users = () => {
     {
       title: 'User',
       key: 'user',
+      fixed: 'left',
+      width: 250,
       render: (_, user) => (
         <div className="flex items-center space-x-3">
-          <Avatar 
-            size={40} 
-            src={user.profilePicture} 
+          <Avatar
+            size={window.innerWidth < 576 ? 32 : 40}
+            src={user.profilePicture}
             icon={<UserOutlined />}
             style={{ backgroundColor: userService.getRoleColor(user.role) }}
           >
             {user.firstName?.[0]}{user.lastName?.[0]}
           </Avatar>
           <div>
-            <div className="font-medium">
+            <div className="font-medium" style={{ fontSize: window.innerWidth < 576 ? 13 : 14 }}>
               {user.firstName} {user.lastName}
             </div>
-            <div className="text-gray-500 text-sm">
+            <div className="text-gray-500" style={{ fontSize: window.innerWidth < 576 ? 11 : 12 }}>
               {user.email}
             </div>
           </div>
         </div>
-      ),
-      sorter: true
+      )
     },
     {
       title: 'Employee ID',
       dataIndex: 'employeeId',
       key: 'employeeId',
-      width: 120
+      width: 120,
+      responsive: ['md']
     },
     {
       title: 'Role',
@@ -662,31 +772,21 @@ const Users = () => {
         <Tag color={userService.getRoleColor(role)}>
           {userService.getRoleDisplayName(role)}
         </Tag>
-      ),
-      filters: userService.getAvailableRoles(currentUser?.role).map(role => ({
-        text: role.label,
-        value: role.value
-      }))
+      )
     },
     {
       title: 'Department',
       key: 'department',
       width: 200,
       render: (_, user) => user.department?.name || 'No Department',
-      filters: departments.map(dept => ({
-        text: dept.name,
-        value: dept.id
-      }))
+      responsive: ['lg']
     },
     {
       title: 'Location',
       key: 'location',
       width: 200,
       render: (_, user) => user.location?.name || 'No Location',
-      filters: locations.map(loc => ({
-        text: loc.name,
-        value: loc.id
-      }))
+      responsive: ['lg']
     },
     {
       title: 'Status',
@@ -697,11 +797,7 @@ const Users = () => {
         <Tag color={isActive ? 'green' : 'red'}>
           {isActive ? 'ACTIVE' : 'INACTIVE'}
         </Tag>
-      ),
-      filters: [
-        { text: 'Active', value: true },
-        { text: 'Inactive', value: false }
-      ]
+      )
     },
     {
       title: 'Last Login',
@@ -709,12 +805,13 @@ const Users = () => {
       key: 'lastLogin',
       width: 150,
       render: (date) => date ? new Date(date).toLocaleDateString() : 'Never',
-      sorter: true
+      responsive: ['md']
     },
     {
       title: 'Actions',
       key: 'actions',
       width: 80,
+      fixed: 'right',
       render: (_, user) => (
         <Dropdown menu={getActionMenu(user)} trigger={['click']} placement="bottomRight">
           <Button type="text" size="small" icon={<MoreOutlined />} />
@@ -724,6 +821,7 @@ const Users = () => {
   ]
 
   const availableRoles = userService.getAvailableRoles(currentUser?.role)
+  const activeFilters = getActiveFilters()
 
   return (
     <div className="space-y-6">
@@ -736,8 +834,8 @@ const Users = () => {
       </div>
 
       {/* Stats */}
-      <Row gutter={16}>
-        <Col span={6}>
+      <Row gutter={[16, 16]}>
+        <Col xs={24} sm={12} lg={6}>
           <Card>
             <Statistic
               title="Total Users"
@@ -746,7 +844,7 @@ const Users = () => {
             />
           </Card>
         </Col>
-        <Col span={6}>
+        <Col xs={24} sm={12} lg={6}>
           <Card>
             <Statistic
               title="Active Users"
@@ -756,7 +854,7 @@ const Users = () => {
             />
           </Card>
         </Col>
-        <Col span={6}>
+        <Col xs={24} sm={12} lg={6}>
           <Card>
             <Statistic
               title="Inactive Users"
@@ -766,7 +864,7 @@ const Users = () => {
             />
           </Card>
         </Col>
-        <Col span={6}>
+        <Col xs={24} sm={12} lg={6}>
           <Card>
             <Statistic
               title="Pending Approvals"
@@ -775,9 +873,9 @@ const Users = () => {
               prefix={<UserOutlined />}
               suffix={
                 stats.pendingApprovals > 0 && (
-                  <Button 
-                    size="small" 
-                    type="primary" 
+                  <Button
+                    size="small"
+                    type="primary"
                     ghost
                     onClick={handleShowApprovals}
                     className="ml-2"
@@ -794,9 +892,9 @@ const Users = () => {
       {/* Filters and Actions */}
       <Card>
         <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-          {/* Search and Filter Row */}
-          <Row gutter={[16, 16]}>
-            <Col xs={24} sm={24} md={12} lg={6}>
+          {/* Search and Action Buttons Row */}
+          <Row gutter={[16, 16]} justify="space-between" align="middle">
+            <Col xs={24} sm={12} md={8}>
               <Search
                 placeholder="Search users..."
                 allowClear
@@ -804,176 +902,101 @@ const Users = () => {
                 enterButton={<SearchOutlined />}
               />
             </Col>
-
-            <Col xs={24} sm={12} md={6} lg={4}>
-              <Select
-                placeholder="Filter by Board"
-                allowClear
-                style={{ width: '100%' }}
-                onChange={(value) => handleFilterChange('board_id', value)}
-                value={filters.board_id || undefined}
-              >
-                {boards.map(board => (
-                  <Option key={board.id} value={board.id}>
-                    {board.name}
-                  </Option>
-                ))}
-              </Select>
-            </Col>
-
-            <Col xs={24} sm={12} md={6} lg={4}>
-              <Select
-                placeholder="Filter by Department"
-                allowClear
-                showSearch
-                style={{ width: '100%' }}
-                onChange={(value) => handleFilterChange('department_id', value)}
-                value={filters.department_id || undefined}
-                disabled={filters.board_id && departments.length === 0}
-                filterOption={(input, option) =>
-                  (option?.children?.toString() || '').toLowerCase().includes(input.toLowerCase())
-                }
-              >
-                {departments.map(dept => (
-                  <Option key={dept.id} value={dept.id}>
-                    {dept.name}
-                  </Option>
-                ))}
-              </Select>
-            </Col>
-
-            <Col xs={24} sm={12} md={6} lg={3}>
-              <Select
-                placeholder="Filter by Role"
-                allowClear
-                style={{ width: '100%' }}
-                onChange={(value) => handleFilterChange('role', value)}
-                value={filters.role || undefined}
-              >
-                {availableRoles.map(role => (
-                  <Option key={role.value} value={role.value}>
-                    {role.label}
-                  </Option>
-                ))}
-              </Select>
-            </Col>
-
-            <Col xs={24} sm={12} md={12} lg={4}>
-              <Select
-                placeholder="Filter by Location"
-                allowClear
-                showSearch
-                style={{ width: '100%' }}
-                onChange={(value) => handleFilterChange('location_id', value)}
-                value={filters.location_id || undefined}
-                popupMatchSelectWidth={false}
-                getPopupContainer={(trigger) => trigger.parentNode}
-                filterOption={(input, option) => {
-                  const searchText = input.toLowerCase()
-                  const locationName = option?.locationname?.toLowerCase() || ''
-                  const building = option?.building?.toLowerCase() || ''
-                  const floor = option?.floor?.toLowerCase() || ''
-                  return locationName.includes(searchText) ||
-                         building.includes(searchText) ||
-                         floor.includes(searchText)
-                }}
-              >
-                {locations.map(loc => (
-                  <Option
-                    key={loc.id}
-                    value={loc.id}
-                    locationname={loc.name}
-                    building={loc.building || ''}
-                    floor={loc.floor || ''}
+            <Col xs={24} sm={12} md={16}>
+              <Space wrap size={[8, 8]} style={{ float: 'right' }}>
+                <Badge count={activeFilters.length} offset={[-5, 5]}>
+                  <Button
+                    icon={<FilterOutlined />}
+                    onClick={handleOpenFilterDrawer}
+                    size={window.innerWidth < 576 ? 'small' : 'middle'}
                   >
-                    <div style={{ whiteSpace: 'normal', wordBreak: 'break-word', padding: '4px 0' }}>
-                      <div style={{ fontWeight: 500 }}>{loc.name}</div>
-                      {(loc.building || loc.floor) && (
-                        <div style={{ fontSize: '11px', color: '#666', lineHeight: '1.3', marginTop: '2px' }}>
-                          {loc.building && `Bldg: ${loc.building}`}
-                          {loc.building && loc.floor && ' • '}
-                          {loc.floor && `Flr: ${loc.floor}`}
-                        </div>
-                      )}
-                    </div>
-                  </Option>
-                ))}
-              </Select>
-            </Col>
-
-            <Col xs={24} sm={12} md={6} lg={3}>
-              <Select
-                placeholder="Filter by Status"
-                style={{ width: '100%' }}
-                onChange={(value) => handleFilterChange('status', value)}
-                value={filters.status}
-              >
-                <Option value="active">Active</Option>
-                <Option value="inactive">Inactive</Option>
-                <Option value="">All</Option>
-              </Select>
-            </Col>
-          </Row>
-
-          {/* Action Buttons Row */}
-          <Row gutter={[8, 8]} justify="end">
-            <Col>
-              <Button
-                icon={<ReloadOutlined />}
-                onClick={fetchUsers}
-                disabled={loading}
-              >
-                Refresh
-              </Button>
-            </Col>
-
-            <Col>
-              <Button
-                icon={<DownloadOutlined />}
-                onClick={handleExport}
-              >
-                Export
-              </Button>
-            </Col>
-
-            <Col>
-              <Button
-                icon={<UploadOutlined />}
-                onClick={handleBulkUploadClick}
-              >
-                Bulk Upload
-              </Button>
-            </Col>
-
-            {selectedUsers.length > 0 && (
-              <Col>
+                    {window.innerWidth >= 768 && 'Filters'}
+                  </Button>
+                </Badge>
                 <Button
-                  danger
-                  icon={<DeleteOutlined />}
-                  onClick={handleBulkDelete}
+                  icon={<ReloadOutlined />}
+                  onClick={fetchUsers}
+                  disabled={loading}
+                  size={window.innerWidth < 576 ? 'small' : 'middle'}
                 >
-                  Delete Selected ({selectedUsers.length})
+                  {window.innerWidth >= 768 && 'Refresh'}
                 </Button>
-              </Col>
-            )}
-
-            <Col>
-              <Button
-                type="primary"
-                icon={<PlusOutlined />}
-                onClick={handleCreateUser}
-              >
-                Add User
-              </Button>
+                <Button
+                  icon={<DownloadOutlined />}
+                  onClick={handleExport}
+                  size={window.innerWidth < 576 ? 'small' : 'middle'}
+                >
+                  {window.innerWidth >= 768 && 'Export'}
+                </Button>
+                <Button
+                  icon={<UploadOutlined />}
+                  onClick={handleBulkUploadClick}
+                  size={window.innerWidth < 576 ? 'small' : 'middle'}
+                >
+                  {window.innerWidth >= 768 && 'Bulk Upload'}
+                </Button>
+                {selectedUsers.length > 0 && (
+                  <Button
+                    danger
+                    icon={<DeleteOutlined />}
+                    onClick={handleBulkDelete}
+                    size={window.innerWidth < 576 ? 'small' : 'middle'}
+                  >
+                    Delete ({selectedUsers.length})
+                  </Button>
+                )}
+                <Button
+                  type="primary"
+                  icon={<PlusOutlined />}
+                  onClick={handleCreateUser}
+                  size={window.innerWidth < 576 ? 'small' : 'middle'}
+                >
+                  {window.innerWidth >= 768 ? 'Add User' : 'Add'}
+                </Button>
+              </Space>
             </Col>
           </Row>
+
+          {/* Active Filters Display */}
+          {activeFilters.length > 0 && (
+            <div style={{ padding: '12px', background: '#f5f5f5', borderRadius: '8px' }}>
+              <Space wrap size={[8, 8]}>
+                <span style={{ fontWeight: 500, color: '#666', fontSize: '13px' }}>Active Filters:</span>
+                {activeFilters.map(filter => (
+                  <Tag
+                    key={filter.key}
+                    closable
+                    onClose={() => handleRemoveFilter(filter.key)}
+                    color="blue"
+                    style={{ fontSize: '12px', padding: '4px 8px', margin: 0 }}
+                  >
+                    {filter.label}
+                  </Tag>
+                ))}
+                <Button
+                  type="link"
+                  size="small"
+                  icon={<CloseCircleOutlined />}
+                  onClick={handleClearFilters}
+                  style={{ padding: '0 8px', fontSize: '12px' }}
+                >
+                  Clear All
+                </Button>
+              </Space>
+            </div>
+          )}
 
           <Table
             columns={columns}
             dataSource={users}
             rowKey="id"
             loading={loading}
-            pagination={pagination}
+            pagination={{
+              ...pagination,
+              showSizeChanger: true,
+              showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} users`,
+              size: window.innerWidth < 576 ? 'small' : 'default'
+            }}
             onChange={handleTableChange}
             rowSelection={{
               selectedRowKeys: selectedUsers,
@@ -982,7 +1005,8 @@ const Users = () => {
                 disabled: !userService.canUserManageUser(currentUser?.role, record.role)
               })
             }}
-            scroll={{ x: 1200 }}
+            scroll={{ x: 'max-content' }}
+            size={window.innerWidth < 576 ? 'small' : 'middle'}
           />
         </Space>
       </Card>
@@ -1494,6 +1518,233 @@ const Users = () => {
           )}
         </div>
       </Modal>
+
+      {/* Filter Drawer */}
+      <Drawer
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span>
+              <FilterOutlined style={{ marginRight: 8, color: '#1890ff' }} />
+              Filters
+            </span>
+            <Badge count={activeFilters.length} showZero={false} />
+          </div>
+        }
+        placement="right"
+        width={typeof window !== 'undefined' && window.innerWidth < 768 ? '100%' : 480}
+        onClose={() => setFilterDrawerVisible(false)}
+        open={filterDrawerVisible}
+        footer={
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'space-between' }}>
+            <Button
+              icon={<ClearOutlined />}
+              onClick={handleClearFilters}
+              style={{ flex: 1 }}
+            >
+              Clear All
+            </Button>
+            <Button
+              type="primary"
+              icon={<FilterOutlined />}
+              onClick={handleApplyFilters}
+              style={{ flex: 1 }}
+            >
+              Apply Filters
+            </Button>
+          </div>
+        }
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+          {/* Basic Filters Section */}
+          <div>
+            <Title level={5} style={{ marginBottom: 16, fontSize: 14, fontWeight: 600 }}>
+              Basic Filters
+            </Title>
+
+            <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: 8, fontWeight: 500, fontSize: 13 }}>
+                  Status
+                </label>
+                <Select
+                  placeholder="Filter by Status"
+                  style={{ width: '100%' }}
+                  onChange={(value) => setTempFilters(prev => ({ ...prev, status: value }))}
+                  value={tempFilters.status}
+                  size="large"
+                >
+                  <Option value="active">Active</Option>
+                  <Option value="inactive">Inactive</Option>
+                  <Option value="">All</Option>
+                </Select>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', marginBottom: 8, fontWeight: 500, fontSize: 13 }}>
+                  Role
+                </label>
+                <Select
+                  placeholder="Filter by Role"
+                  allowClear
+                  style={{ width: '100%' }}
+                  onChange={(value) => setTempFilters(prev => ({ ...prev, role: value || '' }))}
+                  value={tempFilters.role || undefined}
+                  size="large"
+                >
+                  {availableRoles.map(role => (
+                    <Option key={role.value} value={role.value}>
+                      {role.label}
+                    </Option>
+                  ))}
+                </Select>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', marginBottom: 8, fontWeight: 500, fontSize: 13 }}>
+                  Board
+                </label>
+                <Select
+                  placeholder="Filter by Board"
+                  allowClear
+                  style={{ width: '100%' }}
+                  onChange={(value) => {
+                    setTempFilters(prev => ({
+                      ...prev,
+                      board_id: value || '',
+                      department_id: ''
+                    }))
+                  }}
+                  value={tempFilters.board_id || undefined}
+                  size="large"
+                >
+                  {boards.map(board => (
+                    <Option key={board.id} value={board.id}>
+                      {board.name}
+                    </Option>
+                  ))}
+                </Select>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', marginBottom: 8, fontWeight: 500, fontSize: 13 }}>
+                  Department
+                </label>
+                <Select
+                  placeholder="Filter by Department"
+                  allowClear
+                  showSearch
+                  style={{ width: '100%' }}
+                  onChange={(value) => setTempFilters(prev => ({ ...prev, department_id: value || '' }))}
+                  value={tempFilters.department_id || undefined}
+                  disabled={tempFilters.board_id && departments.length === 0}
+                  size="large"
+                  filterOption={(input, option) =>
+                    (option?.children?.toString() || '').toLowerCase().includes(input.toLowerCase())
+                  }
+                >
+                  {departments.map(dept => (
+                    <Option key={dept.id} value={dept.id}>
+                      {dept.name}
+                    </Option>
+                  ))}
+                </Select>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', marginBottom: 8, fontWeight: 500, fontSize: 13 }}>
+                  Location
+                </label>
+                <Select
+                  placeholder="Filter by Location"
+                  allowClear
+                  showSearch
+                  style={{ width: '100%' }}
+                  onChange={(value) => setTempFilters(prev => ({ ...prev, location_id: value || '' }))}
+                  value={tempFilters.location_id || undefined}
+                  size="large"
+                  filterOption={(input, option) => {
+                    const searchText = input.toLowerCase()
+                    const locationName = option?.locationname?.toLowerCase() || ''
+                    const building = option?.building?.toLowerCase() || ''
+                    const floor = option?.floor?.toLowerCase() || ''
+                    return locationName.includes(searchText) ||
+                           building.includes(searchText) ||
+                           floor.includes(searchText)
+                  }}
+                >
+                  {locations.map(loc => (
+                    <Option
+                      key={loc.id}
+                      value={loc.id}
+                      locationname={loc.name}
+                      building={loc.building || ''}
+                      floor={loc.floor || ''}
+                    >
+                      <div>
+                        <div style={{ fontWeight: 500 }}>{loc.name}</div>
+                        {(loc.building || loc.floor) && (
+                          <div style={{ fontSize: '12px', color: '#666' }}>
+                            {loc.building && `Building: ${loc.building}`}
+                            {loc.building && loc.floor && ' • '}
+                            {loc.floor && `Floor: ${loc.floor}`}
+                          </div>
+                        )}
+                      </div>
+                    </Option>
+                  ))}
+                </Select>
+              </div>
+            </Space>
+          </div>
+
+          <Divider style={{ margin: 0 }} />
+
+          {/* Advanced Filters Section */}
+          <div>
+            <Title level={5} style={{ marginBottom: 16, fontSize: 14, fontWeight: 600 }}>
+              Advanced Filters
+            </Title>
+
+            <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: 8, fontWeight: 500, fontSize: 13 }}>
+                  Employee ID
+                </label>
+                <Input
+                  placeholder="Search by Employee ID"
+                  allowClear
+                  value={tempFilters.employeeId}
+                  onChange={(e) => setTempFilters(prev => ({ ...prev, employeeId: e.target.value }))}
+                  size="large"
+                  prefix={<SearchOutlined style={{ color: '#bfbfbf' }} />}
+                />
+              </div>
+            </Space>
+          </div>
+
+          <Divider style={{ margin: 0 }} />
+
+          {/* Filter Summary */}
+          <div>
+            <Title level={5} style={{ marginBottom: 12, fontSize: 14, fontWeight: 600 }}>
+              Active Filters ({activeFilters.length})
+            </Title>
+            {activeFilters.length > 0 ? (
+              <Space wrap size={[8, 8]}>
+                {activeFilters.map(filter => (
+                  <Tag key={filter.key} color="blue" style={{ fontSize: 12, padding: '4px 8px' }}>
+                    {filter.label}
+                  </Tag>
+                ))}
+              </Space>
+            ) : (
+              <div style={{ color: '#999', fontSize: 13, fontStyle: 'italic' }}>
+                No filters applied
+              </div>
+            )}
+          </div>
+        </div>
+      </Drawer>
     </div>
   )
 }

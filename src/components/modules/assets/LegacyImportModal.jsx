@@ -210,6 +210,48 @@ const LegacyImportModal = ({ visible, onClose, onSuccess }) => {
       render: (text) => text || <Text type="secondary">Unassigned</Text>
     },
     {
+      title: 'Warranty End',
+      dataIndex: 'warranty_end_date',
+      key: 'warranty_end',
+      width: 120,
+      render: (text) => text || <Text type="secondary">-</Text>
+    },
+    {
+      title: 'EOL Date',
+      dataIndex: 'eol_date',
+      key: 'eol_date',
+      width: 120,
+      render: (text) => text || <Text type="secondary">-</Text>
+    },
+    {
+      title: 'EOS Date',
+      dataIndex: 'eos_date',
+      key: 'eos_date',
+      width: 120,
+      render: (text) => text || <Text type="secondary">-</Text>
+    },
+    {
+      title: 'OS Software',
+      dataIndex: 'os_name',
+      key: 'os_name',
+      width: 150,
+      render: (text) => text || <Text type="secondary">-</Text>
+    },
+    {
+      title: 'Office Software',
+      dataIndex: 'office_name',
+      key: 'office_name',
+      width: 150,
+      render: (text) => text || <Text type="secondary">-</Text>
+    },
+    {
+      title: 'Additional Software',
+      dataIndex: 'additional_software',
+      key: 'additional_software',
+      width: 150,
+      render: (software) => software && software.length > 0 ? <Tag color="blue">{software.length} software(s)</Tag> : <Text type="secondary">-</Text>
+    },
+    {
       title: 'Issues',
       key: 'issues',
       render: (_, record) => {
@@ -238,7 +280,7 @@ const LegacyImportModal = ({ visible, onClose, onSuccess }) => {
             <div style={{ marginBottom: 24 }}>
               <Title level={5}>Step 1: Download Template</Title>
               <Text type="secondary">
-                Download the Excel template with sample data and reference sheets for products, users, and component hierarchy.
+                Download the Excel template with 5 sheets: Assets (with warranty, EOL/EOS, OS & Office software), Additional Software, Products (reference), Users (reference), and Parent Assets (reference).
               </Text>
               <div style={{ marginTop: 16 }}>
                 <Button
@@ -247,7 +289,7 @@ const LegacyImportModal = ({ visible, onClose, onSuccess }) => {
                   onClick={handleDownloadTemplate}
                   size="large"
                 >
-                  Download Template
+                  Download Template (5 Sheets)
                 </Button>
               </div>
             </div>
@@ -255,7 +297,7 @@ const LegacyImportModal = ({ visible, onClose, onSuccess }) => {
             <div style={{ marginTop: 32 }}>
               <Title level={5}>Step 2: Upload Completed File</Title>
               <Text type="secondary">
-                Fill in the template with your legacy asset data and upload it here for validation.
+                Fill in the template with your legacy asset data including warranty dates, lifecycle dates, and software installations, then upload for validation.
               </Text>
               <Dragger
                 accept=".xlsx,.xls"
@@ -320,8 +362,8 @@ const LegacyImportModal = ({ visible, onClose, onSuccess }) => {
                 ...(validationResult?.errors || [])
               ]}
               rowKey="row_number"
-              scroll={{ x: 1200, y: 400 }}
-              pagination={{ pageSize: 50 }}
+              scroll={{ x: 900, y: typeof window !== 'undefined' && window.innerWidth < 640 ? 300 : 400 }}
+              pagination={{ pageSize: 50, simple: typeof window !== 'undefined' && window.innerWidth < 576 }}
               size="small"
               rowClassName={(record) => {
                 if (record.errors && record.errors.length > 0) return 'error-row'
@@ -384,10 +426,11 @@ const LegacyImportModal = ({ visible, onClose, onSuccess }) => {
 
   return (
     <Modal
-      title="Import Legacy Assets"
+      title={<span className="text-sm sm:text-base">Import Legacy Assets</span>}
       open={visible}
       onCancel={handleClose}
-      width={1200}
+      width={typeof window !== 'undefined' && window.innerWidth < 768 ? '95vw' : typeof window !== 'undefined' && window.innerWidth < 1200 ? '90vw' : 1200}
+      className="responsive-modal"
       footer={
         <Space>
           {currentStep === 1 && (
@@ -411,10 +454,19 @@ const LegacyImportModal = ({ visible, onClose, onSuccess }) => {
         </Space>
       }
     >
-      <Steps current={currentStep} style={{ marginBottom: 32 }}>
-        <Step title="Upload" description="Download & upload file" />
-        <Step title="Validate" description="Review validation results" />
-        <Step title="Complete" description="Import summary" />
+      <Steps current={currentStep} style={{ marginBottom: typeof window !== 'undefined' && window.innerWidth < 640 ? 16 : 32 }} size={typeof window !== 'undefined' && window.innerWidth < 640 ? 'small' : 'default'}>
+        <Step
+          title={<span className="text-xs sm:text-sm">Upload</span>}
+          description={<span className="hidden sm:inline text-xs">Download & upload file</span>}
+        />
+        <Step
+          title={<span className="text-xs sm:text-sm">Validate</span>}
+          description={<span className="hidden sm:inline text-xs">Review validation results</span>}
+        />
+        <Step
+          title={<span className="text-xs sm:text-sm">Complete</span>}
+          description={<span className="hidden sm:inline text-xs">Import summary</span>}
+        />
       </Steps>
 
       {getStepContent()}

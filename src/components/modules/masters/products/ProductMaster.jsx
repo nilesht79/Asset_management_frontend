@@ -1,5 +1,6 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Tabs, Button, message, Space } from 'antd'
+import { useSearchParams } from 'react-router-dom'
 import {
   AppstoreOutlined,
   BranchesOutlined,
@@ -20,10 +21,26 @@ import { fetchProducts } from '../../../../store/slices/masterSlice'
 import api from '../../../../services/api'
 
 const ProductMaster = () => {
-  const [activeTab, setActiveTab] = useState('products')
+  const [searchParams] = useSearchParams()
+  const tabFromUrl = searchParams.get('tab')
+
+  // Valid tab keys
+  const validTabs = ['products', 'category', 'subcategory', 'type', 'series']
+
+  // Set initial active tab from URL parameter if valid, otherwise default to 'products'
+  const [activeTab, setActiveTab] = useState(
+    tabFromUrl && validTabs.includes(tabFromUrl) ? tabFromUrl : 'products'
+  )
   const [isBulkUploadVisible, setIsBulkUploadVisible] = useState(false)
   const [exporting, setExporting] = useState(false)
   const dispatch = useDispatch()
+
+  // Update active tab when URL parameter changes
+  useEffect(() => {
+    if (tabFromUrl && validTabs.includes(tabFromUrl)) {
+      setActiveTab(tabFromUrl)
+    }
+  }, [tabFromUrl])
 
   // Handle export
   const handleExport = async () => {

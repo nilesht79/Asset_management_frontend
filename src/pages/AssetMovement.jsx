@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Card,
   Table,
@@ -16,7 +16,9 @@ import {
   Typography,
   Spin,
   Empty,
-  Tooltip
+  Tooltip,
+  Badge,
+  Grid
 } from 'antd';
 import {
   SearchOutlined,
@@ -26,7 +28,8 @@ import {
   EnvironmentOutlined,
   SwapOutlined,
   ClockCircleOutlined,
-  DownloadOutlined
+  DownloadOutlined,
+  ReloadOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -38,15 +41,19 @@ dayjs.extend(relativeTime);
 const { RangePicker } = DatePicker;
 const { Option } = Select;
 const { Title, Text } = Typography;
+const { useBreakpoint } = Grid;
 
 const AssetMovement = () => {
+  const screens = useBreakpoint();
   const [loading, setLoading] = useState(false);
+  const [exportLoading, setExportLoading] = useState(false);
   const [movements, setMovements] = useState([]);
   const [statistics, setStatistics] = useState(null);
   const [pagination, setPagination] = useState({ current: 1, pageSize: 20, total: 0 });
   const [filters, setFilters] = useState({
     assetTag: '',
     movementType: undefined,
+    status: undefined,
     dateRange: null
   });
   const [selectedAsset, setSelectedAsset] = useState(null);
@@ -54,28 +61,69 @@ const AssetMovement = () => {
   const [assetHistory, setAssetHistory] = useState([]);
   const { showSuccess, showError } = useNotification();
 
+  // Debounced fetch for filters
+  useEffect(() => {
+    // Reset to page 1 when filters change
+    if (pagination.current !== 1) {
+      setPagination(prev => ({ ...prev, current: 1 }));
+      return; // Don't fetch yet, let the pagination change trigger it
+    }
+
+    // Debounce filter changes (500ms delay)
+    const timeoutId = setTimeout(() => {
+      fetchMovements();
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [filters]);
+
+  // Fetch when pagination changes
   useEffect(() => {
     fetchMovements();
-    fetchStatistics();
   }, [pagination.current, pagination.pageSize]);
+
+  // Fetch statistics on mount
+  useEffect(() => {
+    fetchStatistics();
+  }, []);
 
   const fetchMovements = async () => {
     setLoading(true);
     try {
-      const response = await apiClient.get('/asset-movements/recent', {
-        params: {
-          limit: pagination.pageSize,
-          offset: (pagination.current - 1) * pagination.pageSize
-        }
-      });
+      // Build query params object
+      const params = {
+        limit: pagination.pageSize,
+        offset: (pagination.current - 1) * pagination.pageSize
+      };
+
+      // Add filters if they exist
+      if (filters.assetTag && filters.assetTag.trim()) {
+        params.assetTag = filters.assetTag.trim();
+      }
+
+      if (filters.movementType) {
+        params.movementType = filters.movementType;
+      }
+
+      if (filters.status) {
+        params.status = filters.status;
+      }
+
+      if (filters.dateRange && filters.dateRange.length === 2) {
+        params.startDate = filters.dateRange[0].format('YYYY-MM-DD');
+        params.endDate = filters.dateRange[1].format('YYYY-MM-DD');
+      }
+
+      const response = await apiClient.get('/asset-movements/recent', { params });
 
       if (response.data.success) {
         const movements = response.data.data || [];
-        console.log('Asset movements received:', movements);
+        const total = response.data.pagination?.total || 0;
+        console.log('Asset movements received:', movements.length, 'Total:', total);
         setMovements(movements);
         setPagination(prev => ({
           ...prev,
-          total: response.data.pagination?.count || movements.length
+          total: total
         }));
       }
     } catch (error) {
@@ -115,9 +163,88 @@ const AssetMovement = () => {
     }
   };
 
+  // Count active filters
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (filters.assetTag && filters.assetTag.trim()) count++;
+    if (filters.movementType) count++;
+    if (filters.status) count++;
+    if (filters.dateRange) count++;
+    return count;
+  }, [filters]);
+
+  // Reset all filters
+  const handleResetFilters = () => {
+    setFilters({
+      assetTag: '',
+      movementType: undefined,
+      status: undefined,
+      dateRange: null
+    });
+  };
+
   const handleViewHistory = (record) => {
     setSelectedAsset(record);
     fetchAssetHistory(record.asset_id);
+  };
+
+  const handleExportToExcel = async () => {
+    setExportLoading(true);
+    try {
+      // Build query params (same as filters)
+      const params = {};
+
+      if (filters.assetTag && filters.assetTag.trim()) {
+        params.assetTag = filters.assetTag.trim();
+      }
+
+      if (filters.movementType) {
+        params.movementType = filters.movementType;
+      }
+
+      if (filters.status) {
+        params.status = filters.status;
+      }
+
+      if (filters.dateRange && filters.dateRange.length === 2) {
+        params.startDate = filters.dateRange[0].format('YYYY-MM-DD');
+        params.endDate = filters.dateRange[1].format('YYYY-MM-DD');
+      }
+
+      const response = await apiClient.get('/asset-movements/export/excel', {
+        params,
+        responseType: 'blob' // Important for file download
+      });
+
+      // Create blob from response
+      const blob = new Blob([response.data], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      });
+
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+
+      // Generate filename with current date
+      const timestamp = new Date().toISOString().split('T')[0];
+      link.setAttribute('download', `Asset_Movements_${timestamp}.xlsx`);
+
+      // Trigger download
+      document.body.appendChild(link);
+      link.click();
+
+      // Cleanup
+      link.parentNode.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      showSuccess('Excel file downloaded successfully');
+    } catch (error) {
+      showError('Failed to export to Excel');
+      console.error('Error exporting to Excel:', error);
+    } finally {
+      setExportLoading(false);
+    }
   };
 
   const getMovementTypeColor = (type) => {
@@ -170,26 +297,58 @@ const AssetMovement = () => {
       title: 'Asset Tag',
       dataIndex: 'asset_tag',
       key: 'asset_tag',
-      width: 180,
+      width: 200,
       ellipsis: {
         showTitle: false,
       },
       render: (text, record) => (
-        <Space>
-          <Tooltip title={text}>
-            <Tag color="blue" style={{ maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%' }}>
+          <Tooltip title={`${text} - Click to view history`}>
+            <Tag
+              color="blue"
+              onClick={() => handleViewHistory(record)}
+              style={{
+                flex: 1,
+                minWidth: 0,
+                maxWidth: '140px',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                marginRight: 0,
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                userSelect: 'none'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.opacity = '0.8';
+                e.currentTarget.style.transform = 'scale(1.02)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.opacity = '1';
+                e.currentTarget.style.transform = 'scale(1)';
+              }}
+            >
               {text}
             </Tag>
           </Tooltip>
           <Tooltip title="View full history">
             <Button
-              type="link"
+              type="text"
               size="small"
               icon={<HistoryOutlined />}
               onClick={() => handleViewHistory(record)}
+              style={{
+                padding: '4px',
+                minWidth: '28px',
+                height: '28px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#ff4d4f',
+                flexShrink: 0
+              }}
             />
           </Tooltip>
-        </Space>
+        </div>
       )
     },
     {
@@ -209,17 +368,7 @@ const AssetMovement = () => {
             </Tag>
           </Tooltip>
         );
-      },
-      filters: [
-        { text: 'Assigned', value: 'assigned' },
-        { text: 'Transferred', value: 'transferred' },
-        { text: 'Returned', value: 'returned' },
-        { text: 'Relocated', value: 'relocated' },
-        { text: 'Unassigned', value: 'unassigned' },
-        { text: 'Component Install', value: 'component_install' },
-        { text: 'Component Remove', value: 'component_remove' }
-      ],
-      onFilter: (value, record) => record.movement_type === value
+      }
     },
     {
       title: 'Status',
@@ -319,8 +468,8 @@ const AssetMovement = () => {
 
       {/* Statistics Cards */}
       {statistics && (
-        <Row gutter={16} className="mb-6">
-          <Col xs={24} sm={12} md={6}>
+        <Row gutter={[16, 16]} className="mb-6">
+          <Col xs={12} sm={12} md={6}>
             <Card>
               <Statistic
                 title="Total Movements"
@@ -330,7 +479,7 @@ const AssetMovement = () => {
               />
             </Card>
           </Col>
-          <Col xs={24} sm={12} md={6}>
+          <Col xs={12} sm={12} md={6}>
             <Card>
               <Statistic
                 title="Assignments"
@@ -340,7 +489,7 @@ const AssetMovement = () => {
               />
             </Card>
           </Col>
-          <Col xs={24} sm={12} md={6}>
+          <Col xs={12} sm={12} md={6}>
             <Card>
               <Statistic
                 title="Transfers"
@@ -350,7 +499,7 @@ const AssetMovement = () => {
               />
             </Card>
           </Col>
-          <Col xs={24} sm={12} md={6}>
+          <Col xs={12} sm={12} md={6}>
             <Card>
               <Statistic
                 title="Returns"
@@ -364,20 +513,54 @@ const AssetMovement = () => {
       )}
 
       {/* Filters */}
-      <Card className="mb-4">
+      <Card
+        className="mb-4"
+        style={{ borderColor: activeFilterCount > 0 ? '#1890ff' : undefined }}
+      >
         <Row gutter={[16, 16]}>
-          <Col xs={24} sm={12} md={8}>
+          <Col span={24}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+              <Space>
+                <FilterOutlined />
+                <Text strong>Filters</Text>
+                {activeFilterCount > 0 && (
+                  <Badge count={activeFilterCount} style={{ backgroundColor: '#1890ff' }} />
+                )}
+              </Space>
+              <Space size="small">
+                <Button
+                  type="primary"
+                  icon={<DownloadOutlined />}
+                  onClick={handleExportToExcel}
+                  loading={exportLoading}
+                  size={screens.xs ? 'small' : 'middle'}
+                >
+                  {screens.xs ? '' : 'Export to Excel'}
+                </Button>
+                {activeFilterCount > 0 && (
+                  <Button
+                    size="small"
+                    icon={<ReloadOutlined />}
+                    onClick={handleResetFilters}
+                  >
+                    {screens.xs ? '' : 'Reset Filters'}
+                  </Button>
+                )}
+              </Space>
+            </div>
+          </Col>
+          <Col xs={12} sm={12} md={6}>
             <Input
-              placeholder="Search by asset tag"
+              placeholder={screens.xs ? 'Asset tag' : 'Search by asset tag'}
               prefix={<SearchOutlined />}
               value={filters.assetTag}
               onChange={(e) => setFilters({ ...filters, assetTag: e.target.value })}
               allowClear
             />
           </Col>
-          <Col xs={24} sm={12} md={8}>
+          <Col xs={12} sm={12} md={6}>
             <Select
-              placeholder="Filter by movement type"
+              placeholder={screens.xs ? 'Type' : 'Filter by movement type'}
               style={{ width: '100%' }}
               value={filters.movementType}
               onChange={(value) => setFilters({ ...filters, movementType: value })}
@@ -392,11 +575,26 @@ const AssetMovement = () => {
               <Option value="component_remove">Component Remove</Option>
             </Select>
           </Col>
-          <Col xs={24} sm={12} md={8}>
+          <Col xs={12} sm={12} md={6}>
+            <Select
+              placeholder={screens.xs ? 'Status' : 'Filter by status'}
+              style={{ width: '100%' }}
+              value={filters.status}
+              onChange={(value) => setFilters({ ...filters, status: value })}
+              allowClear
+            >
+              <Option value="available">Available</Option>
+              <Option value="assigned">Assigned</Option>
+              <Option value="in-use">In-use</Option>
+              <Option value="maintenance">Maintenance</Option>
+            </Select>
+          </Col>
+          <Col xs={12} sm={12} md={6}>
             <RangePicker
               style={{ width: '100%' }}
               value={filters.dateRange}
               onChange={(dates) => setFilters({ ...filters, dateRange: dates })}
+              placeholder={screens.xs ? ['From', 'To'] : ['Start Date', 'End Date']}
             />
           </Col>
         </Row>
@@ -409,9 +607,34 @@ const AssetMovement = () => {
           dataSource={movements}
           rowKey="id"
           loading={loading}
-          pagination={pagination}
+          pagination={{
+            ...pagination,
+            simple: screens.xs,
+            showSizeChanger: !screens.xs,
+            showTotal: (total, range) =>
+              screens.xs
+                ? `${range[0]}-${range[1]}/${total}`
+                : `${range[0]}-${range[1]} of ${total} items`,
+            pageSizeOptions: ['10', '20', '50', '100']
+          }}
           onChange={handleTableChange}
-          scroll={{ x: 1200 }}
+          scroll={{ x: 1100 }}
+          locale={{
+            emptyText: activeFilterCount > 0 ? (
+              <Empty
+                description={
+                  <Space direction="vertical" size="small">
+                    <Text>No movements match your filters</Text>
+                    <Button size="small" onClick={handleResetFilters}>
+                      Clear Filters
+                    </Button>
+                  </Space>
+                }
+              />
+            ) : (
+              <Empty description="No movement records found" />
+            )
+          }}
         />
       </Card>
 
@@ -431,29 +654,39 @@ const AssetMovement = () => {
             Close
           </Button>
         ]}
-        width={800}
+        width={screens.xs ? '100%' : screens.sm ? '90%' : 800}
+        style={{ maxWidth: screens.xs ? 'none' : 800 }}
+        styles={{ body: { maxHeight: '70vh', overflowY: 'auto' } }}
       >
         <Spin spinning={loading}>
           {assetHistory.length > 0 ? (
-            <Timeline mode="left" style={{ marginTop: 20 }}>
+            <Timeline
+              mode={screens.md ? 'left' : 'alternate'}
+              style={{ marginTop: 20 }}
+            >
               {assetHistory.map((movement) => (
                 <Timeline.Item
                   key={movement.id}
                   color={getMovementTypeColor(movement.movement_type)}
-                  label={
+                  label={screens.md ? (
                     <Space direction="vertical" size={0}>
                       <Text strong>{dayjs(movement.movement_date).format('DD MMM YYYY')}</Text>
                       <Text type="secondary" style={{ fontSize: 12 }}>
                         {dayjs(movement.movement_date).format('HH:mm')}
                       </Text>
                     </Space>
-                  }
+                  ) : undefined}
                 >
                   <Card size="small" style={{ marginBottom: 8 }}>
-                    <Space direction="vertical" style={{ width: '100%' }}>
-                      <Space>
+                    <Space direction="vertical" style={{ width: '100%' }} size="small">
+                      {!screens.md && (
+                        <Text strong style={{ fontSize: 12 }}>
+                          {dayjs(movement.movement_date).format('DD MMM YYYY HH:mm')}
+                        </Text>
+                      )}
+                      <Space wrap>
                         <Tag color={getMovementTypeColor(movement.movement_type)}>
-                          {movement.movement_type?.toUpperCase()}
+                          {movement.movement_type?.replace(/_/g, ' ').toUpperCase()}
                         </Tag>
                         <Tag color={getStatusColor(movement.status)}>
                           {movement.status?.toUpperCase()}
@@ -461,31 +694,31 @@ const AssetMovement = () => {
                       </Space>
 
                       {movement.assigned_to_name && (
-                        <Text>
+                        <Text style={{ fontSize: screens.xs ? 12 : 14 }}>
                           <UserOutlined /> <strong>Assigned to:</strong> {movement.assigned_to_name}
                         </Text>
                       )}
 
                       {movement.location_name && (
-                        <Text>
+                        <Text style={{ fontSize: screens.xs ? 12 : 14 }}>
                           <EnvironmentOutlined /> <strong>Location:</strong> {movement.location_name}
                         </Text>
                       )}
 
                       {movement.previous_user_name && (
-                        <Text type="secondary">
+                        <Text type="secondary" style={{ fontSize: screens.xs ? 12 : 14 }}>
                           <strong>From:</strong> {movement.previous_user_name}
                         </Text>
                       )}
 
                       {movement.reason && (
-                        <Text type="secondary">
+                        <Text type="secondary" style={{ fontSize: screens.xs ? 12 : 14 }}>
                           <strong>Reason:</strong> {movement.reason}
                         </Text>
                       )}
 
-                      <Text type="secondary" style={{ fontSize: 12 }}>
-                        <ClockCircleOutlined /> Performed by: {movement.performed_by_name}
+                      <Text type="secondary" style={{ fontSize: 11 }}>
+                        <ClockCircleOutlined /> {movement.performed_by_name}
                       </Text>
                     </Space>
                   </Card>

@@ -556,7 +556,7 @@ const CoordinatorDashboard = () => {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <MapPin size={18} className="text-gray-700" />
-                  <span className="font-semibold">Asset Distribution by Location</span>
+                  <span className="font-semibold">Asset Distribution</span>
                 </div>
                 <Button
                   type="link"
