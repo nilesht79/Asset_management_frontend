@@ -1,27 +1,41 @@
-import React, { useState, useEffect } from 'react';
-import { Modal, Form, Input, Select, Card, Row, Col, message } from 'antd';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { Modal, Form, Input, Select, Card, Row, Col, message, Button, Divider } from 'antd';
+import { UserAddOutlined, LaptopOutlined } from '@ant-design/icons';
 import ticketService from '../../../services/ticket';
+import AssetSelector from './AssetSelector';
 
 const { Option } = Select;
 const { TextArea } = Input;
 
-const CreateTicketModal = ({ visible, onClose, onSuccess }) => {
+const CreateTicketModal = ({ visible, onClose, onSuccess, currentUser }) => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [employees, setEmployees] = useState([]);
   const [engineers, setEngineers] = useState([]);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [employeeInfo, setEmployeeInfo] = useState(null);
+  const [isGuestMode, setIsGuestMode] = useState(false);
+  const [searchText, setSearchText] = useState('');
+  const [selectedAssets, setSelectedAssets] = useState([]);
+
+  // Check if current user is an engineer (not coordinator/admin)
+  const isEngineerRole = currentUser?.role === 'engineer';
 
   useEffect(() => {
     if (visible) {
       fetchEmployees();
-      fetchEngineers();
+      // Only fetch engineers if user is coordinator/admin (not engineer)
+      if (!isEngineerRole) {
+        fetchEngineers();
+      }
       form.resetFields();
       setEmployeeInfo(null);
       setSelectedEmployee(null);
+      setIsGuestMode(false);
+      setSearchText('');
+      setSelectedAssets([]);
     }
-  }, [visible]);
+  }, [visible, isEngineerRole]);
 
   const fetchEmployees = async () => {
     try {
@@ -45,8 +59,15 @@ const CreateTicketModal = ({ visible, onClose, onSuccess }) => {
   };
 
   const handleEmployeeChange = (userId) => {
+    if (userId === 'GUEST') {
+      handleGuestSelection();
+      return;
+    }
+
     const employee = employees.find((e) => e.user_id === userId);
     setSelectedEmployee(userId);
+    setIsGuestMode(false);
+    setSelectedAssets([]); // Reset asset selection when employee changes
 
     if (employee) {
       setEmployeeInfo({
@@ -59,11 +80,52 @@ const CreateTicketModal = ({ visible, onClose, onSuccess }) => {
     }
   };
 
+  const handleSearch = (value) => {
+    setSearchText(value || '');
+  };
+
+  const handleGuestSelection = useCallback(() => {
+    setIsGuestMode(true);
+    setSelectedEmployee(null);
+    setEmployeeInfo(null);
+    setSelectedAssets([]); // Clear assets for guest tickets
+    form.setFieldsValue({ created_by_user_id: undefined });
+    // Pre-fill guest name with search text if available
+    if (searchText) {
+      form.setFieldsValue({ guest_name: searchText });
+    }
+  }, [searchText, form]);
+
+  const notFoundContent = useMemo(() => {
+    if (searchText) {
+      return (
+        <div style={{ padding: '8px' }}>
+          <Button
+            type="link"
+            icon={<UserAddOutlined />}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleGuestSelection();
+            }}
+            block
+          >
+            Create Guest Ticket for "{searchText}"
+          </Button>
+        </div>
+      );
+    }
+    return (
+      <div style={{ padding: '12px 16px', textAlign: 'center', color: '#999' }}>
+        No employees found
+      </div>
+    );
+  }, [searchText, handleGuestSelection]);
+
   const handleSubmit = async (values) => {
     setLoading(true);
     try {
       const ticketData = {
-        created_by_user_id: values.created_by_user_id,
+        is_guest: isGuestMode,
         title: values.title,
         description: values.description,
         priority: values.priority,
@@ -71,10 +133,37 @@ const CreateTicketModal = ({ visible, onClose, onSuccess }) => {
         assigned_to_engineer_id: values.assigned_to_engineer_id || null
       };
 
-      await ticketService.createTicket(ticketData);
+      if (isGuestMode) {
+        // Guest ticket
+        ticketData.guest_name = values.guest_name;
+        ticketData.guest_email = values.guest_email;
+        ticketData.guest_phone = values.guest_phone || null;
+        ticketData.created_by_user_id = null;
+      } else {
+        // Employee ticket
+        ticketData.created_by_user_id = values.created_by_user_id;
+      }
+
+      // Create the ticket first
+      const response = await ticketService.createTicket(ticketData);
+      const ticketId = response.data?.data?.ticket_id || response.data?.ticket_id;
+
+      // If assets were selected, link them to the ticket
+      if (selectedAssets.length > 0 && ticketId) {
+        try {
+          await ticketService.linkMultipleAssets(ticketId, selectedAssets);
+        } catch (assetError) {
+          console.error('Failed to link assets:', assetError);
+          message.warning('Ticket created but failed to link some assets');
+        }
+      }
+
       form.resetFields();
       setEmployeeInfo(null);
       setSelectedEmployee(null);
+      setIsGuestMode(false);
+      setSearchText('');
+      setSelectedAssets([]);
       onSuccess();
     } catch (error) {
       console.error('Failed to create ticket:', error);
@@ -105,18 +194,22 @@ const CreateTicketModal = ({ visible, onClose, onSuccess }) => {
           priority: 'medium'
         }}
       >
-        {/* Employee Selection */}
+        {/* Employee/Guest Selection */}
         <Form.Item
           name="created_by_user_id"
-          label="Create Ticket For (Employee)"
+          label="Create Ticket For"
           rules={[
-            { required: true, message: 'Please select an employee' }
+            {
+              required: !isGuestMode,
+              message: 'Please select an employee or choose guest'
+            }
           ]}
         >
           <Select
             showSearch
-            placeholder="Search and select employee"
+            placeholder="Search employee name or type for guest"
             onChange={handleEmployeeChange}
+            onSearch={handleSearch}
             filterOption={(input, option) => {
               if (!option?.children) return false;
               const searchText = typeof option.children === 'string'
@@ -124,6 +217,7 @@ const CreateTicketModal = ({ visible, onClose, onSuccess }) => {
                 : option.children.join(' ');
               return searchText.toLowerCase().includes(input.toLowerCase());
             }}
+            notFoundContent={notFoundContent}
           >
             {employees.map((emp) => (
               <Option key={emp.user_id} value={emp.user_id}>
@@ -134,11 +228,11 @@ const CreateTicketModal = ({ visible, onClose, onSuccess }) => {
         </Form.Item>
 
         {/* Display Employee Info (Inherited Data) */}
-        {employeeInfo && (
+        {employeeInfo && !isGuestMode && (
           <Card size="small" className="mb-4" style={{ backgroundColor: '#e6f7ff', borderColor: '#91d5ff' }}>
             <div className="text-sm">
               <div className="font-semibold mb-2" style={{ color: '#0050b3' }}>
-                📋 Ticket will be created for:
+                Ticket will be created for:
               </div>
               <Row gutter={16}>
                 <Col span={12}>
@@ -161,8 +255,57 @@ const CreateTicketModal = ({ visible, onClose, onSuccess }) => {
                 </Col>
               </Row>
               <div className="mt-2 text-xs" style={{ color: '#8c8c8c' }}>
-                ℹ️ Department and location will be automatically inherited from the employee
+                Department and location will be automatically inherited from the employee
               </div>
+            </div>
+          </Card>
+        )}
+
+        {/* Guest Information Fields */}
+        {isGuestMode && (
+          <Card
+            size="small"
+            className="mb-4"
+            style={{ backgroundColor: '#f0f5ff', borderColor: '#adc6ff' }}
+          >
+            <div className="text-sm font-semibold mb-3" style={{ color: '#1d39c4' }}>
+              Guest Information
+            </div>
+
+            <Form.Item
+              name="guest_name"
+              label="Guest Name"
+              rules={[
+                { required: true, message: 'Please enter guest name' },
+                { min: 2, message: 'Name must be at least 2 characters' }
+              ]}
+            >
+              <Input placeholder="Full name of the guest" maxLength={100} />
+            </Form.Item>
+
+            <Row gutter={16}>
+              <Col span={12}>
+                <Form.Item
+                  name="guest_email"
+                  label="Guest Email"
+                  rules={[
+                    { required: true, message: 'Please enter guest email' },
+                    { type: 'email', message: 'Please enter valid email' }
+                  ]}
+                >
+                  <Input placeholder="guest@example.com" maxLength={255} />
+                </Form.Item>
+              </Col>
+
+              <Col span={12}>
+                <Form.Item name="guest_phone" label="Guest Phone (Optional)">
+                  <Input placeholder="+1 234 567 8900" maxLength={20} />
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <div className="text-xs" style={{ color: '#8c8c8c' }}>
+              Guest tickets will not have department or location assigned
             </div>
           </Card>
         )}
@@ -198,6 +341,26 @@ const CreateTicketModal = ({ visible, onClose, onSuccess }) => {
           />
         </Form.Item>
 
+        {/* Asset Selection - Only for employee tickets (not guests) */}
+        {selectedEmployee && !isGuestMode && (
+          <>
+            <Divider style={{ margin: '16px 0' }}>
+              <LaptopOutlined /> Related Assets (Optional)
+            </Divider>
+            <AssetSelector
+              userId={selectedEmployee}
+              selectedAssets={selectedAssets}
+              onSelectionChange={setSelectedAssets}
+              disabled={loading}
+            />
+            <div style={{ marginTop: 8, marginBottom: 16 }}>
+              <span style={{ color: '#8c8c8c', fontSize: '12px' }}>
+                Select assets that are related to this issue. This helps engineers identify and track affected equipment.
+              </span>
+            </div>
+          </>
+        )}
+
         <Row gutter={16}>
           <Col span={12}>
             {/* Priority */}
@@ -207,11 +370,11 @@ const CreateTicketModal = ({ visible, onClose, onSuccess }) => {
               rules={[{ required: true, message: 'Please select priority' }]}
             >
               <Select placeholder="Select priority">
-                <Option value="low">🟢 Low</Option>
-                <Option value="medium">🔵 Medium</Option>
-                <Option value="high">🟠 High</Option>
-                <Option value="critical">🔴 Critical</Option>
-                <Option value="emergency">🚨 Emergency</Option>
+                <Option value="low">Low</Option>
+                <Option value="medium">Medium</Option>
+                <Option value="high">High</Option>
+                <Option value="critical">Critical</Option>
+                <Option value="emergency">Emergency</Option>
               </Select>
             </Form.Item>
           </Col>
@@ -223,41 +386,43 @@ const CreateTicketModal = ({ visible, onClose, onSuccess }) => {
               label="Issue Category"
             >
               <Select placeholder="Select category">
-                <Option value="Hardware">🖥️ Hardware Issue</Option>
-                <Option value="Software">💻 Software Issue</Option>
-                <Option value="Network">🌐 Network/Connectivity</Option>
-                <Option value="Access">🔐 Access/Permission</Option>
-                <Option value="Other">📋 Other</Option>
+                <Option value="Hardware">Hardware Issue</Option>
+                <Option value="Software">Software Issue</Option>
+                <Option value="Network">Network/Connectivity</Option>
+                <Option value="Access">Access/Permission</Option>
+                <Option value="Other">Other</Option>
               </Select>
             </Form.Item>
           </Col>
         </Row>
 
-        {/* Auto-Assign Engineer (Optional) */}
-        <Form.Item
-          name="assigned_to_engineer_id"
-          label="Assign to Engineer (Optional)"
-          extra="Leave blank to assign later"
-        >
-          <Select
-            allowClear
-            placeholder="Select engineer to assign"
-            showSearch
-            filterOption={(input, option) => {
-              if (!option?.children) return false;
-              const searchText = typeof option.children === 'string'
-                ? option.children
-                : option.children.join(' ');
-              return searchText.toLowerCase().includes(input.toLowerCase());
-            }}
+        {/* Auto-Assign Engineer (Optional) - Only visible to coordinators/admins */}
+        {!isEngineerRole && (
+          <Form.Item
+            name="assigned_to_engineer_id"
+            label="Assign to Engineer (Optional)"
+            extra="Leave blank to assign later"
           >
-            {engineers.map((eng) => (
-              <Option key={eng.user_id} value={eng.user_id}>
-                {eng.full_name || `${eng.first_name || ''} ${eng.last_name || ''}`.trim() || 'Unknown'} - {eng.department_name || 'No Dept'}
-              </Option>
-            ))}
-          </Select>
-        </Form.Item>
+            <Select
+              allowClear
+              placeholder="Select engineer to assign"
+              showSearch
+              filterOption={(input, option) => {
+                if (!option?.children) return false;
+                const searchText = typeof option.children === 'string'
+                  ? option.children
+                  : option.children.join(' ');
+                return searchText.toLowerCase().includes(input.toLowerCase());
+              }}
+            >
+              {engineers.map((eng) => (
+                <Option key={eng.user_id} value={eng.user_id}>
+                  {eng.full_name || `${eng.first_name || ''} ${eng.last_name || ''}`.trim() || 'Unknown'} - {eng.department_name || 'No Dept'}
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
+        )}
       </Form>
     </Modal>
   );

@@ -60,6 +60,7 @@ const ProductModelForm = ({ open, mode, product, onClose, onSuccess }) => {
         speed_unit: product.speed_unit || null,
         interface_type: product.interface_type || null,
         form_factor: product.form_factor || null,
+        software_type: product.software_type || null,
         is_active: product.is_active !== undefined ? product.is_active : true
       })
     } else if (open && mode === 'create') {
@@ -71,11 +72,25 @@ const ProductModelForm = ({ open, mode, product, onClose, onSuccess }) => {
     }
   }, [form, open, product, mode])
 
+  // Watch form fields for conditional rendering (must be before handleSubmit to avoid stale closure)
+  const selectedCategoryId = Form.useWatch('category_id', form)
+  const selectedSubCategoryId = Form.useWatch('subcategory_id', form)
+
+  // Check if selected category is "Software" to show software_type field
+  // Also check product's category name directly for edit mode (when categories might not be loaded yet)
+  const selectedCategory = categories.find(c => c.id === selectedCategoryId)
+  const isSoftwareCategory = selectedCategory?.name?.toLowerCase() === 'software' ||
+    (mode === 'edit' && product?.category?.name?.toLowerCase() === 'software') ||
+    (mode === 'edit' && product?.category_name?.toLowerCase() === 'software')
+
   const handleSubmit = async (values) => {
     try {
+      // Ensure software_type is included (null for non-software products)
       const formattedValues = {
         ...values,
-        specifications: values.specifications?.trim() || null
+        specifications: values.specifications?.trim() || null,
+        // Explicitly include software_type - set to null if not a software product
+        software_type: isSoftwareCategory ? (values.software_type || null) : null
       }
 
       if (mode === 'create') {
@@ -114,10 +129,16 @@ const ProductModelForm = ({ open, mode, product, onClose, onSuccess }) => {
     )
   }
 
-  const handleCategoryChange = () => {
+  const handleCategoryChange = (categoryId) => {
+    // Check if new category is Software
+    const newCategory = categories.find(c => c.id === categoryId)
+    const isNewSoftware = newCategory?.name?.toLowerCase() === 'software'
+
     form.setFieldsValue({
       subcategory_id: undefined,
-      series_id: undefined
+      series_id: undefined,
+      // Clear software_type if switching away from Software category (use null, not undefined)
+      software_type: isNewSoftware ? form.getFieldValue('software_type') : null
     })
   }
 
@@ -141,9 +162,6 @@ const ProductModelForm = ({ open, mode, product, onClose, onSuccess }) => {
       dispatch(fetchFieldTemplatesByProductType(product.type_id))
     }
   }, [open, product, mode, dispatch])
-
-  const selectedCategoryId = Form.useWatch('category_id', form)
-  const selectedSubCategoryId = Form.useWatch('subcategory_id', form)
 
   const filteredSubCategories = subCategories.filter(
     subCat => subCat.parent_category_id === selectedCategoryId
@@ -540,6 +558,31 @@ const ProductModelForm = ({ open, mode, product, onClose, onSuccess }) => {
               </Select>
             </Form.Item>
           </Col>
+          {isSoftwareCategory && (
+            <Col span={12}>
+              <Form.Item
+                label={
+                  <Space>
+                    <span>Software Type</span>
+                    <Tooltip title="Type of software application">
+                      <InfoCircleOutlined style={{ color: '#8c8c8c' }} />
+                    </Tooltip>
+                  </Space>
+                }
+                name="software_type"
+                rules={[
+                  { required: true, message: 'Software type is required for software products' }
+                ]}
+              >
+                <Select placeholder="Select software type" allowClear>
+                  <Option value="operating_system">Operating System</Option>
+                  <Option value="application">Application</Option>
+                  <Option value="utility">Utility</Option>
+                  <Option value="driver">Driver</Option>
+                </Select>
+              </Form.Item>
+            </Col>
+          )}
         </Row>
 
         <Divider style={{ margin: '24px 0' }} />

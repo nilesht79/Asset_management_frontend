@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import {
   Card,
   Row,
@@ -86,13 +86,48 @@ const SuperAdminDashboard = () => {
   const [ciDrawerVisible, setCiDrawerVisible] = useState(false)
   const navigate = useNavigate()
 
+  // Chart refs for responsive resizing
+  const masterDataChartRef = useRef(null)
+  const distributionChartRef = useRef(null)
+  const userEngagementChartRef = useRef(null)
+
   useEffect(() => {
     loadDashboardData()
   }, [])
 
+  // Handle window resize for charts
+  useEffect(() => {
+    const handleResize = () => {
+      if (masterDataChartRef.current) {
+        const chartInstance = masterDataChartRef.current.getEchartsInstance()
+        chartInstance && chartInstance.resize()
+      }
+      if (distributionChartRef.current) {
+        const chartInstance = distributionChartRef.current.getEchartsInstance()
+        chartInstance && chartInstance.resize()
+      }
+      if (userEngagementChartRef.current) {
+        const chartInstance = userEngagementChartRef.current.getEchartsInstance()
+        chartInstance && chartInstance.resize()
+      }
+    }
+
+    window.addEventListener('resize', handleResize)
+
+    // Trigger resize after a short delay to ensure charts are rendered
+    const timer = setTimeout(() => {
+      handleResize()
+    }, 100)
+
+    return () => {
+      window.removeEventListener('resize', handleResize)
+      clearTimeout(timer)
+    }
+  }, [loading])
+
   const loadDashboardData = async () => {
     setLoading(true)
-    
+
     try {
       const [dashboardResponse, systemHealthResponse, activitiesResponse] = await Promise.all([
         dashboardService.getSuperAdminDashboard(),
@@ -412,7 +447,7 @@ const SuperAdminDashboard = () => {
   )
 
   const userEngagementRate = useMemo(() =>
-    dashboardData.users.total ? Math.round((dashboardData.users.active / dashboardData.users.total) * 100) : 0,
+    dashboardData.users.total ? parseFloat(((dashboardData.users.active / dashboardData.users.total) * 100).toFixed(1)) : 0,
     [dashboardData.users.total, dashboardData.users.active]
   )
 
@@ -613,6 +648,7 @@ const SuperAdminDashboard = () => {
                 <Statistic
                   title={<span style={{ fontSize: '14px', fontWeight: 500, color: THEME.dark }}>Active Users</span>}
                   value={userEngagementRate}
+                  precision={1}
                   suffix="%"
                   prefix={<TeamOutlined style={{ color: THEME.success, fontSize: '20px' }} />}
                   valueStyle={{ color: THEME.success, fontSize: '28px', fontWeight: 600 }}
@@ -685,11 +721,14 @@ const SuperAdminDashboard = () => {
                   border: `1px solid ${THEME.info}20`
                 }}
               />
-              <div style={{ width: '100%', height: '280px', overflow: 'hidden' }}>
+              <div style={{ width: '100%', height: '280px' }}>
                 <ReactECharts
+                  ref={masterDataChartRef}
                   option={getMasterDataOverviewConfig()}
-                  style={{ height: '280px', width: '100%' }}
+                  style={{ height: '100%', width: '100%' }}
                   opts={{ renderer: 'svg' }}
+                  notMerge={true}
+                  lazyUpdate={true}
                 />
               </div>
             </Card>
@@ -726,11 +765,14 @@ const SuperAdminDashboard = () => {
                   Configuration item distribution across categories
                 </Text>
               </div>
-              <div style={{ width: '100%', height: '280px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ width: '100%', height: '280px' }}>
                 <ReactECharts
+                  ref={distributionChartRef}
                   option={getMasterDataDistributionConfig()}
-                  style={{ height: '280px', width: '100%' }}
+                  style={{ height: '100%', width: '100%' }}
                   opts={{ renderer: 'svg' }}
+                  notMerge={true}
+                  lazyUpdate={true}
                 />
               </div>
             </Card>
@@ -786,11 +828,14 @@ const SuperAdminDashboard = () => {
                   borderRadius: '8px'
                 }}
               />
-              <div style={{ width: '100%', height: '340px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ width: '100%', height: '340px' }}>
                 <ReactECharts
+                  ref={userEngagementChartRef}
                   option={getUserEngagementConfig()}
-                  style={{ height: '340px', width: '100%' }}
+                  style={{ height: '100%', width: '100%' }}
                   opts={{ renderer: 'svg' }}
+                  notMerge={true}
+                  lazyUpdate={true}
                 />
               </div>
             </Card>

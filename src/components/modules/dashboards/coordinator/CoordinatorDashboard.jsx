@@ -38,6 +38,7 @@ import assetService from '../../../../services/asset'
 import ticketService from '../../../../services/ticket'
 import LocationPieChart from '../../../common/Charts/LocationPieChart'
 import TicketStatusByCategory from '../../../common/Charts/TicketStatusByCategory'
+import FaultTrendsWidget from '../widgets/FaultTrendsWidget'
 
 const CoordinatorDashboard = () => {
   const [loading, setLoading] = useState(true)
@@ -443,6 +444,13 @@ const CoordinatorDashboard = () => {
               status={statistics.data?.underRepairAssets > 0 ? "exception" : "success"}
             />
           </Card>
+        </Col>
+      </Row>
+
+      {/* Fault Analysis Widget */}
+      <Row gutter={[16, 16]}>
+        <Col xs={24}>
+          <FaultTrendsWidget compact={true} />
         </Col>
       </Row>
 

@@ -83,6 +83,19 @@ const AssetSoftwareView = ({ assetId }) => {
       render: (text) => <Text strong>{text}</Text>
     },
     {
+      title: 'License Pool',
+      dataIndex: 'license_name',
+      key: 'license_name',
+      render: (licenseName, record) => {
+        if (!licenseName) return <Text type="secondary">Manual Entry</Text>
+        return (
+          <Tooltip title={`${record.allocated_licenses || 0} / ${record.total_licenses || 0} allocated`}>
+            <Tag color="blue">{licenseName}</Tag>
+          </Tooltip>
+        )
+      }
+    },
+    {
       title: 'License Key',
       dataIndex: 'license_key',
       key: 'license_key',
@@ -103,37 +116,22 @@ const AssetSoftwareView = ({ assetId }) => {
       }
     },
     {
-      title: 'License Type',
-      dataIndex: 'license_type',
-      key: 'license_type',
-      render: (type) => {
-        if (!type) return <Text type="secondary">N/A</Text>
-        const colors = {
-          oem: 'blue',
-          retail: 'green',
-          volume: 'purple',
-          subscription: 'orange'
-        }
-        return <Tag color={colors[type.toLowerCase()] || 'default'}>{type.toUpperCase()}</Tag>
-      }
-    },
-    {
       title: 'License Status',
       dataIndex: 'license_status',
       key: 'license_status',
       render: (status, record) => getLicenseStatusTag(status, record.days_until_expiration)
     },
     {
-      title: 'Activation Date',
-      dataIndex: 'activation_date',
-      key: 'activation_date',
+      title: 'Installation Date',
+      dataIndex: 'installation_date',
+      key: 'installation_date',
       render: (date) => date ? new Date(date).toLocaleDateString() : <Text type="secondary">N/A</Text>
     },
     {
-      title: 'Expiration Date',
-      dataIndex: 'expiration_date',
-      key: 'expiration_date',
-      render: (date) => date ? new Date(date).toLocaleDateString() : <Text type="secondary">Never</Text>
+      title: 'License Expiration',
+      dataIndex: 'license_expiration_date',
+      key: 'license_expiration_date',
+      render: (date) => date ? new Date(date).toLocaleDateString() : <Text type="secondary">Perpetual</Text>
     }
   ]
 

@@ -29,6 +29,7 @@ import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { fetchPendingITApprovals, fetchAllRequisitions } from '../../../../store/slices/requisitionSlice';
+import FaultTrendsWidget from '../widgets/FaultTrendsWidget';
 
 dayjs.extend(relativeTime);
 
@@ -283,6 +284,13 @@ const ITHeadDashboard = () => {
                 valueStyle={{ color: '#262626' }}
               />
             </Card>
+          </Col>
+        </Row>
+
+        {/* Fault Analysis Widget */}
+        <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+          <Col span={24}>
+            <FaultTrendsWidget compact={false} />
           </Col>
         </Row>
 

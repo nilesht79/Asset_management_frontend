@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react'
-import { Modal, Form, Input, Select, Row, Col, message } from 'antd'
+import { Modal, Form, Input, Select, Row, Col, message, Checkbox } from 'antd'
 import { useSelector } from 'react-redux'
 import PropTypes from 'prop-types'
 import userService from '../../../../services/user'
@@ -20,12 +20,14 @@ const UserForm = ({ open, mode, user, departments, onClose, onSuccess }) => {
         role: user.role,
         department_id: user.department?.id,
         employee_id: user.employeeId,
-        is_active: user.isActive
+        is_active: user.isActive,
+        is_vip: user.isVip || false
       })
     } else if (open && mode === 'create') {
       form.resetFields()
-      form.setFieldsValue({ 
-        is_active: true
+      form.setFieldsValue({
+        is_active: true,
+        is_vip: false
       })
     }
   }, [form, open, user, mode])
@@ -189,7 +191,7 @@ const UserForm = ({ open, mode, user, departments, onClose, onSuccess }) => {
                 { required: true, message: 'Department is required' }
               ]}
             >
-              <Select 
+              <Select
                 placeholder="Select department"
                 allowClear
                 showSearch
@@ -219,6 +221,22 @@ const UserForm = ({ open, mode, user, departments, onClose, onSuccess }) => {
                 <Option value={false}>Inactive</Option>
               </Select>
             </Form.Item>
+          </Col>
+        </Row>
+
+        <Row gutter={16}>
+          <Col span={12}>
+            <Form.Item
+              name="is_vip"
+              valuePropName="checked"
+            >
+              <Checkbox>
+                VIP User
+              </Checkbox>
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <div style={{ height: '32px' }}></div>
           </Col>
         </Row>
 

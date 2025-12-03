@@ -7,6 +7,17 @@ const assetService = {
     return api.get(`/assets${queryString ? `?${queryString}` : ''}`)
   },
 
+  // Get assets assigned to current user
+  getMyAssets: (params = {}) => {
+    const queryString = apiUtils.buildQueryString(params)
+    return api.get(`/assets/my-assets${queryString ? `?${queryString}` : ''}`)
+  },
+
+  // Get assets for a specific user (for coordinators to create requests on behalf)
+  getUserAssets: (userId) => {
+    return api.get(`/assets/user/${userId}/assets`)
+  },
+
   // Get asset statistics for dashboard
   getAssetStatistics: () => {
     return api.get('/assets/statistics')
@@ -104,6 +115,62 @@ const assetService = {
   // Reinstall a previously removed component
   reinstallComponent: (parentAssetId, componentId, data) => {
     return api.post(`/assets/${parentAssetId}/components/${componentId}/reinstall`, data)
+  },
+
+  // ============================================================================
+  // Lifecycle Management APIs
+  // ============================================================================
+
+  // Get assets with lifecycle alerts (warranty, EOL, EOS)
+  getLifecycleAssets: (params = {}) => {
+    const queryString = apiUtils.buildQueryString(params)
+    return api.get(`/assets/lifecycle${queryString ? `?${queryString}` : ''}`)
+  },
+
+  // Get lifecycle statistics summary
+  getLifecycleStatistics: () => {
+    return api.get('/assets/lifecycle/statistics')
+  },
+
+  // Renew/extend warranty for an asset
+  renewWarranty: (assetId, data) => {
+    return api.post(`/assets/${assetId}/lifecycle/renew`, data)
+  },
+
+  // Dispose an asset
+  disposeAsset: (assetId, data) => {
+    return api.post(`/assets/${assetId}/lifecycle/dispose`, data)
+  },
+
+  // ============================================================================
+  // Label Generation APIs
+  // ============================================================================
+
+  // Get label preview data for an asset
+  getLabelPreview: (assetId) => {
+    return api.get(`/assets/${assetId}/label/preview`)
+  },
+
+  // Download label PDF for a single asset
+  downloadLabel: (assetId) => {
+    return api.get(`/assets/${assetId}/label`, {
+      responseType: 'blob'
+    })
+  },
+
+  // Generate bulk labels for selected assets
+  downloadBulkLabels: (assetIds) => {
+    return api.post('/assets/labels/bulk', { assetIds }, {
+      responseType: 'blob'
+    })
+  },
+
+  // Generate labels for all assets (with filters)
+  downloadAllLabels: (params = {}) => {
+    const queryString = apiUtils.buildQueryString(params)
+    return api.get(`/assets/labels/all${queryString ? `?${queryString}` : ''}`, {
+      responseType: 'blob'
+    })
   }
 }
 

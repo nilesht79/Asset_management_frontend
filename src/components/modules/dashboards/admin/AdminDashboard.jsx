@@ -35,6 +35,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import ReactECharts from 'echarts-for-react'
 import dashboardService from '../../../../services/dashboard'
 import { fetchStandbyStatistics, selectStandbyStatistics } from '../../../../store/slices/standbySlice'
+import FaultTrendsWidget from '../widgets/FaultTrendsWidget'
 
 const { Title, Text } = Typography
 
@@ -506,6 +507,13 @@ const AdminDashboard = () => {
                 </Col>
               </Row>
             </Card>
+          </Col>
+        </Row>
+
+        {/* Fault Analysis Widget */}
+        <Row gutter={[24, 24]} style={{ marginBottom: '32px' }}>
+          <Col span={24}>
+            <FaultTrendsWidget compact={false} />
           </Col>
         </Row>
 

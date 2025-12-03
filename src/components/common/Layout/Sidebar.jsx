@@ -23,7 +23,11 @@ import {
   SwapOutlined,
   CheckCircleOutlined,
   SendOutlined,
-  DeliveredProcedureOutlined
+  DeliveredProcedureOutlined,
+  InboxOutlined,
+  WarningOutlined,
+  AlertOutlined,
+  ClockCircleOutlined
 } from '@ant-design/icons'
 import { selectSidebarCollapsed } from '../../../store/slices/uiSlice'
 import { getThemeByRole } from '../../../utils/roleThemes'
@@ -97,6 +101,10 @@ const Sidebar = () => {
               label: 'OEM Master',
             },
             {
+              key: '/masters/vendors',
+              label: 'Vendor Master',
+            },
+            {
               key: '/masters/products',
               label: 'Product Master',
             },
@@ -131,6 +139,26 @@ const Sidebar = () => {
             }
           ],
         },
+        // Consumables Module
+        {
+          key: 'consumables',
+          icon: <InboxOutlined />,
+          label: 'Consumables',
+          children: [
+            {
+              key: '/consumables/master',
+              label: 'Consumable Master',
+            },
+            {
+              key: '/consumables/inventory',
+              label: 'Inventory Management',
+            },
+            {
+              key: '/consumables/requests',
+              label: 'Requests',
+            },
+          ],
+        },
         // Ticketing & SLA Module
         {
           key: '/tickets',
@@ -142,6 +170,30 @@ const Sidebar = () => {
           key: '/reconciliation',
           icon: <CheckCircleOutlined />,
           label: 'Inventory Reconciliation',
+        },
+        // Software License Management
+        {
+          key: '/licenses',
+          icon: <SafetyCertificateOutlined />,
+          label: 'Software Licenses',
+        },
+        // Fault Analysis Module
+        {
+          key: 'fault-analysis',
+          icon: <WarningOutlined />,
+          label: 'Fault Analysis',
+          children: [
+            {
+              key: '/fault-analysis',
+              icon: <AlertOutlined />,
+              label: 'Analysis Dashboard',
+            },
+            {
+              key: '/admin/fault-types',
+              icon: <ToolOutlined />,
+              label: 'Fault Types',
+            },
+          ],
         },
         // Reporting & Analytics Module
         {
@@ -209,6 +261,11 @@ const Sidebar = () => {
           icon: <SettingOutlined />,
           label: 'Settings',
           children: [
+            {
+              key: '/settings/sla',
+              icon: <ClockCircleOutlined />,
+              label: 'SLA Configuration',
+            },
             ...(user?.role === 'superadmin' ? [
               {
                 key: '/settings/permission-control',
@@ -219,13 +276,18 @@ const Sidebar = () => {
                 key: '/settings/field-templates',
                 icon: <ControlOutlined />,
                 label: 'Field Templates',
+              },
+              {
+                key: '/settings/org-config',
+                icon: <ControlOutlined />,
+                label: 'Organization Config',
+              },
+              {
+                key: '/settings/fault-thresholds',
+                icon: <WarningOutlined />,
+                label: 'Fault Thresholds',
               }
             ] : []),
-            {
-              key: '/settings/system-config',
-              icon: <ControlOutlined />,
-              label: 'System Configuration',
-            },
           ],
         }
       )
@@ -281,9 +343,34 @@ const Sidebar = () => {
           ],
         },
         {
+          key: 'consumables',
+          icon: <InboxOutlined />,
+          label: 'Consumables',
+          children: [
+            {
+              key: '/consumables/master',
+              label: 'Consumable Master',
+            },
+            {
+              key: '/consumables/inventory',
+              label: 'Inventory Management',
+            },
+            {
+              key: '/consumables/requests',
+              label: 'Requests',
+            },
+          ],
+        },
+        {
           key: '/tickets',
           icon: <CustomerServiceOutlined />,
           label: 'Ticket Management',
+        },
+        // Software License Management
+        {
+          key: '/licenses',
+          icon: <SafetyCertificateOutlined />,
+          label: 'Software Licenses',
         }
       )
     }
@@ -355,6 +442,12 @@ const Sidebar = () => {
           key: '/tickets',
           icon: <CustomerServiceOutlined />,
           label: 'Ticket Management',
+        },
+        // Software License Management
+        {
+          key: '/licenses',
+          icon: <SafetyCertificateOutlined />,
+          label: 'Software Licenses',
         }
       )
     }
@@ -368,19 +461,9 @@ const Sidebar = () => {
           label: 'My Deliveries',
         },
         {
-          key: 'tickets',
-          icon: <ToolOutlined />,
-          label: 'Ticket Management',
-          children: [
-            {
-              key: '/tickets/my-queue',
-              label: 'My Tickets',
-            },
-            {
-              key: '/tickets/repair',
-              label: 'Repair Management',
-            },
-          ],
+          key: '/engineer/tickets',
+          icon: <CustomerServiceOutlined />,
+          label: 'My Tickets',
         },
         {
           key: '/reconciliation',
@@ -425,6 +508,11 @@ const Sidebar = () => {
           ],
         },
         {
+          key: '/consumables/requests',
+          icon: <InboxOutlined />,
+          label: 'Consumable Requests',
+        },
+        {
           key: '/create-ticket',
           icon: <CustomerServiceOutlined />,
           label: 'Report Issue',
@@ -460,6 +548,7 @@ const Sidebar = () => {
 
     // Master Data routes
     if (pathname.startsWith('/masters/oem')) return ['/masters/oem']
+    if (pathname.startsWith('/masters/vendors')) return ['/masters/vendors']
     if (pathname.startsWith('/masters/product-categories')) return ['/masters/product-categories']
     if (pathname.startsWith('/masters/product-subcategories')) return ['/masters/product-subcategories']
     if (pathname.startsWith('/masters/product-types')) return ['/masters/product-types']
@@ -485,6 +574,7 @@ const Sidebar = () => {
     if (pathname.startsWith('/requisitions/all-requisitions')) return ['/requisitions/all-requisitions']
 
     // Ticket Management routes
+    if (pathname.startsWith('/engineer/tickets')) return ['/engineer/tickets']
     if (pathname.startsWith('/tickets')) return ['/tickets']
 
     // Reports & Analytics routes
@@ -509,8 +599,23 @@ const Sidebar = () => {
     if (pathname.startsWith('/department/reports')) return ['/department/reports']
 
     // Settings routes
+    if (pathname.startsWith('/settings/sla')) return ['/settings/sla']
     if (pathname.startsWith('/settings/permission-control')) return ['/settings/permission-control']
-    if (pathname.startsWith('/settings/system-config')) return ['/settings/system-config']
+    if (pathname.startsWith('/settings/field-templates')) return ['/settings/field-templates']
+    if (pathname.startsWith('/settings/org-config')) return ['/settings/org-config']
+
+    // Consumables routes
+    if (pathname.startsWith('/consumables/master')) return ['/consumables/master']
+    if (pathname.startsWith('/consumables/inventory')) return ['/consumables/inventory']
+    if (pathname.startsWith('/consumables/requests')) return ['/consumables/requests']
+
+    // Software Licenses route
+    if (pathname.startsWith('/licenses')) return ['/licenses']
+
+    // Fault Analysis routes
+    if (pathname === '/fault-analysis') return ['/fault-analysis']
+    if (pathname.startsWith('/admin/fault-types')) return ['/admin/fault-types']
+    if (pathname.startsWith('/settings/fault-thresholds')) return ['/settings/fault-thresholds']
 
     return [pathname]
   }
@@ -548,6 +653,13 @@ const Sidebar = () => {
     }
     if (pathname.startsWith('/settings')) {
       keys.push('settings')
+    }
+    if (pathname.startsWith('/consumables')) {
+      keys.push('consumables')
+    }
+    if (pathname.startsWith('/fault-analysis') ||
+        pathname.startsWith('/admin/fault-types')) {
+      keys.push('fault-analysis')
     }
 
     return keys

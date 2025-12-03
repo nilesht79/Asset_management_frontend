@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   Card,
   Table,
@@ -22,7 +23,9 @@ import {
   Avatar,
   Collapse,
   Drawer,
-  DatePicker
+  DatePicker,
+  Tabs,
+  Alert
 } from 'antd'
 import dayjs from 'dayjs'
 import {
@@ -46,7 +49,10 @@ import {
   SettingOutlined,
   BankOutlined,
   ApiOutlined,
-  MinusCircleOutlined
+  MinusCircleOutlined,
+  QrcodeOutlined,
+  HistoryOutlined,
+  ToolOutlined
 } from '@ant-design/icons'
 import { Pie } from '@ant-design/plots'
 import { useSelector, useDispatch } from 'react-redux'
@@ -75,6 +81,7 @@ import {
   fetchProducts,
   fetchCategories,
   fetchBoards,
+  fetchVendors,
   selectOEMs,
   selectProducts,
   selectCategories,
@@ -92,6 +99,9 @@ import BulkAddAssetsModal from './BulkAddAssetsModal'
 import LegacyImportModal from './LegacyImportModal'
 import ComponentManager from './components/ComponentManager'
 import AssetSoftwareView from './AssetSoftwareView'
+import AssetLabelPreview from './AssetLabelPreview'
+import AssetRepairHistory from './AssetRepairHistory'
+import licenseService from '../../../services/license'
 
 const { Title, Text } = Typography
 const { Option } = Select
@@ -99,11 +109,15 @@ const { Search } = Input
 
 const AssetInventory = () => {
   const dispatch = useDispatch()
+  const navigate = useNavigate()
   const [isAddModalVisible, setIsAddModalVisible] = useState(false)
   const [isDeletedModalVisible, setIsDeletedModalVisible] = useState(false)
   const [deletedAssets, setDeletedAssets] = useState([])
   const [deletedAssetsLoading, setDeletedAssetsLoading] = useState(false)
   const [form] = Form.useForm()
+  const [labelPreviewVisible, setLabelPreviewVisible] = useState(false)
+  const [labelAssetId, setLabelAssetId] = useState(null)
+  const [bulkGenerating, setBulkGenerating] = useState(false)
   const [selectedRowKeys, setSelectedRowKeys] = useState([])
   const [editingAsset, setEditingAsset] = useState(null)
   const [mapModalVisible, setMapModalVisible] = useState(false)
@@ -133,6 +147,7 @@ const AssetInventory = () => {
   const [serialNumberSearching, setSerialNumberSearching] = useState(false)
   const [softwareProducts, setSoftwareProducts] = useState([])
   const [softwareLoading, setSoftwareLoading] = useState(false)
+  const [productLicenses, setProductLicenses] = useState({}) // Map of productId -> available licenses
 
   // Redux selectors
   const assets = useSelector(selectAssets)
@@ -148,6 +163,7 @@ const AssetInventory = () => {
   const locations = useSelector(selectLocations)
   const users = useSelector(selectUsers)
   const boards = useSelector(selectBoards)
+  const vendors = useSelector(state => state.master.vendors)
 
   // Load initial data
   useEffect(() => {
@@ -158,6 +174,7 @@ const AssetInventory = () => {
     // Fetch master data for dropdowns with high limit to get all items
     dispatch(fetchBoards({ limit: 1000 }))
     dispatch(fetchOEMs({ limit: 1000 }))
+    dispatch(fetchVendors({ limit: 1000 }))
     dispatch(fetchProducts({ limit: 1000 }))
     dispatch(fetchCategories({ limit: 1000, include_subcategories: 'true' }))
     dispatch(fetchLocations({ limit: 1000 }))
@@ -167,18 +184,26 @@ const AssetInventory = () => {
   // Filter software products from all products
   useEffect(() => {
     if (products.data && categories.data) {
-      // Find Software category ID
-      const softwareCategory = categories.data.find(cat => cat.name === 'Software')
+      // Find Software category ID (case-insensitive, top-level category only)
+      const softwareCategory = categories.data.find(cat =>
+        cat.name?.toLowerCase() === 'software' && !cat.parent_category_id
+      )
       if (softwareCategory) {
-        // Filter products that belong to Software category or its subcategories
-        const softwareProds = products.data.filter(product => {
-          const productCategory = categories.data.find(cat => cat.id === product.category_id)
-          return productCategory && (
-            productCategory.id === softwareCategory.id ||
-            productCategory.parent_category_id === softwareCategory.id
-          )
+        // Get all software subcategory IDs
+        const softwareCategoryIds = [softwareCategory.id]
+        categories.data.forEach(cat => {
+          if (cat.parent_category_id === softwareCategory.id) {
+            softwareCategoryIds.push(cat.id)
+          }
         })
+
+        // Filter products that belong to Software category or its subcategories
+        const softwareProds = products.data.filter(product =>
+          softwareCategoryIds.includes(product.category_id)
+        )
         setSoftwareProducts(softwareProds)
+      } else {
+        setSoftwareProducts([])
       }
     }
   }, [products.data, categories.data])
@@ -244,17 +269,24 @@ const AssetInventory = () => {
     let softwareInstallations = []
     try {
       const response = await assetService.getAssetSoftware(asset.id)
-      if (response.success && response.data) {
+      const softwareData = response.data?.success ? response.data.data : (response.data || [])
+
+      if (softwareData && softwareData.length > 0) {
         // Transform software data to form format
-        softwareInstallations = response.data.map(software => ({
+        softwareInstallations = softwareData.map(software => ({
           software_product_id: software.software_product_id,
           software_type: software.software_type,
           license_key: software.license_key,
-          license_type: software.license_type,
-          activation_date: software.activation_date ? dayjs(software.activation_date) : null,
-          expiration_date: software.expiration_date ? dayjs(software.expiration_date) : null,
+          license_id: software.license_id,
+          installation_date: software.installation_date ? dayjs(software.installation_date) : null,
           notes: software.notes
         }))
+
+        // Pre-fetch licenses for each software product - include the currently assigned license
+        const licensePromises = softwareData
+          .filter(software => software.software_product_id)
+          .map(software => fetchLicensesForProduct(software.software_product_id, software.license_id))
+        await Promise.all(licensePromises)
       }
     } catch (error) {
       console.error('Error fetching software installations:', error)
@@ -267,6 +299,7 @@ const AssetInventory = () => {
       product_id: asset.product_id,
       assigned_to: asset.assigned_to,
       status: asset.status,
+      importance: asset.importance || 'medium',
       condition_status: asset.condition_status,
       asset_type: asset.asset_type || 'standalone',
       parent_asset_id: asset.parent_asset_id,
@@ -276,6 +309,8 @@ const AssetInventory = () => {
       warranty_end_date: asset.warranty_end_date ? dayjs(asset.warranty_end_date) : null,
       eol_date: asset.eol_date ? dayjs(asset.eol_date) : null,
       eos_date: asset.eos_date ? dayjs(asset.eos_date) : null,
+      vendor_id: asset.vendor_id,
+      invoice_number: asset.invoice_number,
       purchase_cost: asset.purchase_cost,
       notes: asset.notes,
       software_installations: softwareInstallations
@@ -299,6 +334,21 @@ const AssetInventory = () => {
       // Format dates to YYYY-MM-DD for API
       const formattedValues = { ...values }
 
+      // Ensure UUID fields are strings (not arrays) - fix for form caching issues
+      const uuidFields = ['vendor_id', 'product_id', 'assigned_to', 'parent_asset_id']
+      uuidFields.forEach(field => {
+        if (formattedValues[field]) {
+          // If it's an array, take the first value
+          if (Array.isArray(formattedValues[field])) {
+            formattedValues[field] = formattedValues[field][0] || null
+          }
+          // Ensure it's a string
+          if (formattedValues[field] && typeof formattedValues[field] !== 'string') {
+            formattedValues[field] = String(formattedValues[field])
+          }
+        }
+      })
+
       // Format warranty and lifecycle dates
       if (formattedValues.warranty_start_date) {
         formattedValues.warranty_start_date = formattedValues.warranty_start_date.format('YYYY-MM-DD')
@@ -313,12 +363,29 @@ const AssetInventory = () => {
         formattedValues.eos_date = formattedValues.eos_date.format('YYYY-MM-DD')
       }
 
-      // Format software installation dates
+      // Format software installation dates and validate installation dates
       if (formattedValues.software_installations && formattedValues.software_installations.length > 0) {
+        // Validate installation dates against license pool expiration dates
+        for (const software of formattedValues.software_installations) {
+          if (software.license_id && software.installation_date) {
+            const licensePool = productLicenses[software.software_product_id]?.find(l => l.id === software.license_id)
+            if (licensePool?.expiration_date) {
+              const installationDate = software.installation_date.format ? software.installation_date : dayjs(software.installation_date)
+              const licenseExpDate = dayjs(licensePool.expiration_date)
+              if (installationDate.isAfter(licenseExpDate)) {
+                message.error(`Installation date cannot be after license pool expiration date (${licenseExpDate.format('YYYY-MM-DD')})`)
+                return
+              }
+            }
+          }
+        }
+
         formattedValues.software_installations = formattedValues.software_installations.map(software => ({
           ...software,
-          activation_date: software.activation_date ? software.activation_date.format('YYYY-MM-DD') : null,
-          expiration_date: software.expiration_date ? software.expiration_date.format('YYYY-MM-DD') : null
+          // Ensure license_id is a string
+          license_id: software.license_id ? (Array.isArray(software.license_id) ? software.license_id[0] : software.license_id) : null,
+          software_product_id: software.software_product_id ? (Array.isArray(software.software_product_id) ? software.software_product_id[0] : software.software_product_id) : null,
+          installation_date: software.installation_date ? (software.installation_date.format ? software.installation_date.format('YYYY-MM-DD') : software.installation_date) : null
         }))
       }
 
@@ -393,6 +460,100 @@ const AssetInventory = () => {
   const handleManageComponents = (asset) => {
     setManagingComponentsAsset(asset)
     setComponentDrawerVisible(true)
+  }
+
+  const handleGenerateLabel = (asset) => {
+    setLabelAssetId(asset.id)
+    setLabelPreviewVisible(true)
+  }
+
+  const handleBulkLabelGeneration = async (assetIds, filename) => {
+    setBulkGenerating(true)
+    try {
+      const response = await assetService.downloadBulkLabels(assetIds)
+      const blob = new Blob([response.data], { type: 'application/pdf' })
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = filename
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
+      message.success(`Successfully generated ${assetIds.length} label(s)`)
+    } catch (error) {
+      console.error('Error generating bulk labels:', error)
+      message.error(error.message || 'Failed to generate labels')
+    } finally {
+      setBulkGenerating(false)
+    }
+  }
+
+  const handleGenerateSelectedLabels = () => {
+    if (selectedRowKeys.length === 0) {
+      message.warning('Please select at least one asset')
+      return
+    }
+
+    Modal.confirm({
+      title: 'Generate Labels',
+      content: `Are you sure you want to generate labels for ${selectedRowKeys.length} selected asset(s)?`,
+      icon: <QrcodeOutlined className="text-blue-500" />,
+      okText: 'Generate',
+      onOk: () => {
+        handleBulkLabelGeneration(
+          selectedRowKeys,
+          `asset-labels-selected-${Date.now()}.pdf`
+        )
+      }
+    })
+  }
+
+  const handleGenerateAllLabels = () => {
+    const totalAssets = assets.pagination?.total || 0
+
+    if (totalAssets === 0) {
+      message.warning('No assets available to generate labels')
+      return
+    }
+
+    if (totalAssets > 2000) {
+      message.error('Too many assets. Please apply filters to reduce the count below 2000.')
+      return
+    }
+
+    Modal.confirm({
+      title: 'Generate All Labels',
+      content: (
+        <div>
+          <p>Are you sure you want to generate labels for all {totalAssets} asset(s)?</p>
+          <p className="text-gray-500 text-sm mt-2">This may take a few moments depending on the number of assets.</p>
+        </div>
+      ),
+      icon: <QrcodeOutlined className="text-blue-500" />,
+      okText: 'Generate',
+      onOk: async () => {
+        setBulkGenerating(true)
+        try {
+          const response = await assetService.downloadAllLabels(filters)
+          const blob = new Blob([response.data], { type: 'application/pdf' })
+          const url = window.URL.createObjectURL(blob)
+          const link = document.createElement('a')
+          link.href = url
+          link.download = `asset-labels-all-${Date.now()}.pdf`
+          document.body.appendChild(link)
+          link.click()
+          document.body.removeChild(link)
+          window.URL.revokeObjectURL(url)
+          message.success(`Successfully generated ${totalAssets} label(s)`)
+        } catch (error) {
+          console.error('Error generating all labels:', error)
+          message.error(error.message || 'Failed to generate labels')
+        } finally {
+          setBulkGenerating(false)
+        }
+      }
+    })
   }
 
   const handleAssignAsset = async (values) => {
@@ -555,6 +716,50 @@ const AssetInventory = () => {
       board_id: filters?.board_id || '',
       serial_number: filters?.serial_number || ''
     })
+  }
+
+  // Fetch available licenses for a software product
+  // includeLicenseId: optional - include a specific license even if fully allocated (for editing)
+  const fetchLicensesForProduct = async (productId, includeLicenseId = null) => {
+    if (!productId) return []
+
+    // When editing with a specific license, always fetch fresh to include that license
+    const cacheKey = includeLicenseId ? `${productId}_${includeLicenseId}` : productId
+
+    // Check if we already have licenses for this product cached
+    if (!includeLicenseId && productLicenses[productId]) return productLicenses[productId]
+
+    try {
+      const response = await licenseService.getLicensesForProduct(productId, includeLicenseId)
+      if (response.data?.success && response.data?.data) {
+        const licenses = response.data.data
+        setProductLicenses(prev => ({
+          ...prev,
+          [productId]: licenses
+        }))
+        return licenses
+      }
+    } catch (error) {
+      console.error('Error fetching licenses for product:', error)
+    }
+    return []
+  }
+
+  // Handle software product selection - fetch available licenses and auto-populate software_type
+  const handleSoftwareProductChange = (productId, fieldIndex) => {
+    if (productId) {
+      fetchLicensesForProduct(productId)
+      // Find the selected product to get its software_type
+      const selectedProduct = softwareProducts.find(p => p.id === productId)
+      // Update the form with cleared license and auto-populated software_type
+      const softwareInstallations = form.getFieldValue('software_installations') || []
+      if (softwareInstallations[fieldIndex]) {
+        softwareInstallations[fieldIndex].license_id = undefined
+        // Auto-populate software_type from the product
+        softwareInstallations[fieldIndex].software_type = selectedProduct?.software_type || 'application'
+        form.setFieldsValue({ software_installations: softwareInstallations })
+      }
+    }
   }
 
   // Fetch serial numbers for autocomplete based on search
@@ -995,6 +1200,32 @@ const AssetInventory = () => {
       }
     },
     {
+      title: <span className="font-semibold text-gray-700">Importance</span>,
+      key: 'importance',
+      width: 100,
+      align: 'center',
+      render: (_, record) => {
+        const importanceConfig = {
+          critical: { color: 'red', label: 'Critical' },
+          high: { color: 'orange', label: 'High' },
+          medium: { color: 'blue', label: 'Medium' },
+          low: { color: 'green', label: 'Low' }
+        };
+
+        const config = importanceConfig[record.importance] || { color: 'default', label: record.importance || 'Medium' };
+
+        return (
+          <Tag
+            color={config.color}
+            className="font-medium"
+            style={{ minWidth: '70px', textAlign: 'center' }}
+          >
+            {config.label}
+          </Tag>
+        )
+      }
+    },
+    {
       title: <span className="font-semibold text-gray-700">Actions</span>,
       key: 'action',
       fixed: 'right',
@@ -1039,6 +1270,12 @@ const AssetInventory = () => {
                     label: 'Tag Asset',
                     icon: <TagOutlined />,
                     onClick: () => handleTagAsset(record)
+                  },
+                  {
+                    key: 'generate-label',
+                    label: 'Generate Label',
+                    icon: <QrcodeOutlined />,
+                    onClick: () => handleGenerateLabel(record)
                   },
                   {
                     type: 'divider'
@@ -1534,11 +1771,11 @@ const AssetInventory = () => {
             className="h-full"
           >
             {statusDistribution.length > 0 ? (
-              <div>
+              <div className="flex flex-col h-full">
                 <div className="text-center mb-4">
                   <StatusPieChart data={statusDistribution} />
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-2 mb-4">
                   {statusDistribution.map((item, index) => (
                     <div key={index} className="flex justify-between items-center">
                       <div className="flex items-center">
@@ -1552,10 +1789,10 @@ const AssetInventory = () => {
                     </div>
                   ))}
                 </div>
-                <div className="mt-4 text-center">
-                  <div className="flex items-center justify-center text-blue-500 text-sm">
-                    <InfoCircleOutlined className="mr-1" />
-                    Status Check - {statistics.data?.availableAssets || 0} assets available for immediate deployment
+                <div className="mt-auto pt-4 border-t">
+                  <div className="flex items-center text-blue-500 text-sm">
+                    <InfoCircleOutlined className="mr-2" />
+                    <span>Status Check - {statistics.data?.availableAssets || 0} assets available for immediate deployment</span>
                   </div>
                 </div>
               </div>
@@ -1577,7 +1814,7 @@ const AssetInventory = () => {
             }
             loading={statistics.loading}
             className="h-full"
-            extra={<Button type="link" className="text-blue-500 text-xs sm:text-sm" size="small">View All</Button>}
+            extra={<Button type="link" className="text-blue-500 text-xs sm:text-sm" size="small" onClick={() => navigate('/assets/lifecycle')}>View All</Button>}
           >
             <div className="space-y-2 sm:space-y-3">
               {criticalAlerts.length > 0 ? (
@@ -1590,7 +1827,8 @@ const AssetInventory = () => {
                     'eos_approaching': { bg: 'bg-orange-50', border: 'border-orange-500', color: 'bg-orange-500', label: 'EOS Approaching', desc: 'Assets reaching end of support within 3 months' },
                     'eos_reached': { bg: 'bg-red-50', border: 'border-red-600', color: 'bg-red-600', label: 'EOS Reached', desc: 'Assets that reached end of support' },
                     'licenses_expiring': { bg: 'bg-purple-50', border: 'border-purple-400', color: 'bg-purple-400', label: 'Licenses Expiring Soon', desc: 'Software licenses expiring within 30 days' },
-                    'licenses_expired': { bg: 'bg-purple-50', border: 'border-purple-500', color: 'bg-purple-500', label: 'Licenses Expired', desc: 'Software licenses that have expired' }
+                    'licenses_expired': { bg: 'bg-purple-50', border: 'border-purple-500', color: 'bg-purple-500', label: 'Licenses Expired', desc: 'Software licenses that have expired' },
+                    'under_repair': { bg: 'bg-yellow-50', border: 'border-yellow-500', color: 'bg-yellow-500', label: 'Under Repair', desc: 'Assets currently under repair' }
                   }
                   const config = alertConfig[alert.type] || { bg: 'bg-gray-50', border: 'border-gray-400', color: 'bg-gray-400', label: alert.type, desc: '' }
 
@@ -1670,6 +1908,27 @@ const AssetInventory = () => {
               <span className="hidden lg:inline">View Deleted Assets</span>
               <span className="inline lg:hidden">Deleted</span>
             </Button>
+            <Button
+              icon={<QrcodeOutlined />}
+              onClick={handleGenerateSelectedLabels}
+              disabled={selectedRowKeys.length === 0}
+              loading={bulkGenerating}
+              size="small"
+              className="border-purple-500 text-purple-500 hover:bg-purple-50"
+            >
+              <span className="hidden md:inline">Generate Labels ({selectedRowKeys.length})</span>
+              <span className="inline md:hidden">Labels ({selectedRowKeys.length})</span>
+            </Button>
+            <Button
+              icon={<QrcodeOutlined />}
+              onClick={handleGenerateAllLabels}
+              loading={bulkGenerating}
+              size="small"
+              className="border-green-500 text-green-500 hover:bg-green-50"
+            >
+              <span className="hidden lg:inline">Generate All Labels ({assets.pagination?.total || 0})</span>
+              <span className="inline lg:hidden">All Labels</span>
+            </Button>
           </Space>
         </div>
 
@@ -1678,6 +1937,15 @@ const AssetInventory = () => {
           dataSource={assets.data}
           rowKey="id"
           loading={assets.loading}
+          rowSelection={{
+            selectedRowKeys,
+            onChange: (keys) => setSelectedRowKeys(keys),
+            selections: [
+              Table.SELECTION_ALL,
+              Table.SELECTION_INVERT,
+              Table.SELECTION_NONE,
+            ],
+          }}
           pagination={{
             current: assets.pagination?.page || 1,
             pageSize: assets.pagination?.limit || 10,
@@ -1705,14 +1973,25 @@ const AssetInventory = () => {
         />
       </Card>
 
-      {/* Add/Edit Modal - Responsive */}
-      <Modal
-        title={<span className="text-sm sm:text-base">{editingAsset ? 'Edit Asset' : 'Add New Asset'}</span>}
+      {/* Add/Edit Asset - Responsive Drawer */}
+      <Drawer
+        title={<span className="text-sm sm:text-base font-semibold">{editingAsset ? 'Edit Asset' : 'Add New Asset'}</span>}
         open={isAddModalVisible}
-        onCancel={handleCancel}
-        footer={null}
-        width={typeof window !== 'undefined' && window.innerWidth < 640 ? '95vw' : 600}
-        className="responsive-modal"
+        onClose={handleCancel}
+        width={typeof window !== 'undefined' && window.innerWidth < 768 ? '100%' : 720}
+        placement="right"
+        className="asset-form-drawer"
+        styles={{
+          body: { paddingBottom: 80 }
+        }}
+        extra={
+          <Space>
+            <Button onClick={handleCancel}>Cancel</Button>
+            <Button type="primary" onClick={() => form.submit()} loading={assets.loading}>
+              {editingAsset ? 'Update' : 'Create'}
+            </Button>
+          </Space>
+        }
       >
         <Form
           form={form}
@@ -1789,6 +2068,20 @@ const AssetInventory = () => {
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item
+                name="importance"
+                label="Importance"
+                initialValue="medium"
+              >
+                <Select placeholder="Select importance level">
+                  <Option value="critical">Critical</Option>
+                  <Option value="high">High</Option>
+                  <Option value="medium">Medium</Option>
+                  <Option value="low">Low</Option>
+                </Select>
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
                 name="condition_status"
                 label="Condition"
               >
@@ -1800,6 +2093,9 @@ const AssetInventory = () => {
                 </Select>
               </Form.Item>
             </Col>
+          </Row>
+
+          <Row gutter={16}>
             <Col span={12}>
               <Form.Item
                 name="asset_type"
@@ -1902,127 +2198,137 @@ const AssetInventory = () => {
             }}
           </Form.Item>
 
-          <Divider orientation="left">Warranty & Lifecycle</Divider>
-
-          <Row gutter={16}>
-            <Col xs={24} sm={12}>
-              <Form.Item
-                name="warranty_start_date"
-                label="Warranty Start Date"
-              >
-                <DatePicker
-                  style={{ width: '100%' }}
-                  format="YYYY-MM-DD"
-                  placeholder="Select warranty start date"
-                />
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={12}>
-              <Form.Item
-                name="warranty_end_date"
-                label="Warranty End Date"
-              >
-                <DatePicker
-                  style={{ width: '100%' }}
-                  format="YYYY-MM-DD"
-                  placeholder="Select warranty end date"
-                />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col xs={24} sm={12}>
-              <Form.Item
-                name="eol_date"
-                label="Expected End of Life (EOL)"
-                extra="When product is completely discontinued/retired"
-              >
-                <DatePicker
-                  style={{ width: '100%' }}
-                  format="YYYY-MM-DD"
-                  placeholder="Select expected EOL date"
-                />
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={12}>
-              <Form.Item
-                name="eos_date"
-                label="Expected End of Support (EOS)"
-                extra="Must be before or equal to EOL - when manufacturer stops providing support"
-              >
-                <DatePicker
-                  style={{ width: '100%' }}
-                  format="YYYY-MM-DD"
-                  placeholder="Select expected EOS date"
-                />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Divider orientation="left">Purchase Information</Divider>
-
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                name="purchase_cost"
-                label="Purchase Cost"
-              >
-                <Input type="number" placeholder="Enter cost" />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Form.Item
-            name="notes"
-            label="Notes"
-          >
-            <Input.TextArea rows={3} placeholder="Enter any additional notes" />
-          </Form.Item>
-
-          <Divider orientation="left">Software & Licenses (Optional)</Divider>
-
-          <Form.List name="software_installations">
-            {(fields, { add, remove }) => (
-              <>
-                {fields.map(({ key, name, ...restField }) => (
-                  <div key={key} style={{ marginBottom: 16, padding: 16, border: '1px solid #f0f0f0', borderRadius: 4 }}>
+          <Collapse
+            defaultActiveKey={editingAsset ? ['warranty', 'purchase'] : []}
+            ghost
+            style={{ marginTop: 16 }}
+            items={[
+              {
+                key: 'warranty',
+                label: <span className="font-medium text-gray-700">Warranty & Lifecycle</span>,
+                children: (
+                  <>
                     <Row gutter={16}>
                       <Col xs={24} sm={12}>
                         <Form.Item
-                          {...restField}
-                          name={[name, 'software_product_id']}
-                          label="Software Product"
-                          rules={[{ required: true, message: 'Please select software' }]}
+                          name="warranty_start_date"
+                          label="Warranty Start Date"
+                        >
+                          <DatePicker
+                            style={{ width: '100%' }}
+                            format="YYYY-MM-DD"
+                            placeholder="Select start date"
+                            presets={[
+                              { label: 'Today', value: dayjs() },
+                              { label: 'Yesterday', value: dayjs().subtract(1, 'day') },
+                              { label: 'Last Week', value: dayjs().subtract(1, 'week') },
+                              { label: 'Last Month', value: dayjs().subtract(1, 'month') },
+                            ]}
+                            onChange={(date) => {
+                              // Auto-suggest warranty end date when start date is selected
+                              if (date && !form.getFieldValue('warranty_end_date')) {
+                                // Don't auto-set, just highlight the field
+                              }
+                            }}
+                          />
+                        </Form.Item>
+                      </Col>
+                      <Col xs={24} sm={12}>
+                        <Form.Item
+                          name="warranty_end_date"
+                          label="Warranty End Date"
+                        >
+                          <DatePicker
+                            style={{ width: '100%' }}
+                            format="YYYY-MM-DD"
+                            placeholder="Select end date"
+                            presets={[
+                              { label: '+1 Year', value: dayjs().add(1, 'year') },
+                              { label: '+2 Years', value: dayjs().add(2, 'year') },
+                              { label: '+3 Years', value: dayjs().add(3, 'year') },
+                              { label: '+5 Years', value: dayjs().add(5, 'year') },
+                            ]}
+                          />
+                        </Form.Item>
+                      </Col>
+                    </Row>
+
+                    <Row gutter={16}>
+                      <Col xs={24} sm={12}>
+                        <Form.Item
+                          name="eol_date"
+                          label="Expected End of Life (EOL)"
+                          extra="When product is discontinued"
+                        >
+                          <DatePicker
+                            style={{ width: '100%' }}
+                            format="YYYY-MM-DD"
+                            placeholder="Select EOL date"
+                            presets={[
+                              { label: '+3 Years', value: dayjs().add(3, 'year') },
+                              { label: '+5 Years', value: dayjs().add(5, 'year') },
+                              { label: '+7 Years', value: dayjs().add(7, 'year') },
+                              { label: '+10 Years', value: dayjs().add(10, 'year') },
+                            ]}
+                          />
+                        </Form.Item>
+                      </Col>
+                      <Col xs={24} sm={12}>
+                        <Form.Item
+                          name="eos_date"
+                          label="Expected End of Support (EOS)"
+                          extra="When support ends"
+                        >
+                          <DatePicker
+                            style={{ width: '100%' }}
+                            format="YYYY-MM-DD"
+                            placeholder="Select EOS date"
+                            presets={[
+                              { label: '+2 Years', value: dayjs().add(2, 'year') },
+                              { label: '+4 Years', value: dayjs().add(4, 'year') },
+                              { label: '+6 Years', value: dayjs().add(6, 'year') },
+                              { label: '+8 Years', value: dayjs().add(8, 'year') },
+                            ]}
+                          />
+                        </Form.Item>
+                      </Col>
+                    </Row>
+                  </>
+                )
+              },
+              {
+                key: 'purchase',
+                label: <span className="font-medium text-gray-700">Purchase Information</span>,
+                children: (
+                  <>
+                    <Row gutter={16}>
+                      <Col xs={24} sm={12}>
+                        <Form.Item
+                          name="vendor_id"
+                          label="Vendor"
                         >
                           <Select
-                            placeholder="Select software product"
+                            placeholder="Select vendor"
+                            allowClear
                             showSearch
                             optionFilterProp="children"
                             filterOption={(input, option) =>
                               (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
                             }
-                            options={softwareProducts.map(product => ({
-                              value: product.id,
-                              label: `${product.name}${product.model ? ` - ${product.model}` : ''}`
-                            }))}
-                            loading={products.loading}
+                            options={vendors?.data?.map(vendor => ({
+                              value: vendor.id,
+                              label: vendor.name
+                            })) || []}
+                            loading={vendors?.loading}
                           />
                         </Form.Item>
                       </Col>
                       <Col xs={24} sm={12}>
                         <Form.Item
-                          {...restField}
-                          name={[name, 'software_type']}
-                          label="Software Type"
-                          initialValue="application"
+                          name="invoice_number"
+                          label="Invoice Number"
                         >
-                          <Select placeholder="Select type">
-                            <Option value="operating_system">Operating System</Option>
-                            <Option value="application">Application</Option>
-                            <Option value="utility">Utility</Option>
-                            <Option value="driver">Driver</Option>
-                          </Select>
+                          <Input placeholder="Enter invoice number" />
                         </Form.Item>
                       </Col>
                     </Row>
@@ -2030,104 +2336,238 @@ const AssetInventory = () => {
                     <Row gutter={16}>
                       <Col xs={24} sm={12}>
                         <Form.Item
-                          {...restField}
-                          name={[name, 'license_key']}
-                          label="License Key"
+                          name="purchase_cost"
+                          label="Purchase Cost"
                         >
-                          <Input placeholder="Enter license key" />
-                        </Form.Item>
-                      </Col>
-                      <Col xs={24} sm={12}>
-                        <Form.Item
-                          {...restField}
-                          name={[name, 'license_type']}
-                          label="License Type"
-                          initialValue="oem"
-                        >
-                          <Select placeholder="Select license type">
-                            <Option value="oem">OEM</Option>
-                            <Option value="retail">Retail</Option>
-                            <Option value="volume">Volume</Option>
-                            <Option value="subscription">Subscription</Option>
-                          </Select>
+                          <Input type="number" prefix="₹" placeholder="Enter cost" />
                         </Form.Item>
                       </Col>
                     </Row>
+                  </>
+                )
+              }
+            ]}
+          />
 
-                    <Row gutter={16}>
-                      <Col xs={24} sm={12}>
-                        <Form.Item
-                          {...restField}
-                          name={[name, 'activation_date']}
-                          label="Activation Date"
-                        >
-                          <DatePicker
-                            style={{ width: '100%' }}
-                            format="YYYY-MM-DD"
-                            placeholder="Select activation date"
-                          />
+          <Form.Item
+            name="notes"
+            label="Notes"
+            style={{ marginTop: 16 }}
+          >
+            <Input.TextArea rows={3} placeholder="Enter any additional notes" />
+          </Form.Item>
+
+          <Collapse
+            ghost
+            style={{ marginTop: 8 }}
+            items={[
+              {
+                key: 'software',
+                label: <span className="font-medium text-gray-700">Software & Licenses (Optional)</span>,
+                children: (
+                  <Form.List name="software_installations">
+                    {(fields, { add, remove }) => (
+                      <>
+                        {fields.map(({ key, name, ...restField }) => (
+                          <div key={key} style={{ marginBottom: 16, padding: 16, border: '1px solid #f0f0f0', borderRadius: 4 }}>
+                            <Row gutter={16}>
+                              <Col xs={24} sm={12}>
+                                <Form.Item
+                                  {...restField}
+                                  name={[name, 'software_product_id']}
+                                  label="Software Product"
+                                  rules={[{ required: true, message: 'Please select software' }]}
+                                >
+                                  <Select
+                                    placeholder="Select software product"
+                                    showSearch
+                                    optionFilterProp="children"
+                                    filterOption={(input, option) =>
+                                      (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                                    }
+                                    options={softwareProducts.map(product => ({
+                                      value: product.id,
+                                      label: `${product.name}${product.model ? ` - ${product.model}` : ''}`
+                                    }))}
+                                    loading={products.loading}
+                                    onChange={(value) => handleSoftwareProductChange(value, name)}
+                                  />
+                                </Form.Item>
+                              </Col>
+                              <Col xs={24} sm={12}>
+                                <Form.Item
+                                  {...restField}
+                                  name={[name, 'software_type']}
+                                  label={
+                                    <span>
+                                      Software Type{' '}
+                                      <Tooltip title="Auto-populated from the selected software product">
+                                        <InfoCircleOutlined style={{ color: '#1890ff' }} />
+                                      </Tooltip>
+                                    </span>
+                                  }
+                                  initialValue="application"
+                                >
+                                  <Select placeholder="Auto-populated from product" disabled>
+                                    <Option value="operating_system">Operating System</Option>
+                                    <Option value="application">Application</Option>
+                                    <Option value="utility">Utility</Option>
+                                    <Option value="driver">Driver</Option>
+                                  </Select>
+                                </Form.Item>
+                              </Col>
+                            </Row>
+
+                            {/* License Pool - Select from organizational license pools */}
+                            <Form.Item
+                              noStyle
+                              shouldUpdate={(prevValues, currentValues) =>
+                                prevValues?.software_installations?.[name]?.software_product_id !==
+                                currentValues?.software_installations?.[name]?.software_product_id
+                              }
+                            >
+                              {({ getFieldValue }) => {
+                                const selectedProductId = getFieldValue(['software_installations', name, 'software_product_id'])
+                                const availableLicenses = productLicenses[selectedProductId] || []
+
+                                return (
+                                  <Row gutter={16}>
+                                    <Col span={24}>
+                                      <Form.Item
+                                        {...restField}
+                                        name={[name, 'license_id']}
+                                        label={
+                                          <span>
+                                            License Pool{' '}
+                                            <Tooltip title="Select from organizational license pools. License key will be auto-assigned from the pool.">
+                                              <InfoCircleOutlined style={{ color: '#1890ff' }} />
+                                            </Tooltip>
+                                          </span>
+                                        }
+                                      >
+                                        <Select
+                                          placeholder={!selectedProductId ? "Select software first" : "Select license pool"}
+                                          allowClear
+                                          disabled={!selectedProductId}
+                                          notFoundContent={selectedProductId ? "No licenses available for this software" : "Select software first"}
+                                          popupMatchSelectWidth={false}
+                                          style={{ width: '100%' }}
+                                          optionLabelProp="label"
+                                        >
+                                          {availableLicenses.map(license => {
+                                            const typeLabels = {
+                                              per_user: 'User',
+                                              per_device: 'Device',
+                                              concurrent: 'Concurrent',
+                                              site: 'Site',
+                                              volume: 'Volume'
+                                            }
+                                            const typeColors = {
+                                              per_user: 'blue',
+                                              per_device: 'green',
+                                              concurrent: 'purple',
+                                              site: 'gold',
+                                              volume: 'cyan'
+                                            }
+                                            const displayName = license.license_name.length > 35
+                                              ? license.license_name.substring(0, 35) + '...'
+                                              : license.license_name
+                                            return (
+                                              <Option
+                                                key={license.id}
+                                                value={license.id}
+                                                disabled={license.available_licenses <= 0}
+                                                label={displayName}
+                                              >
+                                                <Tooltip title={license.license_name} placement="left">
+                                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', minWidth: 350 }}>
+                                                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 220 }}>
+                                                      {license.license_name}
+                                                    </span>
+                                                    <Space size={4} style={{ flexShrink: 0, marginLeft: 8 }}>
+                                                      <Tag color={typeColors[license.license_type] || 'default'} style={{ margin: 0, fontSize: 11 }}>
+                                                        {typeLabels[license.license_type] || license.license_type}
+                                                      </Tag>
+                                                      <Tag color={license.available_licenses > 0 ? 'green' : 'red'} style={{ margin: 0, fontSize: 11 }}>
+                                                        {license.available_licenses}/{license.total_licenses}
+                                                      </Tag>
+                                                    </Space>
+                                                  </div>
+                                                </Tooltip>
+                                              </Option>
+                                            )
+                                          })}
+                                        </Select>
+                                      </Form.Item>
+                                    </Col>
+                                  </Row>
+                                )
+                              }}
+                            </Form.Item>
+
+                            <Row gutter={16}>
+                              <Col xs={24} sm={12}>
+                                <Form.Item
+                                  {...restField}
+                                  name={[name, 'installation_date']}
+                                  label="Installation Date (Optional)"
+                                  tooltip="Date when the software was installed on this asset"
+                                >
+                                  <DatePicker
+                                    style={{ width: '100%' }}
+                                    format="YYYY-MM-DD"
+                                    placeholder="Select date"
+                                    presets={[
+                                      { label: 'Today', value: dayjs() },
+                                      { label: 'Yesterday', value: dayjs().subtract(1, 'day') },
+                                    ]}
+                                  />
+                                </Form.Item>
+                              </Col>
+                            </Row>
+
+                            <Row gutter={16}>
+                              <Col span={24}>
+                                <Form.Item
+                                  {...restField}
+                                  name={[name, 'notes']}
+                                  label="Installation Notes (Optional)"
+                                >
+                                  <Input.TextArea rows={2} placeholder="Enter installation notes" />
+                                </Form.Item>
+                              </Col>
+                            </Row>
+
+                            <Button
+                              type="dashed"
+                              danger
+                              onClick={() => remove(name)}
+                              block
+                              icon={<MinusCircleOutlined />}
+                            >
+                              Remove Software
+                            </Button>
+                          </div>
+                        ))}
+                        <Form.Item>
+                          <Button
+                            type="dashed"
+                            onClick={() => add()}
+                            block
+                            icon={<PlusOutlined />}
+                          >
+                            Add Software Installation
+                          </Button>
                         </Form.Item>
-                      </Col>
-                      <Col xs={24} sm={12}>
-                        <Form.Item
-                          {...restField}
-                          name={[name, 'expiration_date']}
-                          label="Expiration Date"
-                        >
-                          <DatePicker
-                            style={{ width: '100%' }}
-                            format="YYYY-MM-DD"
-                            placeholder="Select expiration date"
-                          />
-                        </Form.Item>
-                      </Col>
-                    </Row>
-
-                    <Row gutter={16}>
-                      <Col span={24}>
-                        <Form.Item
-                          {...restField}
-                          name={[name, 'notes']}
-                          label="Installation Notes"
-                        >
-                          <Input.TextArea rows={2} placeholder="Enter installation notes" />
-                        </Form.Item>
-                      </Col>
-                    </Row>
-
-                    <Button
-                      type="dashed"
-                      danger
-                      onClick={() => remove(name)}
-                      block
-                      icon={<MinusCircleOutlined />}
-                    >
-                      Remove Software
-                    </Button>
-                  </div>
-                ))}
-                <Form.Item>
-                  <Button
-                    type="dashed"
-                    onClick={() => add()}
-                    block
-                    icon={<PlusOutlined />}
-                  >
-                    Add Software Installation
-                  </Button>
-                </Form.Item>
-              </>
-            )}
-          </Form.List>
-
-          <div className="flex justify-end space-x-2">
-            <Button onClick={handleCancel}>Cancel</Button>
-            <Button type="primary" htmlType="submit" loading={assets.loading}>
-              {editingAsset ? 'Update' : 'Create'} Asset
-            </Button>
-          </div>
+                      </>
+                    )}
+                  </Form.List>
+                )
+              }
+            ]}
+          />
         </Form>
-      </Modal>
+      </Drawer>
 
       {/* Deleted Assets Modal - Responsive */}
       <Modal
@@ -2262,10 +2702,22 @@ const AssetInventory = () => {
             Close
           </Button>
         ]}
-        width={typeof window !== 'undefined' && window.innerWidth < 640 ? '95vw' : typeof window !== 'undefined' && window.innerWidth < 768 ? '90vw' : 700}
+        width={typeof window !== 'undefined' && window.innerWidth < 640 ? '95vw' : typeof window !== 'undefined' && window.innerWidth < 768 ? '90vw' : 900}
         className="responsive-modal"
       >
         {viewingAsset && (
+          <Tabs
+            defaultActiveKey="details"
+            items={[
+              {
+                key: 'details',
+                label: (
+                  <span>
+                    <InfoCircleOutlined />
+                    Details
+                  </span>
+                ),
+                children: (
           <div className="space-y-4">
             <Row gutter={[8, 8]}>
               <Col xs={24} sm={12} md={8}>
@@ -2286,6 +2738,21 @@ const AssetInventory = () => {
                   <div className="mt-1">
                     <Tag color={getStatusColor(viewingAsset.status)} className="text-xs sm:text-sm">
                       {viewingAsset.status ? viewingAsset.status.charAt(0).toUpperCase() + viewingAsset.status.slice(1).replace('_', ' ') : 'N/A'}
+                    </Tag>
+                  </div>
+                </div>
+              </Col>
+              <Col xs={24} sm={12} md={8}>
+                <div className="bg-gray-50 p-2 sm:p-3 rounded">
+                  <Text type="secondary" className="text-xs">Importance</Text>
+                  <div className="mt-1">
+                    <Tag color={
+                      viewingAsset.importance === 'critical' ? 'red' :
+                      viewingAsset.importance === 'high' ? 'orange' :
+                      viewingAsset.importance === 'medium' ? 'blue' :
+                      viewingAsset.importance === 'low' ? 'green' : 'default'
+                    } className="text-xs sm:text-sm">
+                      {viewingAsset.importance ? viewingAsset.importance.charAt(0).toUpperCase() + viewingAsset.importance.slice(1) : 'Medium'}
                     </Tag>
                   </div>
                 </div>
@@ -2382,6 +2849,14 @@ const AssetInventory = () => {
 
             <Divider orientation="left"><span className="text-sm">Purchase Information</span></Divider>
             <Row gutter={[8, 8]}>
+              <Col xs={24} sm={12}>
+                <Text type="secondary" className="text-xs sm:text-sm">Vendor:</Text>
+                <div className="font-medium text-sm sm:text-base">{viewingAsset.vendor_name || 'N/A'}</div>
+              </Col>
+              <Col xs={24} sm={12}>
+                <Text type="secondary" className="text-xs sm:text-sm">Invoice Number:</Text>
+                <div className="font-medium text-sm sm:text-base">{viewingAsset.invoice_number || 'N/A'}</div>
+              </Col>
               <Col xs={24} sm={12}>
                 <Text type="secondary" className="text-xs sm:text-sm">Purchase Date:</Text>
                 <div className="font-medium text-sm sm:text-base">
@@ -2504,6 +2979,26 @@ const AssetInventory = () => {
               <Alert message="Unable to load software installations" type="warning" />
             )}
           </div>
+                )
+              },
+              {
+                key: 'repair-history',
+                label: (
+                  <span>
+                    <ToolOutlined />
+                    Repair History
+                  </span>
+                ),
+                children: (
+                  <AssetRepairHistory
+                    assetId={viewingAsset.id}
+                    assetTag={viewingAsset.asset_tag}
+                    viewMode="table"
+                  />
+                )
+              }
+            ]}
+          />
         )}
       </Modal>
 
@@ -2539,6 +3034,12 @@ const AssetInventory = () => {
                   <div className="font-medium">{assigningAsset.product_model || 'N/A'}</div>
                 </div>
                 <div>
+                  <Text type="secondary">Category:</Text>
+                  <div className="font-medium">
+                    <Tag color="purple">{assigningAsset.category_name || 'N/A'}</Tag>
+                  </div>
+                </div>
+                <div>
                   <Text type="secondary">Current Status:</Text>
                   <div>
                     <Tag color={assigningAsset.assigned_to ? 'blue' : 'green'}>
@@ -2555,6 +3056,10 @@ const AssetInventory = () => {
               </div>
             </div>
           )}
+          <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded text-xs text-blue-700">
+            <InfoCircleOutlined className="mr-1" />
+            <strong>Note:</strong> Users can only be assigned one asset per category/subcategory type unless the "Allow Multiple Assets" flag is enabled on their profile.
+          </div>
         </div>
 
         <Form
@@ -2888,6 +3393,16 @@ const AssetInventory = () => {
           />
         )}
       </Drawer>
+
+      {/* Asset Label Preview Modal */}
+      <AssetLabelPreview
+        visible={labelPreviewVisible}
+        onClose={() => {
+          setLabelPreviewVisible(false)
+          setLabelAssetId(null)
+        }}
+        assetId={labelAssetId}
+      />
     </div>
   )
 }

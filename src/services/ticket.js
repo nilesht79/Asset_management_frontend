@@ -132,6 +132,19 @@ const ticketService = {
   },
 
   /**
+   * Get filter options - returns only values that exist in database
+   */
+  getFilterOptions: async () => {
+    try {
+      const response = await apiClient.get('/tickets/filter-options');
+      return response;
+    } catch (error) {
+      console.error('Error fetching filter options:', error);
+      throw error;
+    }
+  },
+
+  /**
    * Export tickets to Excel
    */
   exportTickets: async (filters = {}) => {
@@ -177,6 +190,93 @@ const ticketService = {
   },
 
   /**
+   * Get my tickets (for engineers)
+   */
+  getMyTickets: async (params = {}) => {
+    try {
+      const response = await apiClient.get('/tickets/my-tickets', { params });
+      return response;
+    } catch (error) {
+      console.error('Error fetching my tickets:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Engineer requests to close a ticket
+   */
+  requestTicketClose: async (ticketId, requestNotes) => {
+    try {
+      const response = await apiClient.post(`/tickets/${ticketId}/request-close`, {
+        request_notes: requestNotes
+      });
+      return response;
+    } catch (error) {
+      console.error('Error requesting ticket close:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get pending close requests (for coordinators)
+   */
+  getPendingCloseRequests: async (filters = {}) => {
+    try {
+      const response = await apiClient.get('/tickets/pending-close-requests', {
+        params: filters
+      });
+      return response;
+    } catch (error) {
+      console.error('Error fetching pending close requests:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get close request count (for badge)
+   */
+  getCloseRequestCount: async (filters = {}) => {
+    try {
+      const response = await apiClient.get('/tickets/close-requests-count', {
+        params: filters
+      });
+      return response;
+    } catch (error) {
+      console.error('Error fetching close request count:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Coordinator reviews (approves/rejects) close request
+   */
+  reviewCloseRequest: async (closeRequestId, action, reviewNotes = null) => {
+    try {
+      const response = await apiClient.put(`/tickets/${closeRequestId}/review-close-request`, {
+        action,
+        review_notes: reviewNotes
+      });
+      return response;
+    } catch (error) {
+      console.error('Error reviewing close request:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get close request history for a ticket
+   */
+  getCloseRequestHistory: async (ticketId) => {
+    try {
+      const response = await apiClient.get(`/tickets/${ticketId}/close-request-history`);
+      return response;
+    } catch (error) {
+      console.error('Error fetching close request history:', error);
+      throw error;
+    }
+  },
+
+  /**
    * Helper: Get status color for badges
    */
   getStatusColor: (status) => {
@@ -185,6 +285,7 @@ const ticketService = {
       assigned: 'orange',
       in_progress: 'purple',
       pending: 'gold',
+      pending_closure: 'cyan',
       resolved: 'green',
       closed: 'default',
       cancelled: 'red'
@@ -215,6 +316,7 @@ const ticketService = {
       assigned: 'Assigned',
       in_progress: 'In Progress',
       pending: 'Pending',
+      pending_closure: 'Pending Closure',
       resolved: 'Resolved',
       closed: 'Closed',
       cancelled: 'Cancelled'
@@ -296,6 +398,106 @@ const ticketService = {
       month: 'short',
       day: 'numeric'
     });
+  },
+
+  // ============================================
+  // TICKET ASSET LINKING METHODS
+  // ============================================
+
+  /**
+   * Get current user's assigned assets for ticket creation
+   */
+  getMyAssets: async () => {
+    try {
+      const response = await apiClient.get('/tickets/my-assets');
+      return response;
+    } catch (error) {
+      console.error('Error fetching my assets:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get specific employee's assets for ticket creation (coordinators)
+   */
+  getEmployeeAssets: async (userId) => {
+    try {
+      const response = await apiClient.get(`/tickets/employee-assets/${userId}`);
+      return response;
+    } catch (error) {
+      console.error('Error fetching employee assets:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get all assets linked to a ticket
+   */
+  getTicketAssets: async (ticketId) => {
+    try {
+      const response = await apiClient.get(`/tickets/${ticketId}/assets`);
+      return response;
+    } catch (error) {
+      console.error('Error fetching ticket assets:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Link an asset to a ticket
+   */
+  linkAsset: async (ticketId, assetId, notes = null) => {
+    try {
+      const response = await apiClient.post(`/tickets/${ticketId}/assets`, {
+        asset_id: assetId,
+        notes
+      });
+      return response;
+    } catch (error) {
+      console.error('Error linking asset:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Link multiple assets to a ticket
+   */
+  linkMultipleAssets: async (ticketId, assetIds) => {
+    try {
+      const response = await apiClient.post(`/tickets/${ticketId}/assets/bulk`, {
+        asset_ids: assetIds
+      });
+      return response;
+    } catch (error) {
+      console.error('Error linking assets:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Unlink an asset from a ticket
+   */
+  unlinkAsset: async (ticketId, assetId) => {
+    try {
+      const response = await apiClient.delete(`/tickets/${ticketId}/assets/${assetId}`);
+      return response;
+    } catch (error) {
+      console.error('Error unlinking asset:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get asset count for a ticket
+   */
+  getTicketAssetCount: async (ticketId) => {
+    try {
+      const response = await apiClient.get(`/tickets/${ticketId}/assets/count`);
+      return response;
+    } catch (error) {
+      console.error('Error fetching asset count:', error);
+      throw error;
+    }
   }
 };
 

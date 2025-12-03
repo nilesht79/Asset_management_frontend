@@ -19,7 +19,8 @@ import {
   Drawer,
   Divider,
   Badge,
-  Typography
+  Typography,
+  Checkbox
 } from 'antd'
 import {
   UserOutlined,
@@ -296,7 +297,10 @@ const Users = () => {
       department_id: user.department?.id,
       location_id: user.location?.id,
       employee_id: user.employeeId,
-      status: user.status
+      designation: user.designation,
+      status: user.status,
+      is_vip: user.isVip || false,
+      allow_multi_assets: user.allowMultiAssets || false
     })
     setUserModalVisible(true)
   }
@@ -764,6 +768,14 @@ const Users = () => {
       responsive: ['md']
     },
     {
+      title: 'Designation',
+      dataIndex: 'designation',
+      key: 'designation',
+      width: 150,
+      render: (designation) => designation || '-',
+      responsive: ['lg']
+    },
+    {
       title: 'Role',
       dataIndex: 'role',
       key: 'role',
@@ -1110,6 +1122,7 @@ const Users = () => {
               <Form.Item
                 label="Location"
                 name="location_id"
+                className="location-select-form-item"
               >
                 <Select
                   allowClear
@@ -1126,27 +1139,34 @@ const Users = () => {
                   }}
                   virtual
                   listHeight={256}
+                  style={{ width: '100%' }}
+                  optionLabelProp="children"
                 >
-                  {locations.map(loc => (
-                    <Option
-                      key={loc.id}
-                      value={loc.id}
-                      locationname={loc.name}
-                      building={loc.building || ''}
-                      floor={loc.floor || ''}
-                    >
-                      <div>
-                        <div style={{ fontWeight: 500 }}>{loc.name}</div>
-                        {(loc.building || loc.floor) && (
-                          <div style={{ fontSize: '12px', color: '#666' }}>
-                            {loc.building && `Building: ${loc.building}`}
-                            {loc.building && loc.floor && ' • '}
-                            {loc.floor && `Floor: ${loc.floor}`}
-                          </div>
-                        )}
-                      </div>
-                    </Option>
-                  ))}
+                  {locations.map(loc => {
+                    const buildingFloor = [
+                      loc.building ? `Building: ${loc.building}` : '',
+                      loc.floor ? `Floor: ${loc.floor}` : ''
+                    ].filter(Boolean).join(' • ')
+
+                    return (
+                      <Option
+                        key={loc.id}
+                        value={loc.id}
+                        locationname={loc.name}
+                        building={loc.building || ''}
+                        floor={loc.floor || ''}
+                      >
+                        <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={`${loc.name}${buildingFloor ? ` (${buildingFloor})` : ''}`}>
+                          <span style={{ fontWeight: 500 }}>{loc.name}</span>
+                          {buildingFloor && (
+                            <span style={{ fontSize: '12px', color: '#666', marginLeft: '8px' }}>
+                              ({buildingFloor})
+                            </span>
+                          )}
+                        </div>
+                      </Option>
+                    )
+                  })}
                 </Select>
               </Form.Item>
             </Col>
@@ -1166,6 +1186,17 @@ const Users = () => {
             </Col>
             <Col span={12}>
               <Form.Item
+                label="Designation"
+                name="designation"
+              >
+                <Input placeholder="e.g., Software Engineer, Manager" />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
                 label="Status"
                 name="status"
                 initialValue="active"
@@ -1174,6 +1205,31 @@ const Users = () => {
                   <Option value="active">Active</Option>
                   <Option value="inactive">Inactive</Option>
                 </Select>
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <div style={{ height: '32px' }}></div>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                name="is_vip"
+                valuePropName="checked"
+                initialValue={false}
+              >
+                <Checkbox>VIP User</Checkbox>
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="allow_multi_assets"
+                valuePropName="checked"
+                initialValue={false}
+                tooltip="When enabled, this user can be assigned multiple assets of the same category/subcategory type"
+              >
+                <Checkbox>Allow Multiple Assets of Same Type</Checkbox>
               </Form.Item>
             </Col>
           </Row>
@@ -1248,12 +1304,25 @@ const Users = () => {
             <div className="space-y-2">
               <div><strong>Email:</strong> {selectedUserDetails.email}</div>
               <div><strong>Employee ID:</strong> {selectedUserDetails.employeeId || 'N/A'}</div>
+              <div><strong>Designation:</strong> {selectedUserDetails.designation || 'N/A'}</div>
               <div><strong>Department:</strong> {selectedUserDetails.department?.name || 'No Department'}</div>
               <div><strong>Location:</strong> {selectedUserDetails.location?.name || 'No Location'}</div>
               <div>
                 <strong>Status:</strong>
                 <Tag color={selectedUserDetails.isActive ? 'green' : 'red'} className="ml-2">
                   {selectedUserDetails.isActive ? 'ACTIVE' : 'INACTIVE'}
+                </Tag>
+              </div>
+              <div>
+                <strong>VIP:</strong>
+                <Tag color={selectedUserDetails.isVip ? 'gold' : 'default'} className="ml-2">
+                  {selectedUserDetails.isVip ? 'YES' : 'NO'}
+                </Tag>
+              </div>
+              <div>
+                <strong>Allow Multi Assets:</strong>
+                <Tag color={selectedUserDetails.allowMultiAssets ? 'blue' : 'default'} className="ml-2">
+                  {selectedUserDetails.allowMultiAssets ? 'YES' : 'NO'}
                 </Tag>
               </div>
               <div><strong>Last Login:</strong> {selectedUserDetails.lastLogin ? new Date(selectedUserDetails.lastLogin).toLocaleString() : 'Never'}</div>
@@ -1662,6 +1731,7 @@ const Users = () => {
                   onChange={(value) => setTempFilters(prev => ({ ...prev, location_id: value || '' }))}
                   value={tempFilters.location_id || undefined}
                   size="large"
+                  optionLabelProp="children"
                   filterOption={(input, option) => {
                     const searchText = input.toLowerCase()
                     const locationName = option?.locationname?.toLowerCase() || ''
@@ -1672,26 +1742,31 @@ const Users = () => {
                            floor.includes(searchText)
                   }}
                 >
-                  {locations.map(loc => (
-                    <Option
-                      key={loc.id}
-                      value={loc.id}
-                      locationname={loc.name}
-                      building={loc.building || ''}
-                      floor={loc.floor || ''}
-                    >
-                      <div>
-                        <div style={{ fontWeight: 500 }}>{loc.name}</div>
-                        {(loc.building || loc.floor) && (
-                          <div style={{ fontSize: '12px', color: '#666' }}>
-                            {loc.building && `Building: ${loc.building}`}
-                            {loc.building && loc.floor && ' • '}
-                            {loc.floor && `Floor: ${loc.floor}`}
-                          </div>
-                        )}
-                      </div>
-                    </Option>
-                  ))}
+                  {locations.map(loc => {
+                    const buildingFloor = [
+                      loc.building ? `Building: ${loc.building}` : '',
+                      loc.floor ? `Floor: ${loc.floor}` : ''
+                    ].filter(Boolean).join(' • ')
+
+                    return (
+                      <Option
+                        key={loc.id}
+                        value={loc.id}
+                        locationname={loc.name}
+                        building={loc.building || ''}
+                        floor={loc.floor || ''}
+                      >
+                        <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={`${loc.name}${buildingFloor ? ` (${buildingFloor})` : ''}`}>
+                          <span style={{ fontWeight: 500 }}>{loc.name}</span>
+                          {buildingFloor && (
+                            <span style={{ fontSize: '12px', color: '#666', marginLeft: '8px' }}>
+                              ({buildingFloor})
+                            </span>
+                          )}
+                        </div>
+                      </Option>
+                    )
+                  })}
                 </Select>
               </div>
             </Space>

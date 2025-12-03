@@ -51,6 +51,7 @@ import {
 } from '../../../store/slices/reconciliationSlice';
 import ReconcileAssetModal from './ReconcileAssetModal';
 import DiscrepancyList from './DiscrepancyList';
+import departmentService from '../../../services/department';
 
 const { Title, Text } = Typography;
 const { Search } = Input;
@@ -143,23 +144,43 @@ const ReconciliationAssets = () => {
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState(null);
   const [reconciliationStatusFilter, setReconciliationStatusFilter] = useState(null);
+  const [departmentFilter, setDepartmentFilter] = useState(null);
+  const [departments, setDepartments] = useState([]);
+  const [loadingDepartments, setLoadingDepartments] = useState(false);
 
   // Check permissions
   const canReconcile = ['admin', 'superadmin', 'engineer'].includes(user?.role);
 
   useEffect(() => {
     loadData();
+    fetchDepartments();
   }, [reconciliationId]);
 
   useEffect(() => {
     if (reconciliationId) {
       loadAssets();
     }
-  }, [reconciliationId, pagination.page, pagination.limit, searchText, statusFilter, reconciliationStatusFilter]);
+  }, [reconciliationId, pagination.page, pagination.limit, searchText, statusFilter, reconciliationStatusFilter, departmentFilter]);
 
   const loadData = () => {
     dispatch(fetchReconciliation(reconciliationId));
     dispatch(fetchReconciliationStatistics(reconciliationId));
+  };
+
+  const fetchDepartments = async () => {
+    setLoadingDepartments(true);
+    try {
+      const response = await departmentService.getDepartments({ limit: 100 });
+      const departmentsData = response.data?.data?.departments || [];
+      // Filter out departments with null IDs to avoid duplicate key warning
+      const validDepartments = departmentsData.filter(dept => dept.id);
+      setDepartments(validDepartments);
+    } catch (error) {
+      console.error('Failed to fetch departments:', error);
+      message.error('Failed to load departments');
+    } finally {
+      setLoadingDepartments(false);
+    }
   };
 
   const loadAssets = () => {
@@ -171,6 +192,7 @@ const ReconciliationAssets = () => {
     if (searchText) params.search = searchText;
     if (statusFilter) params.status = statusFilter;
     if (reconciliationStatusFilter) params.reconciliation_status = reconciliationStatusFilter;
+    if (departmentFilter) params.department_id = departmentFilter;
 
     dispatch(fetchReconciliationAssets({ reconciliationId, params }));
   };
@@ -183,6 +205,7 @@ const ReconciliationAssets = () => {
   const handleFilterChange = (field, value) => {
     if (field === 'status') setStatusFilter(value);
     if (field === 'reconciliation_status') setReconciliationStatusFilter(value);
+    if (field === 'department') setDepartmentFilter(value);
     dispatch(setAssetsPagination({ page: 1 }));
   };
 
@@ -190,6 +213,7 @@ const ReconciliationAssets = () => {
     setSearchText('');
     setStatusFilter(null);
     setReconciliationStatusFilter(null);
+    setDepartmentFilter(null);
     dispatch(setAssetsPagination({ page: 1 }));
   };
 
@@ -373,6 +397,17 @@ const ReconciliationAssets = () => {
           </span>
         );
       }
+    },
+    {
+      title: 'Department',
+      dataIndex: 'department',
+      key: 'department',
+      width: 150,
+      render: (text) => text ? (
+        <Tag color="blue">{text}</Tag>
+      ) : (
+        <span className="text-gray-400">—</span>
+      )
     },
     {
       title: 'Location',
@@ -567,7 +602,7 @@ const ReconciliationAssets = () => {
                 {/* Filters */}
                 <Card className="mb-4">
                   <Row gutter={16}>
-                    <Col span={6}>
+                    <Col span={5}>
                       <Search
                         placeholder="Search assets..."
                         allowClear
@@ -577,7 +612,7 @@ const ReconciliationAssets = () => {
                         onChange={(e) => setSearchText(e.target.value)}
                       />
                     </Col>
-                    <Col span={5}>
+                    <Col span={4}>
                       <Select
                         placeholder="Asset Status"
                         allowClear
@@ -591,7 +626,7 @@ const ReconciliationAssets = () => {
                         <Option value="under_repair">Under Repair</Option>
                       </Select>
                     </Col>
-                    <Col span={5}>
+                    <Col span={4}>
                       <Select
                         placeholder="Reconciliation Status"
                         allowClear
@@ -606,7 +641,28 @@ const ReconciliationAssets = () => {
                         <Option value="damaged">Damaged</Option>
                       </Select>
                     </Col>
-                    <Col span={4}>
+                    <Col span={5}>
+                      <Select
+                        placeholder="Department"
+                        allowClear
+                        showSearch
+                        style={{ width: '100%' }}
+                        value={departmentFilter}
+                        onChange={(value) => handleFilterChange('department', value)}
+                        loading={loadingDepartments}
+                        filterOption={(input, option) =>
+                          option.children.toLowerCase().includes(input.toLowerCase())
+                        }
+                        optionFilterProp="children"
+                      >
+                        {departments.map(dept => (
+                          <Option key={dept.id} value={dept.id}>
+                            {dept.name}
+                          </Option>
+                        ))}
+                      </Select>
+                    </Col>
+                    <Col span={3}>
                       <Button
                         icon={<FilterOutlined />}
                         onClick={handleClearFilters}
@@ -615,7 +671,7 @@ const ReconciliationAssets = () => {
                         Clear Filters
                       </Button>
                     </Col>
-                    <Col span={4}>
+                    <Col span={3}>
                       <Button
                         icon={<ReloadOutlined />}
                         onClick={loadAssets}
@@ -644,7 +700,7 @@ const ReconciliationAssets = () => {
                       pageSizeOptions: ['10', '20', '50', '100']
                     }}
                     onChange={handleTableChange}
-                    scroll={{ x: 1600 }}
+                    scroll={{ x: 1750 }}
                     rowClassName={(record) =>
                       record.reconciliation_status && record.reconciliation_status !== 'pending'
                         ? 'bg-green-50'

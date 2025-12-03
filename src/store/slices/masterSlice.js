@@ -139,7 +139,19 @@ const initialState = {
     }
   },
 
-  
+  // Vendors
+  vendors: {
+    data: [],
+    total: 0,
+    loading: false,
+    error: null,
+    pagination: {
+      page: 1,
+      limit: 10,
+      total: 0
+    }
+  },
+
   // Currently selected items
   selectedOem: null,
   selectedCategory: null,
@@ -237,6 +249,70 @@ export const exportOEMs = createAsyncThunk(
     } catch (error) {
       return rejectWithValue({
         message: error.response?.data?.message || 'Failed to export OEMs'
+      })
+    }
+  }
+)
+
+// Async thunks for Vendors
+export const fetchVendors = createAsyncThunk(
+  'master/fetchVendors',
+  async (params = {}, { rejectWithValue }) => {
+    try {
+      const response = await masterService.getVendors(params)
+      return response.data
+    } catch (error) {
+      console.error('fetchVendors error:', error)
+      return rejectWithValue({
+        message: error.response?.data?.message || 'Failed to fetch vendors',
+        errors: error.response?.data?.errors
+      })
+    }
+  }
+)
+
+export const createVendor = createAsyncThunk(
+  'master/createVendor',
+  async (vendorData, { dispatch, rejectWithValue }) => {
+    try {
+      const response = await masterService.createVendor(vendorData)
+      dispatch(fetchVendors())
+      return response.data
+    } catch (error) {
+      return rejectWithValue({
+        message: error.response?.data?.message || 'Failed to create vendor',
+        errors: error.response?.data?.errors
+      })
+    }
+  }
+)
+
+export const updateVendor = createAsyncThunk(
+  'master/updateVendor',
+  async ({ id, data }, { dispatch, rejectWithValue }) => {
+    try {
+      const response = await masterService.updateVendor(id, data)
+      dispatch(fetchVendors())
+      return response.data
+    } catch (error) {
+      return rejectWithValue({
+        message: error.response?.data?.message || 'Failed to update vendor',
+        errors: error.response?.data?.errors
+      })
+    }
+  }
+)
+
+export const deleteVendor = createAsyncThunk(
+  'master/deleteVendor',
+  async (id, { dispatch, rejectWithValue }) => {
+    try {
+      await masterService.deleteVendor(id)
+      dispatch(fetchVendors())
+      return id
+    } catch (error) {
+      return rejectWithValue({
+        message: error.response?.data?.message || 'Failed to delete vendor'
       })
     }
   }
@@ -1060,6 +1136,56 @@ const masterSlice = createSlice({
       .addCase(fetchOEMs.rejected, (state, action) => {
         state.oems.loading = false
         state.oems.error = action.payload?.message || 'Failed to fetch OEMs'
+      })
+
+      // Vendors
+      .addCase(fetchVendors.pending, (state) => {
+        state.vendors.loading = true
+        state.vendors.error = null
+      })
+      .addCase(fetchVendors.fulfilled, (state, action) => {
+        state.vendors.loading = false
+        const vendorsArray = action.payload.data?.vendors || action.payload.vendors || []
+        state.vendors.data = Array.isArray(vendorsArray) ? vendorsArray : []
+        state.vendors.total = action.payload.data?.pagination?.total || action.payload.pagination?.total || 0
+        state.vendors.pagination = action.payload.data?.pagination || action.payload.pagination || {}
+      })
+      .addCase(fetchVendors.rejected, (state, action) => {
+        state.vendors.loading = false
+        state.vendors.error = action.payload?.message || 'Failed to fetch vendors'
+      })
+      .addCase(createVendor.pending, (state) => {
+        state.vendors.loading = true
+        state.vendors.error = null
+      })
+      .addCase(createVendor.fulfilled, (state) => {
+        state.vendors.loading = false
+      })
+      .addCase(createVendor.rejected, (state, action) => {
+        state.vendors.loading = false
+        state.vendors.error = action.payload?.message || 'Failed to create vendor'
+      })
+      .addCase(updateVendor.pending, (state) => {
+        state.vendors.loading = true
+        state.vendors.error = null
+      })
+      .addCase(updateVendor.fulfilled, (state) => {
+        state.vendors.loading = false
+      })
+      .addCase(updateVendor.rejected, (state, action) => {
+        state.vendors.loading = false
+        state.vendors.error = action.payload?.message || 'Failed to update vendor'
+      })
+      .addCase(deleteVendor.pending, (state) => {
+        state.vendors.loading = true
+        state.vendors.error = null
+      })
+      .addCase(deleteVendor.fulfilled, (state) => {
+        state.vendors.loading = false
+      })
+      .addCase(deleteVendor.rejected, (state, action) => {
+        state.vendors.loading = false
+        state.vendors.error = action.payload?.message || 'Failed to delete vendor'
       })
 
       // Boards

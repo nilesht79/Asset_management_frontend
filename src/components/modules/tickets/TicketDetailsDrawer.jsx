@@ -13,16 +13,21 @@ import {
   Divider,
   message,
   Empty,
-  Spin
+  Spin,
+  Modal
 } from 'antd';
 import {
   UserOutlined,
   ClockCircleOutlined,
   SendOutlined,
-  CommentOutlined
+  CommentOutlined,
+  LinkOutlined
 } from '@ant-design/icons';
 import ticketService from '../../../services/ticket';
 import { useSelector } from 'react-redux';
+import LinkedAssets from './LinkedAssets';
+import AssetRepairHistory from '../assets/AssetRepairHistory';
+import { SlaStatusBadge } from '../sla';
 
 const { TextArea } = Input;
 
@@ -31,12 +36,23 @@ const TicketDetailsDrawer = ({ visible, ticket, onClose, onUpdate }) => {
   const [loadingComments, setLoadingComments] = useState(false);
   const [newComment, setNewComment] = useState('');
   const [submittingComment, setSubmittingComment] = useState(false);
+  const [closeRequestHistory, setCloseRequestHistory] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [repairHistoryModal, setRepairHistoryModal] = useState({ visible: false, assetId: null, assetTag: null });
 
   const { user: currentUser } = useSelector((state) => state.auth);
+
+  // Check if user can edit linked assets (coordinators, admins, or assigned engineer)
+  const canEditLinkedAssets = currentUser && (
+    currentUser.role === 'admin' ||
+    currentUser.role === 'coordinator' ||
+    (currentUser.role === 'engineer' && ticket?.assigned_to_engineer_id === currentUser.user_id)
+  ) && ticket?.status !== 'closed';
 
   useEffect(() => {
     if (visible && ticket) {
       fetchComments();
+      fetchCloseRequestHistory();
     }
   }, [visible, ticket]);
 
@@ -52,6 +68,21 @@ const TicketDetailsDrawer = ({ visible, ticket, onClose, onUpdate }) => {
       console.error('Failed to fetch comments:', error);
     } finally {
       setLoadingComments(false);
+    }
+  };
+
+  const fetchCloseRequestHistory = async () => {
+    if (!ticket) return;
+
+    setLoadingHistory(true);
+    try {
+      const response = await ticketService.getCloseRequestHistory(ticket.ticket_id);
+      const data = response.data.data || response.data;
+      setCloseRequestHistory(data.history || []);
+    } catch (error) {
+      console.error('Failed to fetch close request history:', error);
+    } finally {
+      setLoadingHistory(false);
     }
   };
 
@@ -75,6 +106,14 @@ const TicketDetailsDrawer = ({ visible, ticket, onClose, onUpdate }) => {
     }
   };
 
+  const handleViewRepairHistory = (assetId, assetTag) => {
+    setRepairHistoryModal({ visible: true, assetId, assetTag });
+  };
+
+  const handleCloseRepairHistory = () => {
+    setRepairHistoryModal({ visible: false, assetId: null, assetTag: null });
+  };
+
   if (!ticket) return null;
 
   return (
@@ -94,7 +133,7 @@ const TicketDetailsDrawer = ({ visible, ticket, onClose, onUpdate }) => {
               <Tag color="blue" className="text-base px-3 py-1">
                 {ticket.ticket_number}
               </Tag>
-              <div className="mt-2 flex gap-2">
+              <div className="mt-2 flex gap-2 flex-wrap">
                 <Tag color={ticketService.getStatusColor(ticket.status)}>
                   {ticketService.getStatusDisplayName(ticket.status)}
                 </Tag>
@@ -103,6 +142,9 @@ const TicketDetailsDrawer = ({ visible, ticket, onClose, onUpdate }) => {
                 </Tag>
                 {ticket.category && (
                   <Tag>{ticket.category}</Tag>
+                )}
+                {ticket.status !== 'closed' && ticket.status !== 'cancelled' && (
+                  <SlaStatusBadge ticketId={ticket.ticket_id} compact />
                 )}
               </div>
             </div>
@@ -118,56 +160,117 @@ const TicketDetailsDrawer = ({ visible, ticket, onClose, onUpdate }) => {
           <p className="text-gray-700">{ticket.description}</p>
         </Card>
 
+        {/* SLA Status */}
+        {ticket.status !== 'closed' && ticket.status !== 'cancelled' && (
+          <Card title="SLA Status" size="small">
+            <SlaStatusBadge
+              ticketId={ticket.ticket_id}
+              showProgress
+              showDetails
+            />
+          </Card>
+        )}
+
         {/* Ticket Information */}
         <Card title="Ticket Information" size="small">
           <Descriptions column={1} size="small">
-            <Descriptions.Item label="Created For">
-              <div className="flex items-center space-x-2">
-                <Avatar size="small" icon={<UserOutlined />} />
-                <div>
-                  <div className="font-medium">{ticket.created_by_user_name}</div>
-                  <div className="text-xs text-gray-500">
-                    {ticket.created_by_user_email}
-                  </div>
-                </div>
-              </div>
-            </Descriptions.Item>
+            {ticket.is_guest ? (
+              <>
+                <Descriptions.Item label="Ticket Type">
+                  <Tag color="purple" icon={<UserOutlined />}>GUEST TICKET</Tag>
+                </Descriptions.Item>
 
-            <Descriptions.Item label="Created By">
-              <div className="flex items-center space-x-2">
-                <Avatar size="small" icon={<UserOutlined />} />
-                <div>
-                  <div className="font-medium">{ticket.coordinator_name}</div>
-                  <div className="text-xs text-gray-500">
-                    {ticket.coordinator_email}
-                  </div>
-                </div>
-              </div>
-            </Descriptions.Item>
+                <Descriptions.Item label="Guest Name">
+                  <div className="font-medium">{ticket.guest_name}</div>
+                </Descriptions.Item>
 
-            <Descriptions.Item label="Assigned To">
-              {ticket.engineer_name ? (
-                <div className="flex items-center space-x-2">
-                  <Avatar size="small" icon={<UserOutlined />} />
-                  <div>
-                    <div className="font-medium">{ticket.engineer_name}</div>
-                    <div className="text-xs text-gray-500">
-                      {ticket.engineer_email}
+                <Descriptions.Item label="Guest Email">
+                  <div className="text-blue-600">{ticket.guest_email}</div>
+                </Descriptions.Item>
+
+                <Descriptions.Item label="Guest Phone">
+                  {ticket.guest_phone || 'N/A'}
+                </Descriptions.Item>
+
+                <Descriptions.Item label="Created By">
+                  <div className="flex items-center space-x-2">
+                    <Avatar size="small" icon={<UserOutlined />} />
+                    <div>
+                      <div className="font-medium">{ticket.coordinator_name || 'System'}</div>
+                      <div className="text-xs text-gray-500">
+                        {ticket.coordinator_email || 'N/A'}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ) : (
-                <Tag color="default">Unassigned</Tag>
-              )}
-            </Descriptions.Item>
+                </Descriptions.Item>
 
-            <Descriptions.Item label="Department">
-              {ticket.department_name || 'N/A'}
-            </Descriptions.Item>
+                <Descriptions.Item label="Assigned To">
+                  {ticket.engineer_name ? (
+                    <div className="flex items-center space-x-2">
+                      <Avatar size="small" icon={<UserOutlined />} />
+                      <div>
+                        <div className="font-medium">{ticket.engineer_name}</div>
+                        <div className="text-xs text-gray-500">
+                          {ticket.engineer_email}
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <Tag color="default">Unassigned</Tag>
+                  )}
+                </Descriptions.Item>
+              </>
+            ) : (
+              <>
+                <Descriptions.Item label="Created For">
+                  <div className="flex items-center space-x-2">
+                    <Avatar size="small" icon={<UserOutlined />} />
+                    <div>
+                      <div className="font-medium">{ticket.created_by_user_name}</div>
+                      <div className="text-xs text-gray-500">
+                        {ticket.created_by_user_email}
+                      </div>
+                    </div>
+                  </div>
+                </Descriptions.Item>
 
-            <Descriptions.Item label="Location">
-              {ticket.location_name || 'N/A'}
-            </Descriptions.Item>
+                <Descriptions.Item label="Created By">
+                  <div className="flex items-center space-x-2">
+                    <Avatar size="small" icon={<UserOutlined />} />
+                    <div>
+                      <div className="font-medium">{ticket.coordinator_name}</div>
+                      <div className="text-xs text-gray-500">
+                        {ticket.coordinator_email}
+                      </div>
+                    </div>
+                  </div>
+                </Descriptions.Item>
+
+                <Descriptions.Item label="Assigned To">
+                  {ticket.engineer_name ? (
+                    <div className="flex items-center space-x-2">
+                      <Avatar size="small" icon={<UserOutlined />} />
+                      <div>
+                        <div className="font-medium">{ticket.engineer_name}</div>
+                        <div className="text-xs text-gray-500">
+                          {ticket.engineer_email}
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <Tag color="default">Unassigned</Tag>
+                  )}
+                </Descriptions.Item>
+
+                <Descriptions.Item label="Department">
+                  {ticket.department_name || 'N/A'}
+                </Descriptions.Item>
+
+                <Descriptions.Item label="Location">
+                  {ticket.location_name || 'N/A'}
+                </Descriptions.Item>
+              </>
+            )}
 
             {ticket.due_date && (
               <Descriptions.Item label="Due Date">
@@ -196,6 +299,129 @@ const TicketDetailsDrawer = ({ visible, ticket, onClose, onUpdate }) => {
             )}
           </Descriptions>
         </Card>
+
+        {/* Linked Assets Section */}
+        <LinkedAssets
+          ticketId={ticket.ticket_id}
+          canEdit={canEditLinkedAssets}
+          showRepairHistory={true}
+          onViewRepairHistory={(assetId) => {
+            // Find the asset tag from the linked assets if available
+            handleViewRepairHistory(assetId, null);
+          }}
+        />
+
+        {/* Close Request History Section */}
+        {closeRequestHistory.length > 0 && (
+          <Card
+            title={
+              <div className="flex items-center space-x-2">
+                <SendOutlined />
+                <span>Close Request History</span>
+                <Tag>{closeRequestHistory.length}</Tag>
+              </div>
+            }
+            size="small"
+          >
+            {loadingHistory ? (
+              <div className="text-center py-4">
+                <Spin />
+              </div>
+            ) : (
+              <Timeline
+                items={closeRequestHistory.map((request) => ({
+                  children: (
+                    <div key={request.close_request_id}>
+                      <div className="space-y-2">
+                        <div className="flex items-center space-x-2">
+                          <Avatar size="small" icon={<UserOutlined />} />
+                          <div>
+                            <span className="font-medium">{request.engineer_name}</span>
+                            <Tag size="small" color="blue" className="ml-2">
+                              Engineer
+                            </Tag>
+                          </div>
+                        </div>
+
+                        <div className="bg-blue-50 p-3 rounded border border-blue-200">
+                          <div className="text-xs text-gray-500 mb-1">Resolution Notes:</div>
+                          <div className="text-gray-700">{request.request_notes}</div>
+                        </div>
+
+                        <div className="flex items-center space-x-2 text-sm">
+                          <span className="text-gray-500">Status:</span>
+                          <Tag
+                            color={
+                              request.request_status === 'approved'
+                                ? 'green'
+                                : request.request_status === 'rejected'
+                                  ? 'red'
+                                  : 'gold'
+                            }
+                          >
+                            {request.request_status.toUpperCase()}
+                          </Tag>
+                          <span className="text-xs text-gray-400">
+                            {ticketService.formatRelativeTime(request.created_at)}
+                          </span>
+                        </div>
+
+                        {request.request_status !== 'pending' && (
+                          <div className="mt-2 pl-4 border-l-2 border-gray-300">
+                            <div className="flex items-center space-x-2 mb-2">
+                              <Avatar size="small" icon={<UserOutlined />} />
+                              <div>
+                                <span className="font-medium">{request.coordinator_name}</span>
+                                <Tag size="small" color="purple" className="ml-2">
+                                  Coordinator
+                                </Tag>
+                              </div>
+                            </div>
+
+                            {request.review_notes && (
+                              <div className={`p-3 rounded border ${
+                                request.request_status === 'approved'
+                                  ? 'bg-green-50 border-green-200'
+                                  : 'bg-red-50 border-red-200'
+                              }`}>
+                                <div className="text-xs text-gray-500 mb-1">Coordinator Feedback:</div>
+                                <div className="text-gray-700">{request.review_notes}</div>
+                              </div>
+                            )}
+
+                            <div className="text-xs text-gray-400 mt-2">
+                              Reviewed {ticketService.formatRelativeTime(request.reviewed_at)}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ),
+                  color: request.request_status === 'approved'
+                    ? 'green'
+                    : request.request_status === 'rejected'
+                      ? 'red'
+                      : 'blue'
+                }))}
+              />
+            )}
+          </Card>
+        )}
+
+        {/* Pending Close Request Alert */}
+        {ticket.status === 'pending_closure' && (
+          <Card size="small" className="bg-cyan-50 border-cyan-200">
+            <div className="flex items-center space-x-2">
+              <ClockCircleOutlined className="text-cyan-600 text-lg" />
+              <div>
+                <div className="font-semibold text-cyan-900">Close Request Pending</div>
+                <div className="text-sm text-cyan-700">
+                  This ticket has a pending close request awaiting coordinator approval
+                </div>
+              </div>
+            </div>
+          </Card>
+        )}
 
         {/* Comments Section */}
         <Card
@@ -284,6 +510,29 @@ const TicketDetailsDrawer = ({ visible, ticket, onClose, onUpdate }) => {
           )}
         </Card>
       </div>
+
+      {/* Asset Repair History Modal */}
+      <Modal
+        title="Asset Repair History"
+        open={repairHistoryModal.visible}
+        onCancel={handleCloseRepairHistory}
+        footer={null}
+        width={950}
+        destroyOnClose
+        zIndex={1100}
+      >
+        {repairHistoryModal.visible && repairHistoryModal.assetId ? (
+          <AssetRepairHistory
+            assetId={repairHistoryModal.assetId}
+            assetTag={repairHistoryModal.assetTag}
+            viewMode="table"
+          />
+        ) : (
+          <div style={{ textAlign: 'center', padding: '40px' }}>
+            <Spin tip="Loading..." />
+          </div>
+        )}
+      </Modal>
     </Drawer>
   );
 };

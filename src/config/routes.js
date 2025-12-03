@@ -68,6 +68,7 @@ export const ROUTES = {
   // Asset Management
   ASSETS: '/assets',
   ASSET_INVENTORY: '/assets/inventory',
+  ASSET_LIFECYCLE: '/assets/lifecycle',
   ASSET_DETAILS: '/assets/:id',
   ASSET_CREATE: '/assets/create',
   ASSET_EDIT: '/assets/:id/edit',
@@ -95,6 +96,7 @@ export const ROUTES = {
   TICKET_QUEUE: '/tickets/queue',
   MY_TICKETS: '/tickets/my-tickets',
   ASSIGNED_TICKETS: '/tickets/assigned',
+  ENGINEER_TICKETS: '/engineer/tickets',
 
   // Reports
   REPORTS: '/reports',
@@ -124,7 +126,17 @@ export const ROUTES = {
   // Help and Support
   HELP: '/help',
   SUPPORT: '/support',
-  DOCUMENTATION: '/documentation'
+  DOCUMENTATION: '/documentation',
+
+  // Software License Management
+  LICENSES: '/licenses',
+  LICENSE_DETAILS: '/licenses/:id',
+
+  // Fault Analysis
+  FAULT_ANALYSIS: '/fault-analysis',
+  REPAIR_HISTORY: '/repair-history',
+  FAULT_THRESHOLD_CONFIG: '/settings/fault-thresholds',
+  FAULT_TYPE_MANAGEMENT: '/admin/fault-types'
 }
 
 // Route metadata and permissions
@@ -214,6 +226,12 @@ export const ROUTE_META = {
     breadcrumb: ['Assets', 'Inventory'],
     roles: ['coordinator', 'admin', 'superadmin', 'department_coordinator'],
     icon: 'database'
+  },
+  [ROUTES.ASSET_LIFECYCLE]: {
+    title: 'Asset Lifecycle',
+    breadcrumb: ['Assets', 'Lifecycle'],
+    roles: ['coordinator', 'admin', 'superadmin'],
+    icon: 'clock-circle'
   },
   [ROUTES.ASSET_ASSIGNMENT]: {
     title: 'Asset Assignment',
@@ -324,6 +342,46 @@ export const ROUTE_META = {
     breadcrumb: ['Admin', 'Permission Control', 'Settings'],
     roles: ['superadmin'],
     icon: 'setting'
+  },
+
+  // Software License Management
+  [ROUTES.LICENSES]: {
+    title: 'Software Licenses',
+    breadcrumb: ['Software Licenses'],
+    roles: ['admin', 'superadmin', 'coordinator', 'it_head'],
+    icon: 'safety-certificate'
+  },
+  [ROUTES.LICENSE_DETAILS]: {
+    title: 'License Details',
+    breadcrumb: ['Software Licenses', 'Details'],
+    roles: ['admin', 'superadmin', 'coordinator', 'it_head'],
+    icon: 'safety-certificate'
+  },
+
+  // Fault Analysis
+  [ROUTES.FAULT_ANALYSIS]: {
+    title: 'Fault Analysis',
+    breadcrumb: ['Fault Analysis'],
+    roles: ['admin', 'superadmin', 'coordinator', 'it_head', 'engineer'],
+    icon: 'warning'
+  },
+  [ROUTES.REPAIR_HISTORY]: {
+    title: 'Repair History',
+    breadcrumb: ['Repair History'],
+    roles: ['admin', 'superadmin', 'coordinator', 'it_head', 'engineer'],
+    icon: 'tool'
+  },
+  [ROUTES.FAULT_THRESHOLD_CONFIG]: {
+    title: 'Fault Threshold Configuration',
+    breadcrumb: ['Settings', 'Fault Thresholds'],
+    roles: ['admin', 'superadmin'],
+    icon: 'setting'
+  },
+  [ROUTES.FAULT_TYPE_MANAGEMENT]: {
+    title: 'Fault Type Management',
+    breadcrumb: ['Admin', 'Fault Types'],
+    roles: ['admin', 'superadmin'],
+    icon: 'tool'
   }
 }
 
@@ -430,6 +488,12 @@ export const NAVIGATION_MENU = [
         path: ROUTES.ASSET_INVENTORY,
         title: 'Inventory',
         roles: ['coordinator', 'admin', 'superadmin', 'department_coordinator']
+      },
+      {
+        key: 'lifecycle',
+        path: ROUTES.ASSET_LIFECYCLE,
+        title: 'Lifecycle',
+        roles: ['coordinator', 'admin', 'superadmin']
       },
       {
         key: 'assignment',
@@ -554,6 +618,20 @@ export const NAVIGATION_MENU = [
         roles: ['superadmin']
       }
     ]
+  },
+  {
+    key: 'licenses',
+    path: ROUTES.LICENSES,
+    title: 'Software Licenses',
+    icon: 'safety-certificate',
+    roles: ['admin', 'superadmin', 'coordinator', 'it_head']
+  },
+  {
+    key: 'fault-analysis',
+    path: ROUTES.FAULT_ANALYSIS,
+    title: 'Fault Analysis',
+    icon: 'warning',
+    roles: ['admin', 'superadmin', 'coordinator', 'it_head', 'engineer']
   }
 ]
 

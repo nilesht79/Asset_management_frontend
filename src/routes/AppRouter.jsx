@@ -14,10 +14,16 @@ import LocationMaster from '../components/modules/masters/locations/LocationMast
 import DepartmentMaster from '../components/modules/masters/departments/DepartmentMaster'
 import BoardMaster from '../components/modules/masters/boards/BoardMaster'
 import TemplateManager from '../components/modules/masters/componentFieldTemplates/TemplateManager'
+import VendorList from '../components/modules/masters/vendors/VendorList'
+
+// Settings Components
+import OrgConfig from '../components/modules/settings/OrgConfig'
 
 import AssetInventory from "../components/modules/assets/AssetInventory"
 import AssetMovement from "../pages/AssetMovement"
+import AssetLifecycle from "../pages/AssetLifecycle"
 import TicketDashboard from "../pages/TicketDashboard"
+import EngineerTicketDashboard from "../pages/EngineerTicketDashboard"
 
 // Standby Assets Components
 import StandbyPool from "../pages/StandbyPool"
@@ -40,6 +46,22 @@ import SuperAdminPermissions from '../pages/SuperAdminPermissions'
 // Reconciliation Components
 import ReconciliationList from '../components/modules/reconciliation/ReconciliationList'
 import ReconciliationAssets from '../components/modules/reconciliation/ReconciliationAssets'
+
+// Consumable Components
+import ConsumableMaster from '../components/modules/consumables/ConsumableMaster'
+import ConsumableRequests from '../components/modules/consumables/ConsumableRequests'
+import ConsumableInventory from '../components/modules/consumables/ConsumableInventory'
+
+// Software License Components
+import SoftwareLicenses from '../components/modules/licenses/SoftwareLicenses'
+
+// Fault Analysis Components
+import FaultAnalysis from '../pages/FaultAnalysis'
+import FaultThresholdConfig from '../components/modules/settings/FaultThresholdConfig'
+import FaultTypeManagement from '../components/modules/admin/FaultTypeManagement'
+
+// SLA Settings
+import SlaSettings from '../pages/SlaSettings'
 
 const AppRouter = () => {
   const { user } = useSelector(state => state.auth)
@@ -65,6 +87,7 @@ const AppRouter = () => {
           <>
             <Route path="masters/boards" element={<BoardMaster />} />
             <Route path="masters/oem" element={<OEMList />} />
+            <Route path="masters/vendors" element={<VendorList />} />
             <Route path="masters/products" element={<ProductMaster />} />
             <Route path="masters/locations" element={<LocationMaster />} />
           </>
@@ -74,6 +97,9 @@ const AppRouter = () => {
         {['it_head', 'coordinator', 'admin', 'superadmin', 'department_coordinator'].includes(user?.role) && (
           <>
             <Route path="assets/inventory" element={<AssetInventory />} />
+            {['coordinator', 'admin', 'superadmin'].includes(user?.role) && (
+              <Route path="assets/lifecycle" element={<AssetLifecycle />} />
+            )}
             {['coordinator', 'admin', 'superadmin', 'department_coordinator'].includes(user?.role) && (
               <>
                 <Route path="assets/assignment" element={<div>Asset Assignment (To be implemented)</div>} />
@@ -129,6 +155,32 @@ const AppRouter = () => {
           <Route path="tickets" element={<TicketDashboard />} />
         )}
 
+        {/* Engineer Ticket Routes */}
+        {user?.role === 'engineer' && (
+          <Route path="engineer/tickets" element={<EngineerTicketDashboard />} />
+        )}
+
+        {/* Consumable Routes - Available to all employees for requests */}
+        <Route path="consumables/requests" element={<ConsumableRequests />} />
+
+        {/* Consumable Management - Coordinator/Admin only */}
+        {['coordinator', 'admin', 'superadmin'].includes(user?.role) && (
+          <>
+            <Route path="consumables/master" element={<ConsumableMaster />} />
+            <Route path="consumables/inventory" element={<ConsumableInventory />} />
+          </>
+        )}
+
+        {/* Software License Management - Admin, Coordinator, IT Head */}
+        {['it_head', 'coordinator', 'admin', 'superadmin'].includes(user?.role) && (
+          <Route path="licenses" element={<SoftwareLicenses />} />
+        )}
+
+        {/* Fault Analysis - Admin, Coordinator, IT Head, Engineer */}
+        {['it_head', 'coordinator', 'admin', 'superadmin', 'engineer'].includes(user?.role) && (
+          <Route path="fault-analysis" element={<FaultAnalysis />} />
+        )}
+
         {/* Reports Routes */}
         <Route path="reports/dashboard" element={<div>Reports Dashboard (To be implemented)</div>} />
         <Route path="reports/assets" element={<div>Asset Reports (To be implemented)</div>} />
@@ -147,7 +199,23 @@ const AppRouter = () => {
           <>
             <Route path="settings/permission-control" element={<SuperAdminPermissions />} />
             <Route path="settings/field-templates" element={<TemplateManager />} />
+            <Route path="settings/org-config" element={<OrgConfig />} />
           </>
+        )}
+
+        {/* Fault Threshold Config - Admin/Superadmin */}
+        {['admin', 'superadmin'].includes(user?.role) && (
+          <Route path="settings/fault-thresholds" element={<FaultThresholdConfig />} />
+        )}
+
+        {/* Fault Type Management - Admin/Superadmin */}
+        {['admin', 'superadmin'].includes(user?.role) && (
+          <Route path="admin/fault-types" element={<FaultTypeManagement />} />
+        )}
+
+        {/* SLA Settings - Admin/Superadmin */}
+        {['admin', 'superadmin'].includes(user?.role) && (
+          <Route path="settings/sla" element={<SlaSettings />} />
         )}
 
         {/* Error Routes */}

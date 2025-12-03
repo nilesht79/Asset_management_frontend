@@ -4,7 +4,6 @@ import {
   Table,
   Button,
   Input,
-  Select,
   Space,
   Tag,
   Modal,
@@ -14,7 +13,8 @@ import {
   Row,
   Col,
   Statistic,
-  Badge
+  Badge,
+  FloatButton
 } from 'antd';
 import {
   PlusOutlined,
@@ -22,13 +22,14 @@ import {
   ReloadOutlined,
   MoreOutlined,
   EyeOutlined,
-  EditOutlined,
+  FilterOutlined,
   UserAddOutlined,
   CheckCircleOutlined,
   ClockCircleOutlined,
   AlertOutlined,
   IssuesCloseOutlined,
-  DownloadOutlined
+  DownloadOutlined,
+  CloseOutlined
 } from '@ant-design/icons';
 import { useSelector } from 'react-redux';
 import ticketService from '../services/ticket';
@@ -36,9 +37,13 @@ import CreateTicketModal from '../components/modules/tickets/CreateTicketModal';
 import AssignEngineerModal from '../components/modules/tickets/AssignEngineerModal';
 import CloseTicketModal from '../components/modules/tickets/CloseTicketModal';
 import TicketDetailsDrawer from '../components/modules/tickets/TicketDetailsDrawer';
+import TicketFilterDrawer from '../components/modules/tickets/TicketFilterDrawer';
+import ReviewCloseRequestModal from '../components/modules/tickets/ReviewCloseRequestModal';
+import PendingCloseRequestsDrawer from '../components/modules/tickets/PendingCloseRequestsDrawer';
+import { SlaStatusIndicator } from '../components/modules/sla';
+import useResponsive from '../hooks/useResponsive';
 
 const { Search } = Input;
-const { Option } = Select;
 const { confirm } = Modal;
 
 const TicketDashboard = () => {
@@ -53,8 +58,10 @@ const TicketDashboard = () => {
     closed_tickets: 0,
     critical_tickets: 0,
     overdue_tickets: 0,
-    resolved_today: 0
+    closed_today: 0
   });
+  const [closeRequestCount, setCloseRequestCount] = useState(0);
+  const [pendingCloseRequests, setPendingCloseRequests] = useState([]);
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
@@ -64,21 +71,31 @@ const TicketDashboard = () => {
     search: '',
     status: '',
     priority: '',
-    category: ''
+    category: '',
+    department_id: '',
+    location_id: '',
+    assigned_to_engineer_id: '',
+    is_guest: undefined
   });
 
-  // Modal states
+  // Modal and Drawer states
   const [createModalVisible, setCreateModalVisible] = useState(false);
   const [assignModalVisible, setAssignModalVisible] = useState(false);
   const [closeModalVisible, setCloseModalVisible] = useState(false);
   const [detailsDrawerVisible, setDetailsDrawerVisible] = useState(false);
+  const [filterDrawerVisible, setFilterDrawerVisible] = useState(false);
+  const [reviewCloseRequestModalVisible, setReviewCloseRequestModalVisible] = useState(false);
+  const [pendingCloseRequestsDrawerVisible, setPendingCloseRequestsDrawerVisible] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState(null);
+  const [selectedCloseRequest, setSelectedCloseRequest] = useState(null);
 
   const { user: currentUser } = useSelector((state) => state.auth);
+  const { isMobile, isTablet } = useResponsive();
 
   useEffect(() => {
     fetchTickets();
     fetchStats();
+    fetchCloseRequestCount();
   }, [pagination.current, pagination.pageSize, filters]);
 
   const fetchTickets = async () => {
@@ -115,6 +132,62 @@ const TicketDashboard = () => {
     }
   };
 
+  const fetchCloseRequestCount = async () => {
+    try {
+      const response = await ticketService.getCloseRequestCount();
+      const data = response.data.data || response.data;
+      setCloseRequestCount(data.count || 0);
+    } catch (error) {
+      console.error('Failed to fetch close request count:', error);
+    }
+  };
+
+  const fetchPendingCloseRequests = async () => {
+    try {
+      const response = await ticketService.getPendingCloseRequests();
+      const data = response.data.data || response.data;
+      setPendingCloseRequests(data.requests || []);
+    } catch (error) {
+      console.error('Failed to fetch pending close requests:', error);
+      message.error('Failed to load close requests');
+    }
+  };
+
+  const handleShowCloseRequests = async () => {
+    await fetchPendingCloseRequests();
+    setPendingCloseRequestsDrawerVisible(true);
+  };
+
+  const handleReviewCloseRequest = (closeRequest) => {
+    setSelectedCloseRequest(closeRequest);
+    setReviewCloseRequestModalVisible(true);
+  };
+
+  const handleReviewSuccess = async (action) => {
+    setReviewCloseRequestModalVisible(false);
+    setSelectedCloseRequest(null);
+
+    // Refresh data
+    await Promise.all([
+      fetchTickets(),
+      fetchStats(),
+      fetchCloseRequestCount(),
+      fetchPendingCloseRequests()
+    ]);
+
+    const actionMessage = action === 'approved'
+      ? 'Close request approved and ticket closed successfully'
+      : 'Close request rejected and returned to engineer';
+    message.success(actionMessage);
+
+    // Auto-close drawer if no more pending requests
+    setTimeout(() => {
+      if (pendingCloseRequests.length === 0) {
+        setPendingCloseRequestsDrawerVisible(false);
+      }
+    }, 500);
+  };
+
   const handleTableChange = (paginationInfo) => {
     setPagination((prev) => ({
       ...prev,
@@ -132,6 +205,67 @@ const TicketDashboard = () => {
       ...prev,
       current: 1
     }));
+  };
+
+  const handleApplyFilters = (newFilters) => {
+    setFilters(newFilters);
+    setPagination((prev) => ({
+      ...prev,
+      current: 1
+    }));
+  };
+
+  const handleClearFilters = () => {
+    const clearedFilters = {
+      search: '',
+      status: '',
+      priority: '',
+      category: '',
+      department_id: '',
+      location_id: '',
+      assigned_to_engineer_id: '',
+      is_guest: undefined
+    };
+    setFilters(clearedFilters);
+    setPagination((prev) => ({
+      ...prev,
+      current: 1
+    }));
+  };
+
+  const handleRemoveFilter = (filterKey) => {
+    setFilters((prev) => ({
+      ...prev,
+      [filterKey]: filterKey === 'is_guest' ? undefined : ''
+    }));
+  };
+
+  const getActiveFilterCount = () => {
+    return Object.entries(filters).filter(([key, value]) => {
+      if (key === 'search') return false; // Don't count search
+      if (key === 'is_guest') return value !== undefined;
+      return value !== '';
+    }).length;
+  };
+
+  const getActiveFilterTags = () => {
+    const tags = [];
+    Object.entries(filters).forEach(([key, value]) => {
+      if (!value || (key === 'is_guest' && value === undefined)) return;
+      if (key === 'search') return; // Don't show search as tag
+
+      let label = key.replace(/_/g, ' ').replace(/^\w/, c => c.toUpperCase());
+      let displayValue = value;
+
+      // Customize labels
+      if (key === 'is_guest') {
+        label = 'Type';
+        displayValue = value === '1' ? 'Guest' : 'Employee';
+      }
+
+      tags.push({ key, label, value: displayValue });
+    });
+    return tags;
   };
 
   const handleCreateTicket = () => {
@@ -203,8 +337,8 @@ const TicketDashboard = () => {
     }
   };
 
-  const getActionMenu = (ticket) => ({
-    items: [
+  const getActionMenu = (ticket) => {
+    const items = [
       {
         key: 'view',
         label: 'View Details',
@@ -216,17 +350,22 @@ const TicketDashboard = () => {
         label: 'Assign Engineer',
         icon: <UserAddOutlined />,
         onClick: () => handleAssignEngineer(ticket),
-        disabled: ticket.status === 'closed'
-      },
-      {
+        disabled: ticket.status === 'closed' || ticket.status === 'pending_closure'
+      }
+    ];
+
+    // Only show "Close Ticket" if status is NOT pending_closure or closed
+    if (ticket.status !== 'pending_closure' && ticket.status !== 'closed') {
+      items.push({
         key: 'close',
         label: 'Close Ticket',
         icon: <CheckCircleOutlined />,
-        onClick: () => handleCloseTicket(ticket),
-        disabled: ticket.status === 'closed'
-      }
-    ]
-  });
+        onClick: () => handleCloseTicket(ticket)
+      });
+    }
+
+    return { items };
+  };
 
   const columns = [
     {
@@ -234,7 +373,8 @@ const TicketDashboard = () => {
       dataIndex: 'ticket_number',
       key: 'ticket_number',
       width: 130,
-      fixed: 'left',
+      fixed: !isMobile ? 'left' : false,
+      responsive: ['sm'],
       render: (text) => (
         <span className="font-mono font-semibold text-blue-600">{text}</span>
       )
@@ -260,6 +400,7 @@ const TicketDashboard = () => {
         { text: 'Open', value: 'open' },
         { text: 'Assigned', value: 'assigned' },
         { text: 'In Progress', value: 'in_progress' },
+        { text: 'Pending Closure', value: 'pending_closure' },
         { text: 'Resolved', value: 'resolved' },
         { text: 'Closed', value: 'closed' }
       ]
@@ -283,14 +424,39 @@ const TicketDashboard = () => {
       ]
     },
     {
+      title: 'SLA',
+      key: 'sla_status',
+      width: 100,
+      render: (_, record) => (
+        record.status !== 'closed' && record.status !== 'cancelled' ? (
+          <SlaStatusIndicator
+            status={record.sla_status}
+            isPaused={record.sla_is_paused}
+          />
+        ) : (
+          <Tag color="default">N/A</Tag>
+        )
+      )
+    },
+    {
       title: 'Created For',
       key: 'created_by_user',
-      width: 200,
+      width: 220,
       render: (_, record) => (
-        <div>
-          <div className="font-medium">{record.created_by_user_name}</div>
-          <div className="text-xs text-gray-500">{record.created_by_user_email}</div>
-        </div>
+        record.is_guest ? (
+          <div>
+            <Tag color="purple" icon={<UserAddOutlined />} style={{ marginBottom: 4 }}>
+              GUEST
+            </Tag>
+            <div className="font-medium">{record.guest_name}</div>
+            <div className="text-xs text-gray-500">{record.guest_email}</div>
+          </div>
+        ) : (
+          <div>
+            <div className="font-medium">{record.created_by_user_name}</div>
+            <div className="text-xs text-gray-500">{record.created_by_user_email}</div>
+          </div>
+        )
       )
     },
     {
@@ -351,9 +517,9 @@ const TicketDashboard = () => {
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <Row gutter={16}>
-        <Col span={6}>
+      {/* Stats Cards - Responsive */}
+      <Row gutter={[16, 16]}>
+        <Col xs={24} sm={12} md={12} lg={6} xl={6}>
           <Card>
             <Statistic
               title="Total Tickets"
@@ -362,7 +528,7 @@ const TicketDashboard = () => {
             />
           </Card>
         </Col>
-        <Col span={6}>
+        <Col xs={24} sm={12} md={12} lg={6} xl={6}>
           <Card>
             <Statistic
               title="Open Tickets"
@@ -372,7 +538,7 @@ const TicketDashboard = () => {
             />
           </Card>
         </Col>
-        <Col span={6}>
+        <Col xs={24} sm={12} md={12} lg={6} xl={6}>
           <Card>
             <Statistic
               title="In Progress"
@@ -382,12 +548,12 @@ const TicketDashboard = () => {
             />
           </Card>
         </Col>
-        <Col span={6}>
+        <Col xs={24} sm={12} md={12} lg={6} xl={6}>
           <Card>
             <Badge count={stats.overdue_tickets} offset={[10, 0]}>
               <Statistic
-                title="Resolved Today"
-                value={stats.resolved_today}
+                title="Closed Today"
+                value={stats.closed_today}
                 valueStyle={{ color: '#52c41a' }}
                 prefix={<CheckCircleOutlined />}
               />
@@ -398,80 +564,56 @@ const TicketDashboard = () => {
 
       {/* Filters and Actions */}
       <Card>
-        <div className="flex flex-col md:flex-row gap-4 mb-4">
+        {/* Search and Actions Bar */}
+        <Space wrap style={{ width: '100%', marginBottom: 16 }}>
           <Search
             placeholder="Search tickets..."
             allowClear
-            style={{ width: 300 }}
+            style={{ width: isMobile ? '100%' : 300 }}
             onSearch={(value) => handleFilterChange('search', value)}
             enterButton={<SearchOutlined />}
           />
 
-          <Select
-            placeholder="Filter by Status"
-            allowClear
-            style={{ width: 180 }}
-            onChange={(value) => handleFilterChange('status', value)}
-            value={filters.status || undefined}
-          >
-            <Option value="open">Open</Option>
-            <Option value="assigned">Assigned</Option>
-            <Option value="in_progress">In Progress</Option>
-            <Option value="pending">Pending</Option>
-            <Option value="resolved">Resolved</Option>
-            <Option value="closed">Closed</Option>
-          </Select>
-
-          <Select
-            placeholder="Filter by Priority"
-            allowClear
-            style={{ width: 180 }}
-            onChange={(value) => handleFilterChange('priority', value)}
-            value={filters.priority || undefined}
-          >
-            <Option value="low">Low</Option>
-            <Option value="medium">Medium</Option>
-            <Option value="high">High</Option>
-            <Option value="critical">Critical</Option>
-            <Option value="emergency">Emergency</Option>
-          </Select>
-
-          <Select
-            placeholder="Filter by Category"
-            allowClear
-            style={{ width: 180 }}
-            onChange={(value) => handleFilterChange('category', value)}
-            value={filters.category || undefined}
-          >
-            <Option value="Hardware">Hardware</Option>
-            <Option value="Software">Software</Option>
-            <Option value="Network">Network</Option>
-            <Option value="Access">Access</Option>
-            <Option value="Other">Other</Option>
-          </Select>
-
-          <div className="flex-1" />
-
-          <Space>
+          <Badge count={getActiveFilterCount()} offset={[0, 0]}>
             <Button
-              icon={<DownloadOutlined />}
-              onClick={handleExport}
-              disabled={loading}
+              icon={<FilterOutlined />}
+              onClick={() => setFilterDrawerVisible(true)}
             >
-              Export
+              {!isMobile && 'Filters'}
             </Button>
+          </Badge>
 
+          <Badge count={closeRequestCount} offset={[0, 0]}>
             <Button
-              icon={<ReloadOutlined />}
-              onClick={() => {
-                fetchTickets();
-                fetchStats();
-              }}
-              disabled={loading}
+              icon={<CheckCircleOutlined />}
+              onClick={handleShowCloseRequests}
+              type={closeRequestCount > 0 ? 'primary' : 'default'}
             >
-              Refresh
+              {!isMobile && 'Close Requests'}
             </Button>
+          </Badge>
 
+          <Button
+            icon={<DownloadOutlined />}
+            onClick={handleExport}
+            disabled={loading}
+          >
+            {!isMobile && 'Export'}
+          </Button>
+
+          <Button
+            icon={<ReloadOutlined />}
+            onClick={() => {
+              fetchTickets();
+              fetchStats();
+              fetchCloseRequestCount();
+            }}
+            disabled={loading}
+          >
+            {!isMobile && 'Refresh'}
+          </Button>
+
+          {!isMobile && (
             <Button
               type="primary"
               icon={<PlusOutlined />}
@@ -479,8 +621,32 @@ const TicketDashboard = () => {
             >
               Create Ticket
             </Button>
+          )}
+        </Space>
+
+        {/* Active Filter Tags */}
+        {getActiveFilterCount() > 0 && (
+          <Space wrap style={{ marginBottom: 16 }}>
+            {getActiveFilterTags().map((tag) => (
+              <Tag
+                key={tag.key}
+                closable
+                onClose={() => handleRemoveFilter(tag.key)}
+                color="blue"
+              >
+                {tag.label}: {tag.value}
+              </Tag>
+            ))}
+            <Button
+              size="small"
+              type="link"
+              icon={<CloseOutlined />}
+              onClick={handleClearFilters}
+            >
+              Clear All
+            </Button>
           </Space>
-        </div>
+        )}
 
         <Table
           columns={columns}
@@ -489,13 +655,15 @@ const TicketDashboard = () => {
           loading={loading}
           pagination={pagination}
           onChange={handleTableChange}
-          scroll={{ x: 1400 }}
+          scroll={{ x: 'max-content' }}
+          sticky
         />
       </Card>
 
       {/* Modals */}
       <CreateTicketModal
         visible={createModalVisible}
+        currentUser={currentUser}
         onClose={() => setCreateModalVisible(false)}
         onSuccess={handleCreateSuccess}
       />
@@ -520,6 +688,27 @@ const TicketDashboard = () => {
         onSuccess={handleCloseSuccess}
       />
 
+      <PendingCloseRequestsDrawer
+        visible={pendingCloseRequestsDrawerVisible}
+        requests={pendingCloseRequests}
+        onClose={() => setPendingCloseRequestsDrawerVisible(false)}
+        onReviewRequest={handleReviewCloseRequest}
+        onUpdate={() => {
+          fetchPendingCloseRequests();
+          fetchCloseRequestCount();
+        }}
+      />
+
+      <ReviewCloseRequestModal
+        visible={reviewCloseRequestModalVisible}
+        closeRequest={selectedCloseRequest}
+        onClose={() => {
+          setReviewCloseRequestModalVisible(false);
+          setSelectedCloseRequest(null);
+        }}
+        onSuccess={handleReviewSuccess}
+      />
+
       <TicketDetailsDrawer
         visible={detailsDrawerVisible}
         ticket={selectedTicket}
@@ -530,8 +719,27 @@ const TicketDashboard = () => {
         onUpdate={() => {
           fetchTickets();
           fetchStats();
+          fetchCloseRequestCount();
         }}
       />
+
+      {/* Filter Drawer */}
+      <TicketFilterDrawer
+        visible={filterDrawerVisible}
+        onClose={() => setFilterDrawerVisible(false)}
+        filters={filters}
+        onApplyFilters={handleApplyFilters}
+      />
+
+      {/* Mobile Floating Action Button */}
+      {isMobile && (
+        <FloatButton
+          icon={<PlusOutlined />}
+          type="primary"
+          onClick={handleCreateTicket}
+          tooltip="Create Ticket"
+        />
+      )}
     </div>
   );
 };

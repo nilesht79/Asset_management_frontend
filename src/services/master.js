@@ -175,6 +175,50 @@ const masterService = {
     return api.get('/masters/products/statistics')
   },
 
+  // Get software products only (products in Software category or its subcategories)
+  getSoftwareProducts: async (params = {}) => {
+    // First get the Software category and its subcategories
+    const categoriesResponse = await api.get('/masters/categories?limit=1000')
+    if (!categoriesResponse.data?.success) {
+      return { data: { success: true, data: { products: [] } } }
+    }
+
+    const categories = categoriesResponse.data.data.categories || categoriesResponse.data.data || []
+    const softwareCategory = categories.find(cat =>
+      cat.name?.toLowerCase() === 'software' && !cat.parent_category_id
+    )
+
+    if (!softwareCategory) {
+      return { data: { success: true, data: { products: [] } } }
+    }
+
+    // Get subcategory IDs
+    const softwareCategoryIds = [softwareCategory.id]
+    categories.forEach(cat => {
+      if (cat.parent_category_id === softwareCategory.id) {
+        softwareCategoryIds.push(cat.id)
+      }
+    })
+
+    // Get all products and filter by software categories
+    const productsResponse = await api.get(`/masters/products?limit=${params.limit || 1000}`)
+    if (!productsResponse.data?.success) {
+      return { data: { success: true, data: { products: [] } } }
+    }
+
+    const allProducts = productsResponse.data.data.products || productsResponse.data.data || []
+    const softwareProducts = allProducts.filter(product =>
+      softwareCategoryIds.includes(product.category_id)
+    )
+
+    return {
+      data: {
+        success: true,
+        data: { products: softwareProducts }
+      }
+    }
+  },
+
   createProduct: (data) => {
     return api.post('/masters/products', data)
   },
@@ -456,8 +500,65 @@ const masterService = {
     if (pagination.limit) params.limit = pagination.limit
     if (pagination.sortBy) params.sortBy = pagination.sortBy
     if (pagination.sortOrder) params.sortOrder = pagination.sortOrder
-    
+
     return params
+  },
+
+  // Vendor Services
+  getVendors: (params = {}) => {
+    const queryString = apiUtils.buildQueryString(params)
+    return api.get(`/masters/vendors${queryString ? `?${queryString}` : ''}`)
+  },
+
+  getVendor: (id) => {
+    return api.get(`/masters/vendors/${id}`)
+  },
+
+  createVendor: (data) => {
+    return api.post('/masters/vendors', data)
+  },
+
+  updateVendor: (id, data) => {
+    return api.put(`/masters/vendors/${id}`, data)
+  },
+
+  deleteVendor: (id) => {
+    return api.delete(`/masters/vendors/${id}`)
+  },
+
+  getVendorAssets: (id, params = {}) => {
+    const queryString = apiUtils.buildQueryString(params)
+    return api.get(`/masters/vendors/${id}/assets${queryString ? `?${queryString}` : ''}`)
+  },
+
+  // Organization Services (ORG/SUB_ORG for Asset Code Generation)
+  getOrgs: (params = {}) => {
+    const queryString = apiUtils.buildQueryString(params)
+    return api.get(`/masters/org${queryString ? `?${queryString}` : ''}`)
+  },
+
+  getOrg: (id) => {
+    return api.get(`/masters/org/${id}`)
+  },
+
+  getDefaultOrg: () => {
+    return api.get('/masters/org/default')
+  },
+
+  createOrg: (data) => {
+    return api.post('/masters/org', data)
+  },
+
+  updateOrg: (id, data) => {
+    return api.put(`/masters/org/${id}`, data)
+  },
+
+  deleteOrg: (id) => {
+    return api.delete(`/masters/org/${id}`)
+  },
+
+  setDefaultOrg: (id) => {
+    return api.post(`/masters/org/${id}/set-default`)
   }
 }
 
