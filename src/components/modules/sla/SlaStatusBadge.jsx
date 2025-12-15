@@ -48,14 +48,15 @@ const SlaStatusBadge = ({
       const response = await slaService.getTicketSlaTracking(ticketId);
       const trackingData = response.data?.data?.tracking;
       if (trackingData) {
+        // Note: DB column is business_elapsed_minutes, not elapsed_business_minutes
+        const elapsedMinutes = trackingData.business_elapsed_minutes || 0;
+        const maxTat = trackingData.max_tat_minutes || 0;
+
         setData({
           status: trackingData.sla_status,
-          elapsed_minutes: trackingData.elapsed_business_minutes,
-          remaining_minutes: trackingData.max_tat_minutes - trackingData.elapsed_business_minutes,
-          percent_used: slaService.calculatePercentage(
-            trackingData.elapsed_business_minutes,
-            trackingData.max_tat_minutes
-          ),
+          elapsed_minutes: elapsedMinutes,
+          remaining_minutes: maxTat - elapsedMinutes,
+          percent_used: slaService.calculatePercentage(elapsedMinutes, maxTat),
           is_paused: trackingData.is_paused,
           rule_name: trackingData.rule_name,
           min_tat: trackingData.min_tat_minutes,

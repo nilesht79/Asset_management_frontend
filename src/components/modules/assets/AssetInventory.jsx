@@ -325,11 +325,8 @@ const AssetInventory = () => {
         return
       }
 
-      // Validate: Components must have parent_asset_id
-      if (values.asset_type === 'component' && !values.parent_asset_id) {
-        message.error('Components must have a parent asset selected.')
-        return
-      }
+      // Note: Components can be spare stock without parent_asset_id
+      // parent_asset_id is optional for spare/stock components
 
       // Format dates to YYYY-MM-DD for API
       const formattedValues = { ...values }
@@ -2169,7 +2166,7 @@ const AssetInventory = () => {
                         }
                         options={dropdown.data?.filter(asset => asset.asset_type !== 'component').map(asset => ({
                           value: asset.id,
-                          label: `${asset.asset_tag} - ${asset.product_name}`
+                          label: `${asset.product_name || 'Unknown'} - ${asset.label || asset.asset_tag || 'N/A'}`
                         }))}
                         loading={dropdown.loading}
                       />

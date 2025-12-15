@@ -49,6 +49,7 @@ const SlaRulesManager = () => {
   const [rules, setRules] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingRule, setEditingRule] = useState(null);
+  const [duplicatingRule, setDuplicatingRule] = useState(null);
   const [businessHoursSchedules, setBusinessHoursSchedules] = useState([]);
   const [holidayCalendars, setHolidayCalendars] = useState([]);
   const [escalationDrawerVisible, setEscalationDrawerVisible] = useState(false);
@@ -65,6 +66,52 @@ const SlaRulesManager = () => {
     fetchSchedules();
     fetchCalendars();
   }, []);
+
+  // Set form values when modal opens for editing or duplicating
+  // This ensures the form is properly mounted before values are set
+  useEffect(() => {
+    if (modalVisible && (editingRule || duplicatingRule)) {
+      const record = editingRule || duplicatingRule;
+      const isDuplicate = !!duplicatingRule;
+
+      // Parse pause conditions from JSON
+      let pauseConditions = {};
+      try {
+        pauseConditions = JSON.parse(record.pause_conditions || '{}');
+      } catch (e) {
+        pauseConditions = {};
+      }
+
+      // Parse comma-separated fields from database
+      const parseCommaSeparated = (value) => {
+        if (!value || value.toLowerCase() === 'all') return [];
+        return value.split(',').map(s => s.trim()).filter(s => s && s.toLowerCase() !== 'all');
+      };
+
+      // Use setTimeout to ensure form is fully mounted
+      setTimeout(() => {
+        form.setFieldsValue({
+          rule_name: isDuplicate ? `${record.rule_name} (Copy)` : record.rule_name,
+          description: record.description,
+          priority_order: isDuplicate ? rules.length + 1 : record.priority_order,
+          is_active: isDuplicate ? false : (record.is_active === true || record.is_active === 1),
+          min_tat_minutes: record.min_tat_minutes,
+          avg_tat_minutes: record.avg_tat_minutes,
+          max_tat_minutes: record.max_tat_minutes,
+          business_hours_schedule_id: record.business_hours_schedule_id,
+          holiday_calendar_id: record.holiday_calendar_id,
+          ticket_priorities: parseCommaSeparated(record.applicable_priority),
+          ticket_types: parseCommaSeparated(record.applicable_ticket_type),
+          ticket_channels: parseCommaSeparated(record.applicable_ticket_channels),
+          vip_only: record.is_vip_override === true || record.is_vip_override === 1,
+          asset_importance: parseCommaSeparated(record.applicable_asset_importance),
+          pause_on_pending_closure: pauseConditions.pending_closure === true || pauseConditions.pending_closure === 1,
+          pause_on_awaiting_info: pauseConditions.awaiting_info === true || pauseConditions.awaiting_info === 1,
+          pause_on_hold: pauseConditions.on_hold === true || pauseConditions.on_hold === 1
+        });
+      }, 0);
+    }
+  }, [modalVisible, editingRule, duplicatingRule, form, rules.length]);
 
   const fetchRules = async () => {
     setLoading(true);
@@ -101,96 +148,40 @@ const SlaRulesManager = () => {
 
   const handleCreate = () => {
     setEditingRule(null);
+    setDuplicatingRule(null);
     form.resetFields();
+
+    // Find default schedule and first calendar
+    const defaultSchedule = businessHoursSchedules.find(s => s.is_default) || businessHoursSchedules[0];
+    const defaultCalendar = holidayCalendars[0];
+
     form.setFieldsValue({
       is_active: true,
       priority_order: rules.length + 1,
       min_tat_minutes: 60,
       avg_tat_minutes: 120,
-      max_tat_minutes: 240
+      max_tat_minutes: 240,
+      business_hours_schedule_id: defaultSchedule?.schedule_id,
+      holiday_calendar_id: defaultCalendar?.calendar_id
     });
     setModalVisible(true);
   };
 
   const handleEdit = (record) => {
+    // Reset form first to clear any stale values
+    form.resetFields();
+    // Set editing rule - the useEffect will handle populating form values
+    setDuplicatingRule(null);
     setEditingRule(record);
-
-    // Parse pause conditions from JSON
-    let pauseConditions = {};
-    try {
-      pauseConditions = JSON.parse(record.pause_conditions || '{}');
-    } catch (e) {
-      pauseConditions = {};
-    }
-
-    // Parse comma-separated fields from database
-    // Note: "all" in database means "any" (no specific selection) in UI
-    const parseCommaSeparated = (value) => {
-      if (!value || value.toLowerCase() === 'all') return [];
-      return value.split(',').map(s => s.trim()).filter(s => s && s.toLowerCase() !== 'all');
-    };
-
-    form.setFieldsValue({
-      rule_name: record.rule_name,
-      description: record.description,
-      priority_order: record.priority_order,
-      is_active: record.is_active === true || record.is_active === 1,
-      min_tat_minutes: record.min_tat_minutes,
-      avg_tat_minutes: record.avg_tat_minutes,
-      max_tat_minutes: record.max_tat_minutes,
-      business_hours_schedule_id: record.business_hours_schedule_id,
-      holiday_calendar_id: record.holiday_calendar_id,
-      // Conditions from separate database columns
-      // "all" means no specific selection (any)
-      ticket_priorities: parseCommaSeparated(record.applicable_priority),
-      ticket_types: parseCommaSeparated(record.applicable_ticket_type),
-      ticket_channels: parseCommaSeparated(record.applicable_ticket_channels),
-      vip_only: record.is_vip_override === true || record.is_vip_override === 1,
-      asset_importance: parseCommaSeparated(record.applicable_asset_importance),
-      // Pause conditions
-      pause_on_pending_closure: pauseConditions.pending_closure === true || pauseConditions.pending_closure === 1,
-      pause_on_awaiting_info: pauseConditions.awaiting_info === true || pauseConditions.awaiting_info === 1,
-      pause_on_hold: pauseConditions.on_hold === true || pauseConditions.on_hold === 1
-    });
     setModalVisible(true);
   };
 
   const handleDuplicate = (record) => {
+    // Reset form first to clear any stale values
+    form.resetFields();
+    // Set duplicating rule - the useEffect will handle populating form values
     setEditingRule(null);
-
-    let pauseConditions = {};
-    try {
-      pauseConditions = JSON.parse(record.pause_conditions || '{}');
-    } catch (e) {
-      pauseConditions = {};
-    }
-
-    // Parse comma-separated fields from database
-    // Note: "all" in database means "any" (no specific selection) in UI
-    const parseCommaSeparated = (value) => {
-      if (!value || value.toLowerCase() === 'all') return [];
-      return value.split(',').map(s => s.trim()).filter(s => s && s.toLowerCase() !== 'all');
-    };
-
-    form.setFieldsValue({
-      rule_name: `${record.rule_name} (Copy)`,
-      description: record.description,
-      priority_order: rules.length + 1,
-      is_active: false, // Duplicates start as inactive
-      min_tat_minutes: record.min_tat_minutes,
-      avg_tat_minutes: record.avg_tat_minutes,
-      max_tat_minutes: record.max_tat_minutes,
-      business_hours_schedule_id: record.business_hours_schedule_id,
-      holiday_calendar_id: record.holiday_calendar_id,
-      ticket_priorities: parseCommaSeparated(record.applicable_priority),
-      ticket_types: parseCommaSeparated(record.applicable_ticket_type),
-      ticket_channels: parseCommaSeparated(record.applicable_ticket_channels),
-      vip_only: record.is_vip_override === true || record.is_vip_override === 1,
-      asset_importance: parseCommaSeparated(record.applicable_asset_importance),
-      pause_on_pending_closure: pauseConditions.pending_closure === true || pauseConditions.pending_closure === 1,
-      pause_on_awaiting_info: pauseConditions.awaiting_info === true || pauseConditions.awaiting_info === 1,
-      pause_on_hold: pauseConditions.on_hold === true || pauseConditions.on_hold === 1
-    });
+    setDuplicatingRule(record);
     setModalVisible(true);
   };
 
@@ -241,10 +232,12 @@ const SlaRulesManager = () => {
         message.success('SLA rule updated successfully');
       } else {
         await slaService.createRule(ruleData);
-        message.success('SLA rule created successfully');
+        message.success(duplicatingRule ? 'SLA rule duplicated successfully' : 'SLA rule created successfully');
       }
 
       setModalVisible(false);
+      setEditingRule(null);
+      setDuplicatingRule(null);
       fetchRules();
     } catch (error) {
       if (error.errorFields) {
@@ -449,14 +442,19 @@ const SlaRulesManager = () => {
         title={
           <Space>
             <ThunderboltOutlined />
-            <span>{editingRule ? 'Edit SLA Rule' : 'Create SLA Rule'}</span>
+            <span>{editingRule ? 'Edit SLA Rule' : duplicatingRule ? 'Duplicate SLA Rule' : 'Create SLA Rule'}</span>
           </Space>
         }
         open={modalVisible}
-        onCancel={() => setModalVisible(false)}
+        onCancel={() => {
+          setModalVisible(false);
+          setEditingRule(null);
+          setDuplicatingRule(null);
+        }}
         onOk={handleSubmit}
         width={800}
-        okText={editingRule ? 'Update' : 'Create'}
+        okText={editingRule ? 'Update' : duplicatingRule ? 'Duplicate' : 'Create'}
+        forceRender
       >
         <Form form={form} layout="vertical" requiredMark="optional">
           <Row gutter={16}>
@@ -587,27 +585,38 @@ const SlaRulesManager = () => {
                 </Col>
               </Row>
 
-              <Form.Item name="vip_only" valuePropName="checked">
-                <Switch /> <Text style={{ marginLeft: 8 }}>VIP Users Only</Text>
-              </Form.Item>
+              <Space>
+                <Form.Item name="vip_only" valuePropName="checked" noStyle>
+                  <Switch />
+                </Form.Item>
+                <Text>VIP Users Only</Text>
+              </Space>
             </Panel>
 
             <Panel header="Business Hours & Calendar" key="schedule">
               <Row gutter={16}>
                 <Col span={12}>
-                  <Form.Item name="business_hours_schedule_id" label="Business Hours Schedule">
-                    <Select placeholder="Select schedule" allowClear>
+                  <Form.Item
+                    name="business_hours_schedule_id"
+                    label="Business Hours Schedule"
+                    rules={[{ required: true, message: 'Please select a business hours schedule' }]}
+                  >
+                    <Select placeholder="Select schedule">
                       {businessHoursSchedules.map(schedule => (
                         <Option key={schedule.schedule_id} value={schedule.schedule_id}>
-                          {schedule.schedule_name}
+                          {schedule.schedule_name} {schedule.is_default ? '(Default)' : ''}
                         </Option>
                       ))}
                     </Select>
                   </Form.Item>
                 </Col>
                 <Col span={12}>
-                  <Form.Item name="holiday_calendar_id" label="Holiday Calendar">
-                    <Select placeholder="Select calendar" allowClear>
+                  <Form.Item
+                    name="holiday_calendar_id"
+                    label="Holiday Calendar"
+                    rules={[{ required: true, message: 'Please select a holiday calendar' }]}
+                  >
+                    <Select placeholder="Select calendar">
                       {holidayCalendars.map(calendar => (
                         <Option key={calendar.calendar_id} value={calendar.calendar_id}>
                           {calendar.calendar_name}
@@ -623,29 +632,33 @@ const SlaRulesManager = () => {
               <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
                 SLA timer will pause when ticket enters these statuses
               </Text>
-              <Space direction="vertical">
-                <Form.Item name="pause_on_pending_closure" valuePropName="checked" noStyle>
-                  <Switch size="small" />
-                </Form.Item>
-                <Text style={{ marginLeft: 8 }}>Pending Closure</Text>
-
-                <Form.Item name="pause_on_awaiting_info" valuePropName="checked" noStyle>
-                  <Switch size="small" />
-                </Form.Item>
-                <Text style={{ marginLeft: 8 }}>Awaiting Information</Text>
-
-                <Form.Item name="pause_on_hold" valuePropName="checked" noStyle>
-                  <Switch size="small" />
-                </Form.Item>
-                <Text style={{ marginLeft: 8 }}>On Hold</Text>
+              <Space direction="vertical" size="middle">
+                <Space>
+                  <Form.Item name="pause_on_pending_closure" valuePropName="checked" noStyle>
+                    <Switch size="small" />
+                  </Form.Item>
+                  <Text>Pending Closure</Text>
+                </Space>
+                <Space>
+                  <Form.Item name="pause_on_awaiting_info" valuePropName="checked" noStyle>
+                    <Switch size="small" />
+                  </Form.Item>
+                  <Text>Awaiting Information</Text>
+                </Space>
+                <Space>
+                  <Form.Item name="pause_on_hold" valuePropName="checked" noStyle>
+                    <Switch size="small" />
+                  </Form.Item>
+                  <Text>On Hold</Text>
+                </Space>
               </Space>
             </Panel>
           </Collapse>
 
           <Divider />
 
-          <Form.Item name="is_active" valuePropName="checked">
-            <Switch /> <Text style={{ marginLeft: 8 }}>Active</Text>
+          <Form.Item name="is_active" valuePropName="checked" label="Status">
+            <Switch checkedChildren="Active" unCheckedChildren="Inactive" />
           </Form.Item>
         </Form>
       </Modal>

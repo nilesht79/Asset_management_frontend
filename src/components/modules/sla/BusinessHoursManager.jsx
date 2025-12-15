@@ -187,6 +187,7 @@ const BusinessHoursManager = () => {
       await slaService.saveBusinessHoursSchedule(scheduleData);
       message.success(editingSchedule ? 'Schedule updated successfully' : 'Schedule created successfully');
       setModalVisible(false);
+      setEditingSchedule(null);
       fetchSchedules();
     } catch (error) {
       if (error.errorFields) {
@@ -265,7 +266,7 @@ const BusinessHoursManager = () => {
         <Space direction="vertical" size={0}>
           <Space>
             <Text strong>{text}</Text>
-            {record.is_default && <Tag color="green">Default</Tag>}
+            {(record.is_default === true || record.is_default === 1) && <Tag color="green">Default</Tag>}
           </Space>
           {record.description && (
             <Text type="secondary" style={{ fontSize: '12px' }}>{record.description}</Text>
@@ -347,10 +348,14 @@ const BusinessHoursManager = () => {
           </Space>
         }
         open={modalVisible}
-        onCancel={() => setModalVisible(false)}
+        onCancel={() => {
+          setModalVisible(false);
+          setEditingSchedule(null);
+        }}
         onOk={handleSubmit}
         width={700}
         okText={editingSchedule ? 'Update' : 'Create'}
+        forceRender
       >
         <Form form={form} layout="vertical" requiredMark="optional">
           <Row gutter={16}>
@@ -496,8 +501,8 @@ const BusinessHoursManager = () => {
 
           <Divider />
 
-          <Form.Item name="is_default" valuePropName="checked">
-            <Switch /> <Text style={{ marginLeft: 8 }}>Set as Default Schedule</Text>
+          <Form.Item name="is_default" valuePropName="checked" label="Default Schedule">
+            <Switch checkedChildren="Yes" unCheckedChildren="No" />
           </Form.Item>
         </Form>
       </Modal>

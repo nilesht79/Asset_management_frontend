@@ -18,6 +18,7 @@ import VendorList from '../components/modules/masters/vendors/VendorList'
 
 // Settings Components
 import OrgConfig from '../components/modules/settings/OrgConfig'
+import EmailSettings from '../components/modules/settings/EmailSettings'
 
 import AssetInventory from "../components/modules/assets/AssetInventory"
 import AssetMovement from "../pages/AssetMovement"
@@ -62,6 +63,13 @@ import FaultTypeManagement from '../components/modules/admin/FaultTypeManagement
 
 // SLA Settings
 import SlaSettings from '../pages/SlaSettings'
+
+// Report Pages
+import SparePartsReport from '../pages/SparePartsReport'
+import ServiceReports from '../pages/ServiceReports'
+
+// Company Settings
+import CompanySettings from '../pages/CompanySettings'
 
 const AppRouter = () => {
   const { user } = useSelector(state => state.auth)
@@ -186,6 +194,16 @@ const AppRouter = () => {
         <Route path="reports/assets" element={<div>Asset Reports (To be implemented)</div>} />
         <Route path="reports/tickets" element={<div>Ticket Reports (To be implemented)</div>} />
 
+        {/* Spare Parts Report - Coordinator, Admin, Superadmin */}
+        {['coordinator', 'admin', 'superadmin'].includes(user?.role) && (
+          <Route path="reports/spare-parts" element={<SparePartsReport />} />
+        )}
+
+        {/* Service Reports - Coordinator, Admin, Superadmin, Engineer */}
+        {['coordinator', 'admin', 'superadmin', 'engineer'].includes(user?.role) && (
+          <Route path="reports/service-reports" element={<ServiceReports />} />
+        )}
+
         {/* Reconciliation Routes - Admin, Superadmin, Engineer */}
         {['admin', 'superadmin', 'engineer'].includes(user?.role) && (
           <>
@@ -200,6 +218,8 @@ const AppRouter = () => {
             <Route path="settings/permission-control" element={<SuperAdminPermissions />} />
             <Route path="settings/field-templates" element={<TemplateManager />} />
             <Route path="settings/org-config" element={<OrgConfig />} />
+            <Route path="settings/email" element={<EmailSettings />} />
+            <Route path="settings/company-branding" element={<CompanySettings />} />
           </>
         )}
 

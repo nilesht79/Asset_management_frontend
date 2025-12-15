@@ -1,22 +1,39 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Form, Input, Card, Row, Col, message, Tag, Alert } from 'antd';
-import { CheckCircleOutlined, ClockCircleOutlined } from '@ant-design/icons';
+import { Modal, Form, Input, Card, Row, Col, message, Tag, Alert, Button } from 'antd';
+import { CheckCircleOutlined, ClockCircleOutlined, ToolOutlined, SwapOutlined, FileTextOutlined } from '@ant-design/icons';
 import ticketService from '../../../services/ticket';
+import serviceReportService from '../../../services/serviceReport';
+import ServiceReportModal from './ServiceReportModal';
 
 const { TextArea } = Input;
 
-const CloseTicketModal = ({ visible, ticket, onClose, onSuccess }) => {
+const CloseTicketModal = ({ visible, ticket, linkedAssets = [], onClose, onSuccess }) => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
+  const [showServiceReport, setShowServiceReport] = useState(false);
+  const [serviceReportCompleted, setServiceReportCompleted] = useState(false);
+
+  // Check if ticket requires service report
+  const requiresServiceReport = ticket?.service_type === 'repair' || ticket?.service_type === 'replace';
+  const isRepair = ticket?.service_type === 'repair';
+  const isReplace = ticket?.service_type === 'replace';
 
   useEffect(() => {
     if (visible && ticket) {
       form.resetFields();
+      setServiceReportCompleted(false);
+      setShowServiceReport(false);
     }
   }, [visible, ticket]);
 
   const handleSubmit = async (values) => {
     if (!ticket) return;
+
+    // If service report is required but not completed, show service report modal
+    if (requiresServiceReport && !serviceReportCompleted) {
+      setShowServiceReport(true);
+      return;
+    }
 
     setLoading(true);
     try {
@@ -31,6 +48,16 @@ const CloseTicketModal = ({ visible, ticket, onClose, onSuccess }) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleServiceReportSuccess = () => {
+    setShowServiceReport(false);
+    setServiceReportCompleted(true);
+    message.success('Service report created. Now complete the resolution notes to close the ticket.');
+  };
+
+  const handleOpenServiceReport = () => {
+    setShowServiceReport(true);
   };
 
   if (!ticket) return null;
@@ -66,14 +93,60 @@ const CloseTicketModal = ({ visible, ticket, onClose, onSuccess }) => {
       width={650}
       destroyOnClose
     >
-      {/* Warning Alert */}
-      <Alert
-        message="Closing Ticket"
-        description="Once closed, this ticket will be marked as resolved and removed from active queue. You can provide resolution notes below."
-        type="info"
-        showIcon
-        className="mb-4"
-      />
+      {/* Service Type Alert */}
+      {requiresServiceReport && !serviceReportCompleted && (
+        <Alert
+          message={
+            <span>
+              {isRepair ? <ToolOutlined /> : <SwapOutlined />}{' '}
+              {isRepair ? 'Repair Service Report Required' : 'Replacement Service Report Required'}
+            </span>
+          }
+          description={
+            <div>
+              <p>
+                {isRepair
+                  ? 'This ticket requires a service report documenting the repair work and spare parts used.'
+                  : 'This ticket requires a service report documenting the replacement and asset transfer.'}
+              </p>
+              <Button
+                type="primary"
+                size="small"
+                icon={<FileTextOutlined />}
+                onClick={handleOpenServiceReport}
+                style={{ marginTop: 8 }}
+              >
+                Create Service Report
+              </Button>
+            </div>
+          }
+          type="warning"
+          showIcon
+          className="mb-4"
+        />
+      )}
+
+      {/* Service Report Completed Alert */}
+      {requiresServiceReport && serviceReportCompleted && (
+        <Alert
+          message="Service Report Created"
+          description="Service report has been submitted. You can now close the ticket with resolution notes."
+          type="success"
+          showIcon
+          className="mb-4"
+        />
+      )}
+
+      {/* Standard Close Alert */}
+      {!requiresServiceReport && (
+        <Alert
+          message="Closing Ticket"
+          description="Once closed, this ticket will be marked as resolved and removed from active queue. You can provide resolution notes below."
+          type="info"
+          showIcon
+          className="mb-4"
+        />
+      )}
 
       {/* Ticket Info */}
       <Card size="small" className="mb-4" style={{ backgroundColor: '#fffbe6', borderColor: '#ffe58f' }}>
@@ -128,7 +201,7 @@ const CloseTicketModal = ({ visible, ticket, onClose, onSuccess }) => {
           </Row>
 
           <Row gutter={16}>
-            <Col span={8}>
+            <Col span={6}>
               <div>
                 <span className="font-semibold">Status:</span>
                 <div>
@@ -138,7 +211,7 @@ const CloseTicketModal = ({ visible, ticket, onClose, onSuccess }) => {
                 </div>
               </div>
             </Col>
-            <Col span={8}>
+            <Col span={6}>
               <div>
                 <span className="font-semibold">Priority:</span>
                 <div>
@@ -148,10 +221,20 @@ const CloseTicketModal = ({ visible, ticket, onClose, onSuccess }) => {
                 </div>
               </div>
             </Col>
-            <Col span={8}>
+            <Col span={6}>
               <div>
                 <span className="font-semibold">Category:</span>
                 <div>{ticket.category || 'N/A'}</div>
+              </div>
+            </Col>
+            <Col span={6}>
+              <div>
+                <span className="font-semibold">Service Type:</span>
+                <div>
+                  <Tag color={serviceReportService.getServiceTypeColor(ticket.service_type)}>
+                    {serviceReportService.getServiceTypeDisplayName(ticket.service_type)}
+                  </Tag>
+                </div>
               </div>
             </Col>
           </Row>
@@ -179,8 +262,19 @@ const CloseTicketModal = ({ visible, ticket, onClose, onSuccess }) => {
       </Form>
 
       <div className="text-xs text-gray-500 mt-2">
-        💡 Tip: Detailed resolution notes help track common issues and improve future support.
+        {requiresServiceReport
+          ? '💡 Tip: Service reports help track repair costs, spare parts usage, and asset lifecycle.'
+          : '💡 Tip: Detailed resolution notes help track common issues and improve future support.'}
       </div>
+
+      {/* Service Report Modal */}
+      <ServiceReportModal
+        visible={showServiceReport}
+        ticket={ticket}
+        linkedAssets={linkedAssets}
+        onClose={() => setShowServiceReport(false)}
+        onSuccess={handleServiceReportSuccess}
+      />
     </Modal>
   );
 };

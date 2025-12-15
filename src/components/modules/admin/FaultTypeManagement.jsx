@@ -188,19 +188,6 @@ const FaultTypeManagement = () => {
       render: (text) => text || '-'
     },
     {
-      title: 'Usage Count',
-      dataIndex: 'usage_count',
-      key: 'usage_count',
-      sorter: (a, b) => (a.usage_count || 0) - (b.usage_count || 0),
-      render: (count) => (
-        <Badge
-          count={count || 0}
-          showZero
-          style={{ backgroundColor: count > 0 ? '#52c41a' : '#d9d9d9' }}
-        />
-      )
-    },
-    {
       title: 'Status',
       dataIndex: 'is_active',
       key: 'is_active',

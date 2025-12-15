@@ -222,6 +222,32 @@ const slaService = {
     }
   },
 
+  /**
+   * Get available designations for escalation rules
+   */
+  getDesignations: async () => {
+    try {
+      const response = await apiClient.get('/sla/designations');
+      return response;
+    } catch (error) {
+      console.error('Error fetching designations:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get available roles for escalation rules
+   */
+  getRoles: async () => {
+    try {
+      const response = await apiClient.get('/sla/roles');
+      return response;
+    } catch (error) {
+      console.error('Error fetching roles:', error);
+      throw error;
+    }
+  },
+
   // ==================== SLA TRACKING ====================
 
   /**

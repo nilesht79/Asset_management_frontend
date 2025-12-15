@@ -27,7 +27,8 @@ import {
   InboxOutlined,
   WarningOutlined,
   AlertOutlined,
-  ClockCircleOutlined
+  ClockCircleOutlined,
+  MailOutlined
 } from '@ant-design/icons'
 import { selectSidebarCollapsed } from '../../../store/slices/uiSlice'
 import { getThemeByRole } from '../../../utils/roleThemes'
@@ -222,6 +223,11 @@ const Sidebar = () => {
               label: 'Ticketing Reports',
             },
             {
+              key: '/reports/service-reports',
+              icon: <FileTextOutlined />,
+              label: 'Service Reports',
+            },
+            {
               key: '/reports/sla-compliance',
               label: 'SLA Compliance Reports',
             },
@@ -268,6 +274,11 @@ const Sidebar = () => {
             },
             ...(user?.role === 'superadmin' ? [
               {
+                key: '/settings/email',
+                icon: <MailOutlined />,
+                label: 'Email Configuration',
+              },
+              {
                 key: '/settings/permission-control',
                 icon: <SecurityScanOutlined />,
                 label: 'Permission Control',
@@ -281,6 +292,11 @@ const Sidebar = () => {
                 key: '/settings/org-config',
                 icon: <ControlOutlined />,
                 label: 'Organization Config',
+              },
+              {
+                key: '/settings/company-branding',
+                icon: <CrownOutlined />,
+                label: 'Company Branding',
               },
               {
                 key: '/settings/fault-thresholds',
@@ -371,6 +387,12 @@ const Sidebar = () => {
           key: '/licenses',
           icon: <SafetyCertificateOutlined />,
           label: 'Software Licenses',
+        },
+        // Reports for Coordinators
+        {
+          key: '/reports/service-reports',
+          icon: <FileTextOutlined />,
+          label: 'Service Reports',
         }
       )
     }
@@ -480,6 +502,12 @@ const Sidebar = () => {
               label: 'View Assets',
             },
           ],
+        },
+        // Reports for Engineers
+        {
+          key: '/reports/service-reports',
+          icon: <FileTextOutlined />,
+          label: 'Service Reports',
         }
       )
     }
@@ -583,6 +611,7 @@ const Sidebar = () => {
     if (pathname.startsWith('/reports/asset-lifecycle')) return ['/reports/asset-lifecycle']
     if (pathname.startsWith('/reports/asset-performance')) return ['/reports/asset-performance']
     if (pathname.startsWith('/reports/tickets')) return ['/reports/tickets']
+    if (pathname.startsWith('/reports/service-reports')) return ['/reports/service-reports']
     if (pathname.startsWith('/reports/sla-compliance')) return ['/reports/sla-compliance']
     if (pathname.startsWith('/reports/custom')) return ['/reports/custom']
 
@@ -599,10 +628,12 @@ const Sidebar = () => {
     if (pathname.startsWith('/department/reports')) return ['/department/reports']
 
     // Settings routes
+    if (pathname.startsWith('/settings/email')) return ['/settings/email']
     if (pathname.startsWith('/settings/sla')) return ['/settings/sla']
     if (pathname.startsWith('/settings/permission-control')) return ['/settings/permission-control']
     if (pathname.startsWith('/settings/field-templates')) return ['/settings/field-templates']
     if (pathname.startsWith('/settings/org-config')) return ['/settings/org-config']
+    if (pathname.startsWith('/settings/company-branding')) return ['/settings/company-branding']
 
     // Consumables routes
     if (pathname.startsWith('/consumables/master')) return ['/consumables/master']

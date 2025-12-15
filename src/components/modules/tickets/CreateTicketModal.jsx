@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Modal, Form, Input, Select, Card, Row, Col, message, Button, Divider } from 'antd';
-import { UserAddOutlined, LaptopOutlined } from '@ant-design/icons';
+import { Modal, Form, Input, Select, Card, Row, Col, message, Button, Divider, Alert } from 'antd';
+import { UserAddOutlined, LaptopOutlined, ToolOutlined } from '@ant-design/icons';
 import ticketService from '../../../services/ticket';
 import AssetSelector from './AssetSelector';
 
@@ -17,6 +17,9 @@ const CreateTicketModal = ({ visible, onClose, onSuccess, currentUser }) => {
   const [isGuestMode, setIsGuestMode] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [selectedAssets, setSelectedAssets] = useState([]);
+
+  // Watch service_type to show alert for repair/replace
+  const serviceType = Form.useWatch('service_type', form);
 
   // Check if current user is an engineer (not coordinator/admin)
   const isEngineerRole = currentUser?.role === 'engineer';
@@ -130,6 +133,8 @@ const CreateTicketModal = ({ visible, onClose, onSuccess, currentUser }) => {
         description: values.description,
         priority: values.priority,
         category: values.category,
+        ticket_type: values.ticket_type || 'internal',
+        service_type: values.service_type || 'general',
         assigned_to_engineer_id: values.assigned_to_engineer_id || null
       };
 
@@ -191,7 +196,9 @@ const CreateTicketModal = ({ visible, onClose, onSuccess, currentUser }) => {
         layout="vertical"
         onFinish={handleSubmit}
         initialValues={{
-          priority: 'medium'
+          priority: 'medium',
+          ticket_type: 'internal',
+          service_type: 'general'
         }}
       >
         {/* Employee/Guest Selection */}
@@ -359,6 +366,64 @@ const CreateTicketModal = ({ visible, onClose, onSuccess, currentUser }) => {
               </span>
             </div>
           </>
+        )}
+
+        <Row gutter={16}>
+          <Col span={12}>
+            {/* Ticket Type */}
+            <Form.Item
+              name="ticket_type"
+              label="Ticket Type"
+              rules={[{ required: true, message: 'Please select ticket type' }]}
+            >
+              <Select placeholder="Select ticket type">
+                <Option value="internal">Internal (Employee)</Option>
+                <Option value="external">External (Vendor/Client)</Option>
+                <Option value="walk_in">Walk-in</Option>
+                <Option value="phone">Phone Request</Option>
+                <Option value="email">Email Request</Option>
+              </Select>
+            </Form.Item>
+          </Col>
+
+          <Col span={12}>
+            {/* Service Type */}
+            <Form.Item
+              name="service_type"
+              label="Service Type"
+              rules={[{ required: true, message: 'Please select service type' }]}
+              tooltip="Repair/Replace tickets will require a service report upon closure"
+            >
+              <Select placeholder="Select service type">
+                <Option value="general">General Support</Option>
+                <Option value="repair">Repair Service</Option>
+                <Option value="replace">Replacement Service</Option>
+              </Select>
+            </Form.Item>
+          </Col>
+        </Row>
+
+        {/* Service Type Alert */}
+        {(serviceType === 'repair' || serviceType === 'replace') && (
+          <Alert
+            message={
+              <span>
+                <ToolOutlined style={{ marginRight: 8 }} />
+                {serviceType === 'repair'
+                  ? 'Repair Service Selected'
+                  : 'Replacement Service Selected'}
+              </span>
+            }
+            description={
+              serviceType === 'repair'
+                ? 'A service report will be required when closing this ticket. You can document spare parts used and repair details.'
+                : 'A service report will be required when closing this ticket. You can document the replacement asset and any components transferred.'
+            }
+            type="info"
+            showIcon={false}
+            className="mb-4"
+            style={{ backgroundColor: '#fff7e6', borderColor: '#ffd591' }}
+          />
         )}
 
         <Row gutter={16}>

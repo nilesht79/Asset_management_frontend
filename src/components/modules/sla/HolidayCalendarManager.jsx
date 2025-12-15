@@ -138,6 +138,7 @@ const HolidayCalendarManager = () => {
       await slaService.saveHolidayCalendar(calendarData);
       message.success(editingCalendar ? 'Calendar updated successfully' : 'Calendar created successfully');
       setModalVisible(false);
+      setEditingCalendar(null);
       fetchCalendars();
     } catch (error) {
       if (error.errorFields) {
@@ -285,10 +286,14 @@ const HolidayCalendarManager = () => {
           </Space>
         }
         open={modalVisible}
-        onCancel={() => setModalVisible(false)}
+        onCancel={() => {
+          setModalVisible(false);
+          setEditingCalendar(null);
+        }}
         onOk={handleSubmit}
         width={700}
         okText={editingCalendar ? 'Update' : 'Create'}
+        forceRender
       >
         <Form form={form} layout="vertical" requiredMark="optional">
           <Row gutter={16}>
@@ -396,8 +401,8 @@ const HolidayCalendarManager = () => {
 
           <Divider />
 
-          <Form.Item name="is_active" valuePropName="checked">
-            <Switch /> <Text style={{ marginLeft: 8 }}>Active</Text>
+          <Form.Item name="is_active" valuePropName="checked" label="Status">
+            <Switch checkedChildren="Active" unCheckedChildren="Inactive" />
           </Form.Item>
         </Form>
       </Modal>

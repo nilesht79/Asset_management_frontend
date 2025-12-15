@@ -46,11 +46,13 @@ const TRIGGER_TYPES = [
 
 const RECIPIENT_TYPES = [
   { value: 'assigned_engineer', label: 'Assigned Engineer' },
-  { value: 'coordinator', label: 'Ticket Coordinator' },
-  { value: 'team_leader', label: 'Team Leader' },
+  { value: 'coordinator', label: 'Coordinator' },
+  { value: 'it_head', label: 'IT Head' },
   { value: 'department_head', label: 'Department Head' },
-  { value: 'project_owner', label: 'Project Owner' },
-  { value: 'custom_group', label: 'Custom Role/Group' }
+  { value: 'admin', label: 'Admin' },
+  { value: 'superadmin', label: 'Super Admin' },
+  { value: 'custom_role', label: 'Custom Role' },
+  { value: 'custom_designation', label: 'Custom Designation' }
 ];
 
 const REFERENCE_THRESHOLDS = [
@@ -67,13 +69,66 @@ const EscalationRulesManager = ({ slaRuleId, slaRuleName, onClose }) => {
   const [rules, setRules] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingRule, setEditingRule] = useState(null);
+  const [designations, setDesignations] = useState([]);
+  const [roles, setRoles] = useState([]);
+  const [loadingDesignations, setLoadingDesignations] = useState(false);
+  const [loadingRoles, setLoadingRoles] = useState(false);
   const [form] = Form.useForm();
+  const recipientType = Form.useWatch('recipient_type', form);
 
   useEffect(() => {
     if (slaRuleId) {
       fetchRules();
     }
+    fetchDesignations();
+    fetchRoles();
   }, [slaRuleId]);
+
+  const fetchDesignations = async () => {
+    setLoadingDesignations(true);
+    try {
+      const response = await slaService.getDesignations();
+      setDesignations(response.data?.data?.designations || []);
+    } catch (error) {
+      console.error('Failed to fetch designations:', error);
+    } finally {
+      setLoadingDesignations(false);
+    }
+  };
+
+  const fetchRoles = async () => {
+    setLoadingRoles(true);
+    try {
+      const response = await slaService.getRoles();
+      setRoles(response.data?.data?.roles || []);
+    } catch (error) {
+      console.error('Failed to fetch roles:', error);
+    } finally {
+      setLoadingRoles(false);
+    }
+  };
+
+  // Set form values when modal opens for editing
+  useEffect(() => {
+    if (modalVisible && editingRule) {
+      setTimeout(() => {
+        form.setFieldsValue({
+          escalation_level: editingRule.escalation_level,
+          trigger_type: editingRule.trigger_type,
+          reference_threshold: editingRule.reference_threshold,
+          trigger_offset_minutes: editingRule.trigger_offset_minutes,
+          repeat_interval_minutes: editingRule.repeat_interval_minutes,
+          max_repeat_count: editingRule.max_repeat_count,
+          recipient_type: editingRule.recipient_type,
+          recipient_role: editingRule.recipient_role,
+          number_of_recipients: editingRule.number_of_recipients,
+          notification_template: editingRule.notification_template,
+          include_ticket_details: editingRule.include_ticket_details === true || editingRule.include_ticket_details === 1,
+          is_active: editingRule.is_active === true || editingRule.is_active === 1
+        });
+      }, 0);
+    }
+  }, [modalVisible, editingRule, form]);
 
   const fetchRules = async () => {
     setLoading(true);
@@ -98,7 +153,6 @@ const EscalationRulesManager = ({ slaRuleId, slaRuleName, onClose }) => {
       trigger_offset_minutes: -30,
       recipient_type: 'assigned_engineer',
       number_of_recipients: 1,
-      escalation_type: 'notification',
       include_ticket_details: true,
       is_active: true
     });
@@ -106,22 +160,8 @@ const EscalationRulesManager = ({ slaRuleId, slaRuleName, onClose }) => {
   };
 
   const handleEdit = (record) => {
+    form.resetFields();
     setEditingRule(record);
-    form.setFieldsValue({
-      escalation_level: record.escalation_level,
-      trigger_type: record.trigger_type,
-      reference_threshold: record.reference_threshold,
-      trigger_offset_minutes: record.trigger_offset_minutes,
-      repeat_interval_minutes: record.repeat_interval_minutes,
-      max_repeat_count: record.max_repeat_count,
-      recipient_type: record.recipient_type,
-      recipient_role: record.recipient_role,
-      number_of_recipients: record.number_of_recipients,
-      escalation_type: record.escalation_type,
-      notification_template: record.notification_template,
-      include_ticket_details: record.include_ticket_details === true || record.include_ticket_details === 1,
-      is_active: record.is_active === true || record.is_active === 1
-    });
     setModalVisible(true);
   };
 
@@ -151,7 +191,7 @@ const EscalationRulesManager = ({ slaRuleId, slaRuleName, onClose }) => {
         recipient_type: values.recipient_type,
         recipient_role: values.recipient_role || null,
         number_of_recipients: values.number_of_recipients,
-        escalation_type: values.escalation_type,
+        escalation_type: 'notification', // Always email notification
         notification_template: values.notification_template || null,
         include_ticket_details: values.include_ticket_details,
         is_active: values.is_active
@@ -160,6 +200,7 @@ const EscalationRulesManager = ({ slaRuleId, slaRuleName, onClose }) => {
       await slaService.saveEscalationRule(ruleData);
       message.success(editingRule ? 'Rule updated successfully' : 'Rule created successfully');
       setModalVisible(false);
+      setEditingRule(null);
       fetchRules();
     } catch (error) {
       if (error.errorFields) {
@@ -219,7 +260,9 @@ const EscalationRulesManager = ({ slaRuleId, slaRuleName, onClose }) => {
         <Space direction="vertical" size={0}>
           <Text>{getRecipientLabel(record.recipient_type)}</Text>
           {record.recipient_role && (
-            <Text type="secondary" style={{ fontSize: '11px' }}>Role: {record.recipient_role}</Text>
+            <Text type="secondary" style={{ fontSize: '11px' }}>
+              {record.recipient_type === 'custom_designation' ? 'Designation' : 'Role'}: {record.recipient_role}
+            </Text>
           )}
           <Text type="secondary" style={{ fontSize: '11px' }}>
             Count: {record.number_of_recipients}
@@ -325,10 +368,14 @@ const EscalationRulesManager = ({ slaRuleId, slaRuleName, onClose }) => {
           </Space>
         }
         open={modalVisible}
-        onCancel={() => setModalVisible(false)}
+        onCancel={() => {
+          setModalVisible(false);
+          setEditingRule(null);
+        }}
         onOk={handleSubmit}
         width={700}
         okText={editingRule ? 'Update' : 'Create'}
+        forceRender
       >
         <Form form={form} layout="vertical" requiredMark="optional">
           <Row gutter={16}>
@@ -426,10 +473,44 @@ const EscalationRulesManager = ({ slaRuleId, slaRuleName, onClose }) => {
             <Col span={8}>
               <Form.Item
                 name="recipient_role"
-                label="Custom Role (if applicable)"
-                tooltip="Required for Custom Role/Group type"
+                label={recipientType === 'custom_designation' ? 'Designation' : 'Custom Role'}
+                tooltip={recipientType === 'custom_designation'
+                  ? 'Select the designation to notify'
+                  : 'Select the role to notify'}
+                rules={[{
+                  required: recipientType === 'custom_role' || recipientType === 'custom_designation',
+                  message: recipientType === 'custom_designation' ? 'Designation is required' : 'Role is required'
+                }]}
               >
-                <Input placeholder="e.g., supervisor, manager" />
+                {recipientType === 'custom_designation' ? (
+                  <Select
+                    placeholder="Select designation"
+                    loading={loadingDesignations}
+                    showSearch
+                    optionFilterProp="children"
+                  >
+                    {designations.map(d => (
+                      <Option key={d.value} value={d.value}>
+                        {d.label} ({d.userCount} users)
+                      </Option>
+                    ))}
+                  </Select>
+                ) : recipientType === 'custom_role' ? (
+                  <Select
+                    placeholder="Select role"
+                    loading={loadingRoles}
+                    showSearch
+                    optionFilterProp="children"
+                  >
+                    {roles.map(r => (
+                      <Option key={r.value} value={r.value}>
+                        {r.label} ({r.userCount} users)
+                      </Option>
+                    ))}
+                  </Select>
+                ) : (
+                  <Input placeholder="N/A" disabled />
+                )}
               </Form.Item>
             </Col>
             <Col span={8}>
@@ -447,21 +528,8 @@ const EscalationRulesManager = ({ slaRuleId, slaRuleName, onClose }) => {
 
           <Row gutter={16}>
             <Col span={12}>
-              <Form.Item
-                name="escalation_type"
-                label="Escalation Type"
-                rules={[{ required: true, message: 'Required' }]}
-              >
-                <Select>
-                  <Option value="notification">Email Notification</Option>
-                  <Option value="assignment">Auto Re-assignment</Option>
-                  <Option value="both">Both</Option>
-                </Select>
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item name="include_ticket_details" valuePropName="checked">
-                <Switch /> <Text style={{ marginLeft: 8 }}>Include Ticket Details</Text>
+              <Form.Item name="include_ticket_details" valuePropName="checked" label="Include Ticket Details">
+                <Switch checkedChildren="Yes" unCheckedChildren="No" />
               </Form.Item>
             </Col>
           </Row>
@@ -476,8 +544,8 @@ const EscalationRulesManager = ({ slaRuleId, slaRuleName, onClose }) => {
             />
           </Form.Item>
 
-          <Form.Item name="is_active" valuePropName="checked">
-            <Switch /> <Text style={{ marginLeft: 8 }}>Active</Text>
+          <Form.Item name="is_active" valuePropName="checked" label="Status">
+            <Switch checkedChildren="Active" unCheckedChildren="Inactive" />
           </Form.Item>
         </Form>
       </Modal>

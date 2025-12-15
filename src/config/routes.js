@@ -105,6 +105,8 @@ export const ROUTES = {
   REPORTS_TICKETS: '/reports/tickets',
   REPORTS_USERS: '/reports/users',
   REPORTS_DEPARTMENTS: '/reports/departments',
+  REPORTS_SERVICE_REPORTS: '/reports/service-reports',
+  REPORTS_SPARE_PARTS: '/reports/spare-parts',
 
   // Error pages
   UNAUTHORIZED: '/unauthorized',
@@ -136,7 +138,13 @@ export const ROUTES = {
   FAULT_ANALYSIS: '/fault-analysis',
   REPAIR_HISTORY: '/repair-history',
   FAULT_THRESHOLD_CONFIG: '/settings/fault-thresholds',
-  FAULT_TYPE_MANAGEMENT: '/admin/fault-types'
+  FAULT_TYPE_MANAGEMENT: '/admin/fault-types',
+
+  // Email Settings (Superadmin only)
+  EMAIL_SETTINGS: '/settings/email',
+
+  // SLA Configuration
+  SLA_CONFIG: '/settings/sla'
 }
 
 // Route metadata and permissions
@@ -291,6 +299,18 @@ export const ROUTE_META = {
     roles: ['all'],
     icon: 'file-search'
   },
+  [ROUTES.REPORTS_SERVICE_REPORTS]: {
+    title: 'Service Reports',
+    breadcrumb: ['Reports', 'Service Reports'],
+    roles: ['coordinator', 'admin', 'superadmin', 'engineer'],
+    icon: 'file-text'
+  },
+  [ROUTES.REPORTS_SPARE_PARTS]: {
+    title: 'Spare Parts Report',
+    breadcrumb: ['Reports', 'Spare Parts'],
+    roles: ['coordinator', 'admin', 'superadmin'],
+    icon: 'tool'
+  },
 
   // Settings Routes
   [ROUTES.PERMISSION_CONTROL]: {
@@ -382,6 +402,22 @@ export const ROUTE_META = {
     breadcrumb: ['Admin', 'Fault Types'],
     roles: ['admin', 'superadmin'],
     icon: 'tool'
+  },
+
+  // Email Settings
+  [ROUTES.EMAIL_SETTINGS]: {
+    title: 'Email Settings',
+    breadcrumb: ['Settings', 'Email Configuration'],
+    roles: ['superadmin'],
+    icon: 'mail'
+  },
+
+  // SLA Configuration
+  [ROUTES.SLA_CONFIG]: {
+    title: 'SLA Configuration',
+    breadcrumb: ['Settings', 'SLA Configuration'],
+    roles: ['superadmin', 'admin'],
+    icon: 'thunderbolt'
   }
 }
 
@@ -572,6 +608,18 @@ export const NAVIGATION_MENU = [
         path: ROUTES.REPORTS_TICKETS,
         title: 'Ticket Reports',
         roles: ['all']
+      },
+      {
+        key: 'service-reports',
+        path: ROUTES.REPORTS_SERVICE_REPORTS,
+        title: 'Service Reports',
+        roles: ['coordinator', 'admin', 'superadmin', 'engineer']
+      },
+      {
+        key: 'spare-parts',
+        path: ROUTES.REPORTS_SPARE_PARTS,
+        title: 'Spare Parts',
+        roles: ['coordinator', 'admin', 'superadmin']
       }
     ]
   },
@@ -616,6 +664,32 @@ export const NAVIGATION_MENU = [
         path: ROUTES.ADMIN_PERMISSION_SETTINGS,
         title: 'Settings',
         roles: ['superadmin']
+      }
+    ]
+  },
+  {
+    key: 'settings',
+    title: 'Settings',
+    icon: 'setting',
+    roles: ['superadmin', 'admin'],
+    children: [
+      {
+        key: 'email-settings',
+        path: ROUTES.EMAIL_SETTINGS,
+        title: 'Email Configuration',
+        roles: ['superadmin']
+      },
+      {
+        key: 'sla-config',
+        path: ROUTES.SLA_CONFIG,
+        title: 'SLA Configuration',
+        roles: ['superadmin', 'admin']
+      },
+      {
+        key: 'fault-thresholds',
+        path: ROUTES.FAULT_THRESHOLD_CONFIG,
+        title: 'Fault Thresholds',
+        roles: ['superadmin', 'admin']
       }
     ]
   },

@@ -88,6 +88,7 @@ const TicketDashboard = () => {
   const [pendingCloseRequestsDrawerVisible, setPendingCloseRequestsDrawerVisible] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [selectedCloseRequest, setSelectedCloseRequest] = useState(null);
+  const [linkedAssets, setLinkedAssets] = useState([]);
 
   const { user: currentUser } = useSelector((state) => state.auth);
   const { isMobile, isTablet } = useResponsive();
@@ -297,14 +298,24 @@ const TicketDashboard = () => {
     message.success('Engineer assigned successfully');
   };
 
-  const handleCloseTicket = (ticket) => {
+  const handleCloseTicket = async (ticket) => {
     setSelectedTicket(ticket);
+    // Fetch linked assets for service report
+    try {
+      const response = await ticketService.getTicketAssets(ticket.ticket_id);
+      const assets = response.data?.data?.assets || response.data?.assets || [];
+      setLinkedAssets(assets);
+    } catch (error) {
+      console.error('Failed to fetch ticket assets:', error);
+      setLinkedAssets([]);
+    }
     setCloseModalVisible(true);
   };
 
   const handleCloseSuccess = () => {
     setCloseModalVisible(false);
     setSelectedTicket(null);
+    setLinkedAssets([]);
     fetchTickets();
     fetchStats();
     message.success('Ticket closed successfully');
@@ -681,9 +692,11 @@ const TicketDashboard = () => {
       <CloseTicketModal
         visible={closeModalVisible}
         ticket={selectedTicket}
+        linkedAssets={linkedAssets}
         onClose={() => {
           setCloseModalVisible(false);
           setSelectedTicket(null);
+          setLinkedAssets([]);
         }}
         onSuccess={handleCloseSuccess}
       />
