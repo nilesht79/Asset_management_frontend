@@ -31,7 +31,6 @@ import ticketService from '../services/ticket';
 import RequestCloseTicketModal from '../components/modules/tickets/RequestCloseTicketModal';
 import TicketDetailsDrawer from '../components/modules/tickets/TicketDetailsDrawer';
 import CreateTicketModal from '../components/modules/tickets/CreateTicketModal';
-import { SlaStatusIndicator } from '../components/modules/sla';
 import useResponsive from '../hooks/useResponsive';
 
 const { Search } = Input;
@@ -213,21 +212,6 @@ const EngineerTicketDashboard = () => {
         <Tag color={ticketService.getPriorityColor(priority)}>
           {ticketService.getPriorityDisplayName(priority).toUpperCase()}
         </Tag>
-      )
-    },
-    {
-      title: 'SLA',
-      key: 'sla_status',
-      width: 100,
-      render: (_, record) => (
-        record.status !== 'closed' && record.status !== 'cancelled' ? (
-          <SlaStatusIndicator
-            status={record.sla_status}
-            isPaused={record.sla_is_paused}
-          />
-        ) : (
-          <Tag color="default">N/A</Tag>
-        )
       )
     },
     {

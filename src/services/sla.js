@@ -330,6 +330,57 @@ const slaService = {
     }
   },
 
+  // ==================== REPORTS ====================
+
+  /**
+   * Get SLA Compliance Report
+   * @param {Object} params - Filter parameters
+   * @param {string} params.date_from - Start date (required)
+   * @param {string} params.date_to - End date (required)
+   * @param {string} params.location_id - Filter by location
+   * @param {string} params.department_id - Filter by department
+   * @param {string} params.asset_category_id - Filter by asset category
+   * @param {string} params.oem_id - Filter by OEM
+   * @param {string} params.product_model - Filter by product model
+   * @param {string} params.frequency - Group by: daily, weekly, monthly, quarterly
+   */
+  getComplianceReport: async (params = {}) => {
+    try {
+      const response = await apiClient.get('/sla/compliance-report', { params });
+      return response;
+    } catch (error) {
+      console.error('Error fetching SLA compliance report:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Export SLA Compliance Report to Excel
+   */
+  exportComplianceReport: async (params = {}) => {
+    try {
+      const response = await apiClient.get('/sla/compliance-report/export', {
+        params,
+        responseType: 'blob'
+      });
+
+      // Create download link
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `SLA_Compliance_Report_${params.date_from}_to_${params.date_to}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      return true;
+    } catch (error) {
+      console.error('Error exporting SLA compliance report:', error);
+      throw error;
+    }
+  },
+
   // ==================== UTILITY FUNCTIONS ====================
 
   /**

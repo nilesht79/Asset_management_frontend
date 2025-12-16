@@ -160,16 +160,24 @@ const TicketDetailsDrawer = ({ visible, ticket, onClose, onUpdate }) => {
           <p className="text-gray-700">{ticket.description}</p>
         </Card>
 
-        {/* SLA Status */}
-        {ticket.status !== 'closed' && ticket.status !== 'cancelled' && (
-          <Card title="SLA Status" size="small">
-            <SlaStatusBadge
-              ticketId={ticket.ticket_id}
-              showProgress
-              showDetails
-            />
-          </Card>
-        )}
+        {/* SLA Status - Show for all tickets (active and closed) */}
+        <Card
+          title={
+            <div className="flex items-center space-x-2">
+              <ClockCircleOutlined />
+              <span>SLA Status</span>
+              {(ticket.status === 'closed' || ticket.status === 'cancelled') && (
+                <Tag color="default" style={{ marginLeft: 8 }}>Final</Tag>
+              )}
+            </div>
+          }
+          size="small"
+        >
+          <SlaStatusBadge
+            ticketId={ticket.ticket_id}
+            inline
+          />
+        </Card>
 
         {/* Ticket Information */}
         <Card title="Ticket Information" size="small">

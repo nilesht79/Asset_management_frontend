@@ -67,6 +67,13 @@ import SlaSettings from '../pages/SlaSettings'
 // Report Pages
 import SparePartsReport from '../pages/SparePartsReport'
 import ServiceReports from '../pages/ServiceReports'
+import SlaComplianceReport from '../pages/SlaComplianceReport'
+import TicketTrendAnalysis from '../pages/TicketTrendAnalysis'
+import ConsumablesConsumptionReport from '../pages/ConsumablesConsumptionReport'
+import AssetJobReports from '../pages/AssetJobReports'
+
+// Gate Pass Management
+import GatePasses from '../pages/GatePasses'
 
 // Company Settings
 import CompanySettings from '../pages/CompanySettings'
@@ -202,6 +209,31 @@ const AppRouter = () => {
         {/* Service Reports - Coordinator, Admin, Superadmin, Engineer */}
         {['coordinator', 'admin', 'superadmin', 'engineer'].includes(user?.role) && (
           <Route path="reports/service-reports" element={<ServiceReports />} />
+        )}
+
+        {/* SLA Compliance Report - Coordinator, Admin, Superadmin */}
+        {['coordinator', 'admin', 'superadmin'].includes(user?.role) && (
+          <Route path="reports/sla-compliance" element={<SlaComplianceReport />} />
+        )}
+
+        {/* Ticket Trend Analysis - Coordinator, Admin, Superadmin */}
+        {['coordinator', 'admin', 'superadmin'].includes(user?.role) && (
+          <Route path="reports/ticket-trends" element={<TicketTrendAnalysis />} />
+        )}
+
+        {/* Consumables Consumption Report - Coordinator, Admin, Superadmin */}
+        {['coordinator', 'admin', 'superadmin'].includes(user?.role) && (
+          <Route path="reports/consumables-consumption" element={<ConsumablesConsumptionReport />} />
+        )}
+
+        {/* Asset Job Reports - IT Asset Install/Move/Transfer - Coordinator, Admin, Superadmin, IT Head */}
+        {['it_head', 'coordinator', 'admin', 'superadmin'].includes(user?.role) && (
+          <Route path="reports/asset-job-reports" element={<AssetJobReports />} />
+        )}
+
+        {/* Gate Pass Management - Coordinator, Admin, Superadmin, IT Head */}
+        {['it_head', 'coordinator', 'admin', 'superadmin'].includes(user?.role) && (
+          <Route path="gate-passes" element={<GatePasses />} />
         )}
 
         {/* Reconciliation Routes - Admin, Superadmin, Engineer */}

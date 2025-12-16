@@ -107,6 +107,9 @@ export const ROUTES = {
   REPORTS_DEPARTMENTS: '/reports/departments',
   REPORTS_SERVICE_REPORTS: '/reports/service-reports',
   REPORTS_SPARE_PARTS: '/reports/spare-parts',
+  REPORTS_SLA_COMPLIANCE: '/reports/sla-compliance',
+  REPORTS_TICKET_TRENDS: '/reports/ticket-trends',
+  REPORTS_CONSUMABLES: '/reports/consumables-consumption',
 
   // Error pages
   UNAUTHORIZED: '/unauthorized',
@@ -310,6 +313,24 @@ export const ROUTE_META = {
     breadcrumb: ['Reports', 'Spare Parts'],
     roles: ['coordinator', 'admin', 'superadmin'],
     icon: 'tool'
+  },
+  [ROUTES.REPORTS_SLA_COMPLIANCE]: {
+    title: 'SLA Compliance Report',
+    breadcrumb: ['Reports', 'SLA Compliance'],
+    roles: ['coordinator', 'admin', 'superadmin'],
+    icon: 'pie-chart'
+  },
+  [ROUTES.REPORTS_TICKET_TRENDS]: {
+    title: 'Ticket Trend Analysis',
+    breadcrumb: ['Reports', 'Ticket Trends'],
+    roles: ['coordinator', 'admin', 'superadmin'],
+    icon: 'line-chart'
+  },
+  [ROUTES.REPORTS_CONSUMABLES]: {
+    title: 'Consumables Consumption Report',
+    breadcrumb: ['Reports', 'Consumables'],
+    roles: ['coordinator', 'admin', 'superadmin'],
+    icon: 'shopping'
   },
 
   // Settings Routes
@@ -619,6 +640,24 @@ export const NAVIGATION_MENU = [
         key: 'spare-parts',
         path: ROUTES.REPORTS_SPARE_PARTS,
         title: 'Spare Parts',
+        roles: ['coordinator', 'admin', 'superadmin']
+      },
+      {
+        key: 'sla-compliance',
+        path: ROUTES.REPORTS_SLA_COMPLIANCE,
+        title: 'SLA Compliance',
+        roles: ['coordinator', 'admin', 'superadmin']
+      },
+      {
+        key: 'ticket-trends',
+        path: ROUTES.REPORTS_TICKET_TRENDS,
+        title: 'Ticket Trends',
+        roles: ['coordinator', 'admin', 'superadmin']
+      },
+      {
+        key: 'consumables-consumption',
+        path: ROUTES.REPORTS_CONSUMABLES,
+        title: 'Consumables',
         roles: ['coordinator', 'admin', 'superadmin']
       }
     ]

@@ -9,7 +9,6 @@ import {
   DesktopOutlined,
   CustomerServiceOutlined,
   BarChartOutlined,
-  MonitorOutlined,
   SettingOutlined,
   UserOutlined,
   FileTextOutlined,
@@ -28,7 +27,8 @@ import {
   WarningOutlined,
   AlertOutlined,
   ClockCircleOutlined,
-  MailOutlined
+  MailOutlined,
+  ExportOutlined
 } from '@ant-design/icons'
 import { selectSidebarCollapsed } from '../../../store/slices/uiSlice'
 import { getThemeByRole } from '../../../utils/roleThemes'
@@ -196,6 +196,12 @@ const Sidebar = () => {
             },
           ],
         },
+        // Gate Pass Management
+        {
+          key: '/gate-passes',
+          icon: <ExportOutlined />,
+          label: 'Gate Passes',
+        },
         // Reporting & Analytics Module
         {
           key: 'reports',
@@ -203,61 +209,31 @@ const Sidebar = () => {
           label: 'Reports & Analytics',
           children: [
             {
-              key: '/reports/dashboard',
-              label: 'Report Dashboard',
-            },
-            {
-              key: '/reports/asset-inventory',
-              label: 'Asset Inventory Reports',
-            },
-            {
-              key: '/reports/asset-lifecycle',
-              label: 'Asset Lifecycle Reports',
-            },
-            {
-              key: '/reports/asset-performance',
-              label: 'Asset Performance Reports',
-            },
-            {
-              key: '/reports/tickets',
-              label: 'Ticketing Reports',
-            },
-            {
               key: '/reports/service-reports',
               icon: <FileTextOutlined />,
               label: 'Service Reports',
+            },
+            {
+              key: '/reports/spare-parts',
+              icon: <ToolOutlined />,
+              label: 'Spare Parts Consumption',
             },
             {
               key: '/reports/sla-compliance',
               label: 'SLA Compliance Reports',
             },
             {
-              key: '/reports/custom',
-              label: 'Custom Reports',
-            },
-          ],
-        },
-        // Monitoring Module
-        {
-          key: 'monitoring',
-          icon: <MonitorOutlined />,
-          label: 'Monitoring',
-          children: [
-            {
-              key: '/monitoring/devices',
-              label: 'Device Monitoring',
+              key: '/reports/ticket-trends',
+              label: 'Ticket Trend Analysis',
             },
             {
-              key: '/monitoring/services',
-              label: 'Service Monitoring',
+              key: '/reports/consumables-consumption',
+              label: 'Consumables Consumption',
             },
             {
-              key: '/monitoring/alerts',
-              label: 'Alert Management',
-            },
-            {
-              key: '/monitoring/uptime',
-              label: 'Uptime Reports',
+              key: '/reports/asset-job-reports',
+              icon: <DesktopOutlined />,
+              label: 'Asset Job Reports',
             },
           ],
         },
@@ -390,9 +366,27 @@ const Sidebar = () => {
         },
         // Reports for Coordinators
         {
-          key: '/reports/service-reports',
-          icon: <FileTextOutlined />,
-          label: 'Service Reports',
+          key: 'reports',
+          icon: <BarChartOutlined />,
+          label: 'Reports',
+          children: [
+            {
+              key: '/reports/service-reports',
+              icon: <FileTextOutlined />,
+              label: 'Service Reports',
+            },
+            {
+              key: '/reports/asset-job-reports',
+              icon: <DesktopOutlined />,
+              label: 'Asset Job Reports',
+            },
+          ],
+        },
+        // Gate Pass Management
+        {
+          key: '/gate-passes',
+          icon: <ExportOutlined />,
+          label: 'Gate Passes',
         }
       )
     }
@@ -470,6 +464,30 @@ const Sidebar = () => {
           key: '/licenses',
           icon: <SafetyCertificateOutlined />,
           label: 'Software Licenses',
+        },
+        // Reports for IT Head
+        {
+          key: 'reports',
+          icon: <BarChartOutlined />,
+          label: 'Reports',
+          children: [
+            {
+              key: '/reports/service-reports',
+              icon: <FileTextOutlined />,
+              label: 'Service Reports',
+            },
+            {
+              key: '/reports/asset-job-reports',
+              icon: <DesktopOutlined />,
+              label: 'Asset Job Reports',
+            },
+          ],
+        },
+        // Gate Pass Management
+        {
+          key: '/gate-passes',
+          icon: <ExportOutlined />,
+          label: 'Gate Passes',
         }
       )
     }
@@ -606,20 +624,12 @@ const Sidebar = () => {
     if (pathname.startsWith('/tickets')) return ['/tickets']
 
     // Reports & Analytics routes
-    if (pathname.startsWith('/reports/dashboard')) return ['/reports/dashboard']
-    if (pathname.startsWith('/reports/asset-inventory')) return ['/reports/asset-inventory']
-    if (pathname.startsWith('/reports/asset-lifecycle')) return ['/reports/asset-lifecycle']
-    if (pathname.startsWith('/reports/asset-performance')) return ['/reports/asset-performance']
-    if (pathname.startsWith('/reports/tickets')) return ['/reports/tickets']
     if (pathname.startsWith('/reports/service-reports')) return ['/reports/service-reports']
+    if (pathname.startsWith('/reports/spare-parts')) return ['/reports/spare-parts']
     if (pathname.startsWith('/reports/sla-compliance')) return ['/reports/sla-compliance']
-    if (pathname.startsWith('/reports/custom')) return ['/reports/custom']
-
-    // Monitoring routes
-    if (pathname.startsWith('/monitoring/devices')) return ['/monitoring/devices']
-    if (pathname.startsWith('/monitoring/services')) return ['/monitoring/services']
-    if (pathname.startsWith('/monitoring/alerts')) return ['/monitoring/alerts']
-    if (pathname.startsWith('/monitoring/uptime')) return ['/monitoring/uptime']
+    if (pathname.startsWith('/reports/ticket-trends')) return ['/reports/ticket-trends']
+    if (pathname.startsWith('/reports/consumables-consumption')) return ['/reports/consumables-consumption']
+    if (pathname.startsWith('/reports/asset-job-reports')) return ['/reports/asset-job-reports']
 
     // Department Management routes
     if (pathname.startsWith('/department/assets')) return ['/department/assets']
@@ -642,6 +652,9 @@ const Sidebar = () => {
 
     // Software Licenses route
     if (pathname.startsWith('/licenses')) return ['/licenses']
+
+    // Gate Pass route
+    if (pathname.startsWith('/gate-passes')) return ['/gate-passes']
 
     // Fault Analysis routes
     if (pathname === '/fault-analysis') return ['/fault-analysis']
@@ -675,9 +688,6 @@ const Sidebar = () => {
     }
     if (pathname.startsWith('/reports')) {
       keys.push('reports')
-    }
-    if (pathname.startsWith('/monitoring')) {
-      keys.push('monitoring')
     }
     if (pathname.startsWith('/department')) {
       keys.push('department')

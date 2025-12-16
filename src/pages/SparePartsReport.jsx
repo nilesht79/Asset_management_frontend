@@ -237,7 +237,7 @@ const SparePartsReport = () => {
 
       {/* Filters */}
       <Card size="small" className="mb-4">
-        <Row gutter={16} align="middle">
+        <Row gutter={[16, 12]} align="middle">
           <Col>
             <Space>
               <FilterOutlined />
@@ -276,6 +276,104 @@ const SparePartsReport = () => {
                 onClick={handleExportCSV}
               >
                 Export CSV
+              </Button>
+            </Space>
+          </Col>
+        </Row>
+        <Divider style={{ margin: '12px 0' }} />
+        <Row gutter={8}>
+          <Col>
+            <Text type="secondary" style={{ marginRight: 8 }}>Quick Presets:</Text>
+          </Col>
+          <Col>
+            <Space size={4} wrap>
+              <Button
+                size="small"
+                onClick={() => {
+                  setDateRange([dayjs().subtract(30, 'day'), dayjs()]);
+                  setTimeout(() => fetchReport(), 0);
+                }}
+              >
+                Last 30 Days
+              </Button>
+              <Button
+                size="small"
+                onClick={() => {
+                  setDateRange([dayjs().subtract(60, 'day'), dayjs()]);
+                  setTimeout(() => fetchReport(), 0);
+                }}
+              >
+                Last 60 Days
+              </Button>
+              <Button
+                size="small"
+                onClick={() => {
+                  setDateRange([dayjs().subtract(90, 'day'), dayjs()]);
+                  setTimeout(() => fetchReport(), 0);
+                }}
+              >
+                Last 90 Days
+              </Button>
+              <Divider type="vertical" />
+              <Button
+                size="small"
+                onClick={() => {
+                  const year = dayjs().year();
+                  setDateRange([dayjs(`${year}-01-01`), dayjs(`${year}-03-31`)]);
+                  setTimeout(() => fetchReport(), 0);
+                }}
+              >
+                Q1 {dayjs().year()}
+              </Button>
+              <Button
+                size="small"
+                onClick={() => {
+                  const year = dayjs().year();
+                  setDateRange([dayjs(`${year}-04-01`), dayjs(`${year}-06-30`)]);
+                  setTimeout(() => fetchReport(), 0);
+                }}
+              >
+                Q2 {dayjs().year()}
+              </Button>
+              <Button
+                size="small"
+                onClick={() => {
+                  const year = dayjs().year();
+                  setDateRange([dayjs(`${year}-07-01`), dayjs(`${year}-09-30`)]);
+                  setTimeout(() => fetchReport(), 0);
+                }}
+              >
+                Q3 {dayjs().year()}
+              </Button>
+              <Button
+                size="small"
+                onClick={() => {
+                  const year = dayjs().year();
+                  setDateRange([dayjs(`${year}-10-01`), dayjs(`${year}-12-31`)]);
+                  setTimeout(() => fetchReport(), 0);
+                }}
+              >
+                Q4 {dayjs().year()}
+              </Button>
+              <Divider type="vertical" />
+              <Button
+                size="small"
+                onClick={() => {
+                  setDateRange([dayjs().startOf('year'), dayjs()]);
+                  setTimeout(() => fetchReport(), 0);
+                }}
+              >
+                YTD
+              </Button>
+              <Button
+                size="small"
+                onClick={() => {
+                  const lastYear = dayjs().year() - 1;
+                  setDateRange([dayjs(`${lastYear}-01-01`), dayjs(`${lastYear}-12-31`)]);
+                  setTimeout(() => fetchReport(), 0);
+                }}
+              >
+                Full Year {dayjs().year() - 1}
               </Button>
             </Space>
           </Col>

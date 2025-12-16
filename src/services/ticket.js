@@ -498,6 +498,55 @@ const ticketService = {
       console.error('Error fetching asset count:', error);
       throw error;
     }
+  },
+
+  // ============================================
+  // TICKET TREND ANALYSIS METHODS
+  // ============================================
+
+  /**
+   * Get ticket trend analysis
+   * @param {Object} params - Filter parameters (months_back, location_id, department_id, priority)
+   */
+  getTrendAnalysis: async (params = {}) => {
+    try {
+      const response = await apiClient.get('/tickets/trend-analysis', { params });
+      return response;
+    } catch (error) {
+      console.error('Error fetching trend analysis:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Export ticket trend analysis to Excel
+   * @param {Object} params - Filter parameters (months_back, location_id, department_id, priority)
+   */
+  exportTrendAnalysis: async (params = {}) => {
+    try {
+      const response = await apiClient.get('/tickets/trend-analysis/export', {
+        params,
+        responseType: 'blob'
+      });
+
+      // Create download link
+      const blob = new Blob([response.data], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `ticket_trend_analysis_${params.months_back || 6}m_${new Date().toISOString().split('T')[0]}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      return response;
+    } catch (error) {
+      console.error('Error exporting trend analysis:', error);
+      throw error;
+    }
   }
 };
 

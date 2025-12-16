@@ -40,7 +40,6 @@ import TicketDetailsDrawer from '../components/modules/tickets/TicketDetailsDraw
 import TicketFilterDrawer from '../components/modules/tickets/TicketFilterDrawer';
 import ReviewCloseRequestModal from '../components/modules/tickets/ReviewCloseRequestModal';
 import PendingCloseRequestsDrawer from '../components/modules/tickets/PendingCloseRequestsDrawer';
-import { SlaStatusIndicator } from '../components/modules/sla';
 import useResponsive from '../hooks/useResponsive';
 
 const { Search } = Input;
@@ -433,21 +432,6 @@ const TicketDashboard = () => {
         { text: 'Critical', value: 'critical' },
         { text: 'Emergency', value: 'emergency' }
       ]
-    },
-    {
-      title: 'SLA',
-      key: 'sla_status',
-      width: 100,
-      render: (_, record) => (
-        record.status !== 'closed' && record.status !== 'cancelled' ? (
-          <SlaStatusIndicator
-            status={record.sla_status}
-            isPaused={record.sla_is_paused}
-          />
-        ) : (
-          <Tag color="default">N/A</Tag>
-        )
-      )
     },
     {
       title: 'Created For',

@@ -30,6 +30,7 @@ const SlaStatusBadge = ({
   slaData = null, // Pre-fetched SLA data (optional)
   showProgress = false,
   showDetails = false,
+  inline = false, // Show full details inline (not in popover)
   size = 'default', // 'small', 'default', 'large'
   compact = false
 }) => {
@@ -61,7 +62,11 @@ const SlaStatusBadge = ({
           rule_name: trackingData.rule_name,
           min_tat: trackingData.min_tat_minutes,
           avg_tat: trackingData.avg_tat_minutes,
-          max_tat: trackingData.max_tat_minutes
+          max_tat: trackingData.max_tat_minutes,
+          // For closed tickets
+          resolved_at: trackingData.resolved_at,
+          final_status: trackingData.final_status,
+          sla_start_time: trackingData.sla_start_time
         });
       }
     } catch (error) {
@@ -225,6 +230,111 @@ const SlaStatusBadge = ({
           style={{ marginTop: 4 }}
         />
       </Space>
+    );
+  }
+
+  // Inline detailed view (no popover)
+  if (inline) {
+    const isResolved = !!data.resolved_at;
+    const metSla = data.final_status && data.final_status !== 'breached';
+
+    return (
+      <div style={{ width: '100%' }}>
+        <Space direction="vertical" size="small" style={{ width: '100%' }}>
+          {/* Status Row */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Text type="secondary">{isResolved ? 'Final Status:' : 'Status:'}</Text>
+            <Tag color={getStatusColor()} icon={getStatusIcon()}>
+              {data.is_paused ? 'Paused' : slaService.getStatusDisplayName(data.final_status || data.status)}
+            </Tag>
+          </div>
+
+          {/* Resolution Info for closed tickets */}
+          {isResolved && (
+            <>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Text type="secondary" style={{ fontSize: '12px' }}>SLA Met:</Text>
+                <Tag color={metSla ? 'green' : 'red'} style={{ fontSize: '11px' }}>
+                  {metSla ? 'Yes - Within SLA' : 'No - Breached'}
+                </Tag>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <Text type="secondary" style={{ fontSize: '12px' }}>Resolved At:</Text>
+                <Text style={{ fontSize: '12px' }}>
+                  {new Date(data.resolved_at).toLocaleString()}
+                </Text>
+              </div>
+            </>
+          )}
+
+          {/* Progress */}
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+              <Text type="secondary" style={{ fontSize: '12px' }}>
+                {isResolved ? 'Final Progress:' : 'Progress:'}
+              </Text>
+              <Text style={{ fontSize: '12px' }}>{data.percent_used}%</Text>
+            </div>
+            <Progress
+              percent={Math.min(100, data.percent_used)}
+              strokeColor={getProgressColor()}
+              size="small"
+              showInfo={false}
+            />
+          </div>
+
+          {/* Time Info */}
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <Text type="secondary" style={{ fontSize: '12px' }}>
+              {isResolved ? 'Resolution Time:' : 'Elapsed:'}
+            </Text>
+            <Text style={{ fontSize: '12px' }}>{formatTime(data.elapsed_minutes)}</Text>
+          </div>
+
+          {!isResolved && (
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <Text type="secondary" style={{ fontSize: '12px' }}>
+                {data.remaining_minutes >= 0 ? 'Remaining:' : 'Overdue by:'}
+              </Text>
+              <Text
+                type={data.remaining_minutes < 0 ? 'danger' : undefined}
+                strong={data.remaining_minutes < 0}
+                style={{ fontSize: '12px' }}
+              >
+                {formatTime(Math.abs(data.remaining_minutes))}
+              </Text>
+            </div>
+          )}
+
+          {/* TAT Thresholds */}
+          <div style={{ borderTop: '1px solid #f0f0f0', paddingTop: 8, marginTop: 4 }}>
+            <Text type="secondary" style={{ fontSize: '12px', marginBottom: 4, display: 'block' }}>TAT Thresholds:</Text>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <div style={{ textAlign: 'center' }}>
+                <Text style={{ fontSize: '11px', color: '#52c41a', display: 'block' }}>Min</Text>
+                <Text style={{ fontSize: '12px' }}>{formatTime(data.min_tat)}</Text>
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <Text style={{ fontSize: '11px', color: '#faad14', display: 'block' }}>Avg</Text>
+                <Text style={{ fontSize: '12px' }}>{formatTime(data.avg_tat)}</Text>
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <Text style={{ fontSize: '11px', color: '#ff4d4f', display: 'block' }}>Max</Text>
+                <Text style={{ fontSize: '12px' }}>{formatTime(data.max_tat)}</Text>
+              </div>
+            </div>
+          </div>
+
+          {/* Rule Name */}
+          {data.rule_name && (
+            <div style={{ borderTop: '1px solid #f0f0f0', paddingTop: 8 }}>
+              <Text type="secondary" style={{ fontSize: '12px' }}>
+                SLA Rule: <Text style={{ fontSize: '12px' }}>{data.rule_name}</Text>
+              </Text>
+            </div>
+          )}
+        </Space>
+      </div>
     );
   }
 

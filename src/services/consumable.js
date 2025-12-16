@@ -143,6 +143,36 @@ const consumableService = {
   // Get stock info for a specific request (for approval modal)
   getRequestStockInfo: (requestId) => {
     return api.get(`/consumables/requests/${requestId}/stock-info`)
+  },
+
+  // =====================
+  // CONSUMPTION REPORTS
+  // =====================
+  getConsumptionReport: (params = {}) => {
+    const queryString = apiUtils.buildQueryString(params)
+    return api.get(`/consumables/consumption-report${queryString ? `?${queryString}` : ''}`)
+  },
+
+  exportConsumptionReport: async (params = {}) => {
+    const queryString = apiUtils.buildQueryString(params)
+    const response = await api.get(`/consumables/consumption-report/export${queryString ? `?${queryString}` : ''}`, {
+      responseType: 'blob'
+    })
+
+    // Create download link
+    const blob = new Blob([response.data], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    })
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `consumables_consumption_${new Date().toISOString().split('T')[0]}.xlsx`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+
+    return response
   }
 }
 
