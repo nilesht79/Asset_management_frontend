@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import {
   Card,
   Table,
@@ -110,6 +110,7 @@ const { Search } = Input
 const AssetInventory = () => {
   const dispatch = useDispatch()
   const navigate = useNavigate()
+  const location = useLocation()
   const [isAddModalVisible, setIsAddModalVisible] = useState(false)
   const [isDeletedModalVisible, setIsDeletedModalVisible] = useState(false)
   const [deletedAssets, setDeletedAssets] = useState([])
@@ -167,8 +168,18 @@ const AssetInventory = () => {
 
   // Load initial data
   useEffect(() => {
-    // Fetch assets and statistics
-    dispatch(fetchAssets({ page: 1, limit: 10 }))
+    // Check for search query parameter from URL
+    const searchParams = new URLSearchParams(location.search)
+    const searchQuery = searchParams.get('search')
+
+    // Fetch assets with search param if present
+    if (searchQuery) {
+      dispatch(setAssetFilters({ search: searchQuery }))
+      dispatch(fetchAssets({ page: 1, limit: 10, search: searchQuery }))
+      setTempFilters(prev => ({ ...prev, search: searchQuery }))
+    } else {
+      dispatch(fetchAssets({ page: 1, limit: 10 }))
+    }
     dispatch(fetchAssetStatistics())
 
     // Fetch master data for dropdowns with high limit to get all items
@@ -179,7 +190,7 @@ const AssetInventory = () => {
     dispatch(fetchCategories({ limit: 1000, include_subcategories: 'true' }))
     dispatch(fetchLocations({ limit: 1000 }))
     dispatch(fetchUsers({ limit: 1000 }))
-  }, [dispatch])
+  }, [dispatch, location.search])
 
   // Filter software products from all products
   useEffect(() => {
@@ -1082,8 +1093,15 @@ const AssetInventory = () => {
       title: <span className="font-semibold text-gray-700">Asset ID</span>,
       dataIndex: 'asset_tag',
       key: 'asset_id',
-      width: 120,
-      render: (text) => <span className="font-mono text-xs bg-blue-50 px-2 py-1 rounded text-blue-700">{text}</span>
+      width: 150,
+      render: (text) => (
+        <span
+          className="font-mono text-xs bg-blue-50 px-2 py-1 rounded text-blue-700"
+          style={{ whiteSpace: 'nowrap', display: 'inline-block' }}
+        >
+          {text}
+        </span>
+      )
     },
     {
       title: <span className="font-semibold text-gray-700">Assigned To</span>,

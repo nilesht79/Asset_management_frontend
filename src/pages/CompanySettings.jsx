@@ -13,7 +13,8 @@ import {
   Avatar,
   Row,
   Col,
-  Alert
+  Alert,
+  Switch
 } from 'antd'
 import {
   UploadOutlined,
@@ -35,6 +36,7 @@ const CompanySettings = () => {
   const [uploading, setUploading] = useState(false)
   const [logoUrl, setLogoUrl] = useState(null)
   const [logoFilename, setLogoFilename] = useState(null)
+  const [showNameInPdf, setShowNameInPdf] = useState(true)
 
   // Fetch settings on mount
   useEffect(() => {
@@ -53,6 +55,7 @@ const CompanySettings = () => {
       })
 
       setLogoFilename(data.logo)
+      setShowNameInPdf(data.showNameInPdf !== false) // Default to true
       if (data.logoUrl) {
         // Construct full URL
         const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'
@@ -73,7 +76,8 @@ const CompanySettings = () => {
     try {
       await companySettingsService.updateSettings({
         name: values.name,
-        address: values.address
+        address: values.address,
+        showNameInPdf
       })
       message.success('Company settings saved successfully')
     } catch (error) {
@@ -240,6 +244,25 @@ const CompanySettings = () => {
                 Max size: 2MB<br />
                 Formats: JPG, PNG, SVG
               </Paragraph>
+
+              {logoUrl && (
+                <>
+                  <Divider style={{ margin: '16px 0' }} />
+                  <div style={{ textAlign: 'left' }}>
+                    <Space>
+                      <Switch
+                        checked={showNameInPdf}
+                        onChange={setShowNameInPdf}
+                        size="small"
+                      />
+                      <Text style={{ fontSize: 12 }}>Show company name in PDFs</Text>
+                    </Space>
+                    <Paragraph type="secondary" style={{ fontSize: 11, marginTop: 4, marginBottom: 0 }}>
+                      Disable if your logo already contains the company name
+                    </Paragraph>
+                  </div>
+                </>
+              )}
             </div>
           </Card>
         </Col>
@@ -331,14 +354,16 @@ const CompanySettings = () => {
                     <PictureOutlined style={{ fontSize: 24, color: '#999' }} />
                   </div>
                 )}
-                <div>
-                  <Title level={4} style={{ margin: 0, color: '#1a365d' }}>
-                    {form.getFieldValue('name') || 'Company Name'}
-                  </Title>
-                  <Text type="secondary" style={{ fontSize: 12 }}>
-                    {form.getFieldValue('address') || 'Company address will appear here'}
-                  </Text>
-                </div>
+                {(showNameInPdf || !logoUrl) && (
+                  <div>
+                    <Title level={4} style={{ margin: 0, color: '#1a365d' }}>
+                      {form.getFieldValue('name') || 'Company Name'}
+                    </Title>
+                    <Text type="secondary" style={{ fontSize: 12 }}>
+                      {form.getFieldValue('address') || 'Company address will appear here'}
+                    </Text>
+                  </div>
+                )}
               </Space>
             </Col>
             <Col>

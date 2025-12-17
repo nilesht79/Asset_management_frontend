@@ -28,7 +28,8 @@ import {
   AlertOutlined,
   ClockCircleOutlined,
   MailOutlined,
-  ExportOutlined
+  ExportOutlined,
+  ReloadOutlined
 } from '@ant-design/icons'
 import { selectSidebarCollapsed } from '../../../store/slices/uiSlice'
 import { getThemeByRole } from '../../../utils/roleThemes'
@@ -278,6 +279,11 @@ const Sidebar = () => {
                 key: '/settings/fault-thresholds',
                 icon: <WarningOutlined />,
                 label: 'Fault Thresholds',
+              },
+              {
+                key: '/settings/ticket-reopen',
+                icon: <ReloadOutlined />,
+                label: 'Ticket Reopen Config',
               }
             ] : []),
           ],

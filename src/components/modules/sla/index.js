@@ -9,3 +9,4 @@ export { default as BusinessHoursManager } from './BusinessHoursManager';
 export { default as HolidayCalendarManager } from './HolidayCalendarManager';
 export { default as EscalationRulesManager } from './EscalationRulesManager';
 export { default as SlaDashboard } from './SlaDashboard';
+export { default as TicketReopenConfig } from './TicketReopenConfig';

@@ -133,7 +133,7 @@ const CreateTicketModal = ({ visible, onClose, onSuccess, currentUser }) => {
         description: values.description,
         priority: values.priority,
         category: values.category,
-        ticket_type: values.ticket_type || 'internal',
+        ticket_type: values.ticket_type || 'incident',
         service_type: values.service_type || 'general',
         assigned_to_engineer_id: values.assigned_to_engineer_id || null
       };
@@ -197,7 +197,7 @@ const CreateTicketModal = ({ visible, onClose, onSuccess, currentUser }) => {
         onFinish={handleSubmit}
         initialValues={{
           priority: 'medium',
-          ticket_type: 'internal',
+          ticket_type: 'incident',
           service_type: 'general'
         }}
       >
@@ -377,11 +377,10 @@ const CreateTicketModal = ({ visible, onClose, onSuccess, currentUser }) => {
               rules={[{ required: true, message: 'Please select ticket type' }]}
             >
               <Select placeholder="Select ticket type">
-                <Option value="internal">Internal (Employee)</Option>
-                <Option value="external">External (Vendor/Client)</Option>
-                <Option value="walk_in">Walk-in</Option>
-                <Option value="phone">Phone Request</Option>
-                <Option value="email">Email Request</Option>
+                <Option value="incident">Incident</Option>
+                <Option value="service_request">Service Request</Option>
+                <Option value="change_request">Change Request</Option>
+                <Option value="problem">Problem</Option>
               </Select>
             </Form.Item>
           </Col>

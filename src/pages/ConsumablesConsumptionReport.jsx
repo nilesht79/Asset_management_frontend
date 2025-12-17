@@ -29,7 +29,8 @@ import {
   EnvironmentOutlined,
   FolderOutlined,
   DollarOutlined,
-  NumberOutlined
+  NumberOutlined,
+  UserOutlined
 } from '@ant-design/icons';
 import {
   BarChart,
@@ -46,6 +47,7 @@ import {
 } from 'recharts';
 import consumableService from '../services/consumable';
 import masterService from '../services/master';
+import userService from '../services/user';
 import dayjs from 'dayjs';
 
 const { RangePicker } = DatePicker;
@@ -60,6 +62,7 @@ const ConsumablesConsumptionReport = () => {
   const [categories, setCategories] = useState([]);
   const [locations, setLocations] = useState([]);
   const [consumables, setConsumables] = useState([]);
+  const [engineers, setEngineers] = useState([]);
 
   // Filters
   const [dateRange, setDateRange] = useState([
@@ -69,6 +72,7 @@ const ConsumablesConsumptionReport = () => {
   const [categoryId, setCategoryId] = useState(null);
   const [locationId, setLocationId] = useState(null);
   const [consumableId, setConsumableId] = useState(null);
+  const [engineerId, setEngineerId] = useState(null);
 
   // Load initial data
   useEffect(() => {
@@ -78,15 +82,17 @@ const ConsumablesConsumptionReport = () => {
 
   const loadFilterOptions = async () => {
     try {
-      const [categoriesRes, locationsRes, consumablesRes] = await Promise.all([
+      const [categoriesRes, locationsRes, consumablesRes, engineersRes] = await Promise.all([
         consumableService.getCategories(),
-        masterService.getLocations(),
-        consumableService.getConsumables({ limit: 500 })
+        masterService.getLocations({ limit: 1000 }),
+        consumableService.getConsumables({ limit: 500 }),
+        userService.getUsers({ role: 'engineer', limit: 1000 })
       ]);
 
       setCategories(categoriesRes?.data?.data?.categories || categoriesRes?.data?.categories || []);
       setLocations(locationsRes?.data?.data?.locations || locationsRes?.data?.data || []);
       setConsumables(consumablesRes?.data?.data?.consumables || consumablesRes?.data?.consumables || []);
+      setEngineers(engineersRes?.data?.data?.users || engineersRes?.data?.users || []);
     } catch (error) {
       console.error('Error loading filter options:', error);
     }
@@ -105,6 +111,7 @@ const ConsumablesConsumptionReport = () => {
       if (categoryId) params.category_id = categoryId;
       if (locationId) params.location_id = locationId;
       if (consumableId) params.consumable_id = consumableId;
+      if (engineerId) params.engineer_id = engineerId;
 
       const response = await consumableService.getConsumptionReport(params);
       setReportData(response?.data?.data || response?.data || null);
@@ -129,6 +136,7 @@ const ConsumablesConsumptionReport = () => {
       if (categoryId) params.category_id = categoryId;
       if (locationId) params.location_id = locationId;
       if (consumableId) params.consumable_id = consumableId;
+      if (engineerId) params.engineer_id = engineerId;
 
       await consumableService.exportConsumptionReport(params);
       message.success('Report exported successfully');
@@ -149,6 +157,7 @@ const ConsumablesConsumptionReport = () => {
     setCategoryId(null);
     setLocationId(null);
     setConsumableId(null);
+    setEngineerId(null);
     setTimeout(() => fetchReport(), 0);
   };
 
@@ -355,11 +364,46 @@ const ConsumablesConsumptionReport = () => {
     }
   ];
 
+  // Engineer breakdown columns
+  const engineerColumns = [
+    {
+      title: 'Engineer',
+      dataIndex: 'engineer_name',
+      key: 'engineer_name',
+      width: 200
+    },
+    {
+      title: 'Requests',
+      dataIndex: 'request_count',
+      key: 'request_count',
+      width: 100,
+      align: 'right'
+    },
+    {
+      title: 'Qty Delivered',
+      dataIndex: 'total_quantity',
+      key: 'total_quantity',
+      width: 120,
+      align: 'right',
+      sorter: (a, b) => a.total_quantity - b.total_quantity,
+      defaultSortOrder: 'descend'
+    },
+    {
+      title: 'Total Cost',
+      dataIndex: 'total_cost',
+      key: 'total_cost',
+      width: 120,
+      align: 'right',
+      render: (val) => `₹${parseFloat(val || 0).toFixed(2)}`
+    }
+  ];
+
   const totals = reportData?.totals || {};
   const summary = reportData?.summary || [];
   const details = reportData?.details || [];
   const byCategory = reportData?.by_category || [];
   const byLocation = reportData?.by_location || [];
+  const byEngineer = reportData?.by_engineer || [];
 
   const tabItems = [
     {
@@ -379,7 +423,7 @@ const ConsumablesConsumptionReport = () => {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis type="number" />
                   <YAxis dataKey="consumable_name" type="category" width={150} tick={{ fontSize: 11 }} />
-                  <RechartsTooltip formatter={(value) => [value, 'Qty Delivered']} />
+                  <RechartsTooltip formatter={(value) => [value, 'Qty Delivered']} contentStyle={{ color: '#000' }} />
                   <Legend />
                   <Bar dataKey="total_delivered" name="Quantity Delivered" fill="#1890ff" />
                 </BarChart>
@@ -444,7 +488,7 @@ const ConsumablesConsumptionReport = () => {
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
-                    <RechartsTooltip />
+                    <RechartsTooltip contentStyle={{ color: '#000' }} />
                   </PieChart>
                 </ResponsiveContainer>
               </Card>
@@ -481,7 +525,7 @@ const ConsumablesConsumptionReport = () => {
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis type="number" />
                     <YAxis dataKey="location_name" type="category" width={120} tick={{ fontSize: 11 }} />
-                    <RechartsTooltip />
+                    <RechartsTooltip contentStyle={{ color: '#000' }} />
                     <Bar dataKey="total_quantity" name="Quantity" fill="#722ed1" />
                   </BarChart>
                 </ResponsiveContainer>
@@ -494,6 +538,44 @@ const ConsumablesConsumptionReport = () => {
                 columns={locationColumns}
                 dataSource={byLocation}
                 rowKey="location_name"
+                size="small"
+                pagination={{ pageSize: 10 }}
+              />
+            </Card>
+          </Col>
+        </Row>
+      )
+    },
+    {
+      key: 'engineer',
+      label: (
+        <span>
+          <UserOutlined /> By Engineer
+        </span>
+      ),
+      children: (
+        <Row gutter={16}>
+          <Col xs={24} lg={12}>
+            {byEngineer.length > 0 && (
+              <Card size="small" title="Engineer Distribution" style={{ marginBottom: 16 }}>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={byEngineer.slice(0, 10)} layout="vertical">
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis type="number" />
+                    <YAxis dataKey="engineer_name" type="category" width={120} tick={{ fontSize: 11 }} />
+                    <RechartsTooltip contentStyle={{ color: '#000' }} />
+                    <Bar dataKey="total_quantity" name="Quantity" fill="#eb2f96" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </Card>
+            )}
+          </Col>
+          <Col xs={24} lg={12}>
+            <Card size="small" title="Engineer Breakdown">
+              <Table
+                columns={engineerColumns}
+                dataSource={byEngineer}
+                rowKey="engineer_name"
                 size="small"
                 pagination={{ pageSize: 10 }}
               />
@@ -576,7 +658,26 @@ const ConsumablesConsumptionReport = () => {
             </Select>
           </Col>
 
-          <Col xs={24} sm={24} md={24} lg={8}>
+          <Col xs={24} sm={12} md={8} lg={4}>
+            <label className="block text-sm font-medium mb-1">Engineer</label>
+            <Select
+              value={engineerId}
+              onChange={setEngineerId}
+              allowClear
+              placeholder="All Engineers"
+              style={{ width: '100%' }}
+              showSearch
+              optionFilterProp="children"
+            >
+              {engineers.map(eng => (
+                <Option key={eng.id} value={eng.id}>
+                  {eng.firstName} {eng.lastName}
+                </Option>
+              ))}
+            </Select>
+          </Col>
+
+          <Col xs={24} sm={24} md={24} lg={6}>
             <label className="block text-sm font-medium mb-1">&nbsp;</label>
             <Space wrap>
               <Button type="primary" onClick={handleApplyFilters} loading={loading}>

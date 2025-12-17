@@ -1,8 +1,38 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Form, Input, Card, Row, Col, message, Tag, Alert, Button, Space, Divider, Select, InputNumber, Switch, Checkbox, List, Typography } from 'antd';
-import { CheckCircleOutlined, CloseCircleOutlined, UserOutlined, ClockCircleOutlined, ToolOutlined, LaptopOutlined } from '@ant-design/icons';
+import {
+  Modal,
+  Form,
+  Input,
+  Card,
+  Row,
+  Col,
+  message,
+  Tag,
+  Alert,
+  Button,
+  Space,
+  Divider,
+  Select,
+  InputNumber,
+  Switch,
+  Checkbox,
+  List,
+  Typography,
+  Descriptions
+} from 'antd';
+import {
+  CheckCircleOutlined,
+  CloseCircleOutlined,
+  UserOutlined,
+  ClockCircleOutlined,
+  ToolOutlined,
+  SwapOutlined,
+  LaptopOutlined,
+  FileTextOutlined
+} from '@ant-design/icons';
 import ticketService from '../../../services/ticket';
 import repairHistoryService from '../../../services/repairHistory';
+import serviceReportService from '../../../services/serviceReport';
 
 const { TextArea } = Input;
 const { Option } = Select;
@@ -11,12 +41,17 @@ const { Text } = Typography;
 const ReviewCloseRequestModal = ({ visible, closeRequest, onClose, onSuccess }) => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
-  const [action, setAction] = useState(null); // 'approved' or 'rejected'
+  const [action, setAction] = useState(null);
   const [linkedAssets, setLinkedAssets] = useState([]);
   const [faultTypes, setFaultTypes] = useState([]);
   const [recordRepairs, setRecordRepairs] = useState(false);
   const [selectedAssets, setSelectedAssets] = useState([]);
   const [repairData, setRepairData] = useState({});
+
+  // Check if this is a repair/replace ticket with service report
+  const hasServiceReport = closeRequest?.service_report_id;
+  const isRepair = closeRequest?.ticket_service_type === 'repair' || closeRequest?.service_report_type === 'repair';
+  const isReplace = closeRequest?.ticket_service_type === 'replace' || closeRequest?.service_report_type === 'replace';
 
   useEffect(() => {
     if (visible && closeRequest) {
@@ -26,7 +61,11 @@ const ReviewCloseRequestModal = ({ visible, closeRequest, onClose, onSuccess }) 
       setSelectedAssets([]);
       setRepairData({});
       fetchLinkedAssets();
-      fetchFaultTypes();
+
+      // Only fetch fault types if no service report (manual repair history entry)
+      if (!hasServiceReport) {
+        fetchFaultTypes();
+      }
     }
   }, [visible, closeRequest]);
 
@@ -56,7 +95,6 @@ const ReviewCloseRequestModal = ({ visible, closeRequest, onClose, onSuccess }) 
   const handleAssetSelect = (assetId, checked) => {
     if (checked) {
       setSelectedAssets([...selectedAssets, assetId]);
-      // Initialize repair data for this asset
       setRepairData(prev => ({
         ...prev,
         [assetId]: {
@@ -102,23 +140,17 @@ const ReviewCloseRequestModal = ({ visible, closeRequest, onClose, onSuccess }) 
       return;
     }
 
-    console.log('Submitting review:', {
-      close_request_id: closeRequest.close_request_id,
-      action,
-      review_notes: values.review_notes
-    });
-
     setLoading(true);
     try {
-      // First, review the close request
+      // Review the close request - backend will handle service report finalization
       await ticketService.reviewCloseRequest(
         closeRequest.close_request_id,
         action,
         values.review_notes || null
       );
 
-      // If approved and repair records should be created, create them
-      if (action === 'approved' && recordRepairs && selectedAssets.length > 0) {
+      // If approved and NO service report, allow manual repair recording (for general tickets)
+      if (action === 'approved' && !hasServiceReport && recordRepairs && selectedAssets.length > 0) {
         const repairPromises = selectedAssets.map(assetId => {
           const assetRepair = repairData[assetId];
           if (!assetRepair) return null;
@@ -158,7 +190,6 @@ const ReviewCloseRequestModal = ({ visible, closeRequest, onClose, onSuccess }) 
       onSuccess(action);
     } catch (error) {
       console.error('Failed to review close request:', error);
-      console.error('Error response:', error.response);
       message.error(
         error.response?.data?.message || 'Failed to review close request'
       );
@@ -197,21 +228,28 @@ const ReviewCloseRequestModal = ({ visible, closeRequest, onClose, onSuccess }) 
     return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
   };
 
+  const formatCurrency = (value) => {
+    return `₹${(value || 0).toFixed(2)}`;
+  };
+
   return (
     <Modal
       title={
         <div className="flex items-center space-x-2">
           <CheckCircleOutlined style={{ color: '#1890ff' }} />
           <span>Review Close Request</span>
+          {hasServiceReport && (
+            <Tag color={isRepair ? 'orange' : 'purple'}>
+              {isRepair ? 'REPAIR' : 'REPLACEMENT'}
+            </Tag>
+          )}
         </div>
       }
       open={visible}
       onCancel={onClose}
       footer={
         <Space>
-          <Button onClick={onClose}>
-            Cancel
-          </Button>
+          <Button onClick={onClose}>Cancel</Button>
           <Button
             danger
             icon={<CloseCircleOutlined />}
@@ -230,13 +268,17 @@ const ReviewCloseRequestModal = ({ visible, closeRequest, onClose, onSuccess }) 
           </Button>
         </Space>
       }
-      width={700}
+      width={hasServiceReport ? 850 : 700}
       destroyOnClose
     >
       {/* Info Alert */}
       <Alert
         message="Review Engineer's Close Request"
-        description="Approve to close the ticket or reject to send it back to the engineer with feedback."
+        description={
+          hasServiceReport
+            ? `This ${isRepair ? 'repair' : 'replacement'} service report was prepared by the engineer. Review the details and approve to close the ticket${isRepair ? ' (repair history will be auto-recorded)' : ''}.`
+            : "Approve to close the ticket or reject to send it back to the engineer with feedback."
+        }
         type="info"
         showIcon
         className="mb-4"
@@ -249,6 +291,11 @@ const ReviewCloseRequestModal = ({ visible, closeRequest, onClose, onSuccess }) 
             <div>
               <span className="font-semibold">Ticket:</span>{' '}
               <Tag color="blue">{closeRequest.ticket_number}</Tag>
+              {closeRequest.ticket_service_type && (
+                <Tag color={serviceReportService.getServiceTypeColor(closeRequest.ticket_service_type)}>
+                  {serviceReportService.getServiceTypeDisplayName(closeRequest.ticket_service_type)}
+                </Tag>
+              )}
             </div>
             <div className="text-right">
               <div className="text-xs text-gray-500">
@@ -281,40 +328,119 @@ const ReviewCloseRequestModal = ({ visible, closeRequest, onClose, onSuccess }) 
 
           <Divider style={{ margin: '8px 0' }} />
 
-          {/* Created For */}
-          <div>
-            <div className="text-xs text-gray-500 mb-1">Created For</div>
-            {closeRequest.guest_name ? (
-              <div className="flex items-center space-x-2">
-                <Tag color="purple">GUEST</Tag>
-                <div>
-                  <div className="font-medium">{closeRequest.guest_name}</div>
-                  <div className="text-xs text-gray-500">{closeRequest.guest_email}</div>
+          <Row gutter={16}>
+            <Col span={12}>
+              <div className="text-xs text-gray-500 mb-1">Created For</div>
+              {closeRequest.guest_name ? (
+                <div className="flex items-center space-x-2">
+                  <Tag color="purple">GUEST</Tag>
+                  <div>
+                    <div className="font-medium">{closeRequest.guest_name}</div>
+                    <div className="text-xs text-gray-500">{closeRequest.guest_email}</div>
+                  </div>
                 </div>
+              ) : (
+                <div>
+                  <div className="font-medium">{closeRequest.created_by_user_name}</div>
+                  <div className="text-xs text-gray-500">{closeRequest.created_by_user_email}</div>
+                </div>
+              )}
+            </Col>
+            <Col span={12}>
+              <div className="text-xs text-gray-500 mb-1">
+                <UserOutlined /> Engineer
               </div>
-            ) : (
-              <div>
-                <div className="font-medium">{closeRequest.created_by_user_name}</div>
-                <div className="text-xs text-gray-500">{closeRequest.created_by_user_email}</div>
-              </div>
-            )}
-          </div>
-
-          {/* Engineer */}
-          <div>
-            <div className="text-xs text-gray-500 mb-1">
-              <UserOutlined /> Engineer
-            </div>
-            <div className="font-medium">{closeRequest.engineer_name}</div>
-            <div className="text-xs text-gray-500">{closeRequest.engineer_email}</div>
-          </div>
+              <div className="font-medium">{closeRequest.engineer_name}</div>
+              <div className="text-xs text-gray-500">{closeRequest.engineer_email}</div>
+            </Col>
+          </Row>
         </div>
       </Card>
+
+      {/* Service Report Section - When available */}
+      {hasServiceReport && (
+        <Card
+          size="small"
+          title={
+            <Space>
+              {isRepair ? <ToolOutlined style={{ color: '#fa8c16' }} /> : <SwapOutlined style={{ color: '#722ed1' }} />}
+              <span>Service Report: {closeRequest.service_report_number}</span>
+              <Tag color={closeRequest.service_report_status === 'draft' ? 'gold' : 'green'}>
+                {closeRequest.service_report_status?.toUpperCase()}
+              </Tag>
+            </Space>
+          }
+          className="mb-4"
+          headStyle={{ backgroundColor: isRepair ? '#fff7e6' : '#f9f0ff' }}
+        >
+          <Descriptions column={2} size="small" bordered>
+            <Descriptions.Item label="Diagnosis" span={2}>
+              <div className="whitespace-pre-wrap">{closeRequest.service_report_diagnosis || 'N/A'}</div>
+            </Descriptions.Item>
+            <Descriptions.Item label="Work Performed" span={2}>
+              <div className="whitespace-pre-wrap">{closeRequest.service_report_work_performed || 'N/A'}</div>
+            </Descriptions.Item>
+            {isRepair && (
+              <>
+                <Descriptions.Item label="Fault Type" span={2}>
+                  {closeRequest.fault_type_name ? (
+                    <Tag color="volcano">
+                      {closeRequest.fault_type_category ? `[${closeRequest.fault_type_category}] ` : ''}
+                      {closeRequest.fault_type_name}
+                    </Tag>
+                  ) : (
+                    <Text type="secondary">Not specified</Text>
+                  )}
+                </Descriptions.Item>
+                <Descriptions.Item label="Condition Before">
+                  <Tag color={serviceReportService.getConditionColor(closeRequest.condition_before)}>
+                    {serviceReportService.getConditionDisplayName(closeRequest.condition_before)}
+                  </Tag>
+                </Descriptions.Item>
+                <Descriptions.Item label="Condition After">
+                  <Tag color={serviceReportService.getConditionColor(closeRequest.condition_after)}>
+                    {serviceReportService.getConditionDisplayName(closeRequest.condition_after)}
+                  </Tag>
+                </Descriptions.Item>
+              </>
+            )}
+            <Descriptions.Item label="Parts Cost">
+              {formatCurrency(closeRequest.total_parts_cost)}
+            </Descriptions.Item>
+            <Descriptions.Item label="Labor Cost">
+              {formatCurrency(closeRequest.labor_cost)}
+            </Descriptions.Item>
+            <Descriptions.Item label="Total Cost" span={2}>
+              <Text strong>{formatCurrency((closeRequest.total_parts_cost || 0) + (closeRequest.labor_cost || 0))}</Text>
+            </Descriptions.Item>
+            {closeRequest.service_report_notes && (
+              <Descriptions.Item label="Engineer Notes" span={2}>
+                {closeRequest.service_report_notes}
+              </Descriptions.Item>
+            )}
+          </Descriptions>
+
+          {isRepair && (
+            <Alert
+              message="Repair History"
+              description="Repair history will be automatically recorded for the serviced asset when you approve this request."
+              type="info"
+              showIcon
+              className="mt-3"
+            />
+          )}
+        </Card>
+      )}
 
       {/* Engineer's Resolution Notes */}
       <Card
         size="small"
-        title="Engineer's Resolution Notes"
+        title={
+          <Space>
+            <FileTextOutlined />
+            <span>Engineer's Resolution Notes</span>
+          </Space>
+        }
         className="mb-4"
         headStyle={{ backgroundColor: '#e6f7ff', fontWeight: 600 }}
       >
@@ -385,29 +511,22 @@ const ReviewCloseRequestModal = ({ visible, closeRequest, onClose, onSuccess }) 
           ]}
         >
           <TextArea
-            rows={4}
-            placeholder="Provide feedback to the engineer...
-
-For Approval (optional):
-- Good work! Ticket resolved satisfactorily.
-
-For Rejection (required):
-- Please provide more details about the testing performed
-- The issue was not fully resolved, please check X, Y, Z"
+            rows={3}
+            placeholder="Provide feedback to the engineer..."
             maxLength={1000}
             showCount
           />
         </Form.Item>
       </Form>
 
-      {/* Record Repair History Section */}
-      {linkedAssets.length > 0 && (
+      {/* Manual Repair History Section - Only when NO service report */}
+      {!hasServiceReport && linkedAssets.length > 0 && (
         <Card
           size="small"
           title={
             <Space>
               <ToolOutlined />
-              <span>Record Repair History</span>
+              <span>Record Repair History (Optional)</span>
               <Switch
                 checked={recordRepairs}
                 onChange={setRecordRepairs}
@@ -421,7 +540,7 @@ For Rejection (required):
         >
           {!recordRepairs ? (
             <Text type="secondary">
-              Enable to record repair entries for linked assets when approving this ticket
+              Enable to manually record repair entries for linked assets when approving this ticket
             </Text>
           ) : (
             <div>
@@ -457,11 +576,6 @@ For Rejection (required):
                         ) : null}
                         <Text strong>{asset.asset_tag}</Text>
                         <Text type="secondary">{asset.product_name}</Text>
-                        {asset.is_component_of_linked && asset.parent_asset_tag && (
-                          <Text type="secondary" style={{ fontSize: '11px' }}>
-                            (of {asset.parent_asset_tag})
-                          </Text>
-                        )}
                       </div>
 
                       {selectedAssets.includes(asset.asset_id) && (
@@ -504,7 +618,7 @@ For Rejection (required):
 
                           <Row gutter={16}>
                             <Col span={8}>
-                              <div className="text-xs text-gray-500 mb-1">Parts Cost ($)</div>
+                              <div className="text-xs text-gray-500 mb-1">Parts Cost (₹)</div>
                               <InputNumber
                                 style={{ width: '100%' }}
                                 min={0}
@@ -514,7 +628,7 @@ For Rejection (required):
                               />
                             </Col>
                             <Col span={8}>
-                              <div className="text-xs text-gray-500 mb-1">Labor Cost ($)</div>
+                              <div className="text-xs text-gray-500 mb-1">Labor Cost (₹)</div>
                               <InputNumber
                                 style={{ width: '100%' }}
                                 min={0}
@@ -561,26 +675,6 @@ For Rejection (required):
             </div>
           )}
         </Card>
-      )}
-
-      {/* Warning for Actions */}
-      {action === 'approved' && (
-        <Alert
-          message="Approve & Close"
-          description="The ticket will be permanently closed and marked as resolved."
-          type="success"
-          showIcon
-          className="mt-2"
-        />
-      )}
-      {action === 'rejected' && (
-        <Alert
-          message="Reject Request"
-          description="The ticket will return to 'In Progress' status and the engineer will be notified with your feedback."
-          type="warning"
-          showIcon
-          className="mt-2"
-        />
       )}
     </Modal>
   );

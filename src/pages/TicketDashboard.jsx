@@ -40,6 +40,7 @@ import TicketDetailsDrawer from '../components/modules/tickets/TicketDetailsDraw
 import TicketFilterDrawer from '../components/modules/tickets/TicketFilterDrawer';
 import ReviewCloseRequestModal from '../components/modules/tickets/ReviewCloseRequestModal';
 import PendingCloseRequestsDrawer from '../components/modules/tickets/PendingCloseRequestsDrawer';
+import ReopenTicketModal from '../components/modules/tickets/ReopenTicketModal';
 import useResponsive from '../hooks/useResponsive';
 
 const { Search } = Input;
@@ -85,6 +86,7 @@ const TicketDashboard = () => {
   const [filterDrawerVisible, setFilterDrawerVisible] = useState(false);
   const [reviewCloseRequestModalVisible, setReviewCloseRequestModalVisible] = useState(false);
   const [pendingCloseRequestsDrawerVisible, setPendingCloseRequestsDrawerVisible] = useState(false);
+  const [reopenModalVisible, setReopenModalVisible] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [selectedCloseRequest, setSelectedCloseRequest] = useState(null);
   const [linkedAssets, setLinkedAssets] = useState([]);
@@ -320,6 +322,18 @@ const TicketDashboard = () => {
     message.success('Ticket closed successfully');
   };
 
+  const handleReopenTicket = (ticket) => {
+    setSelectedTicket(ticket);
+    setReopenModalVisible(true);
+  };
+
+  const handleReopenSuccess = () => {
+    setReopenModalVisible(false);
+    setSelectedTicket(null);
+    fetchTickets();
+    fetchStats();
+  };
+
   const handleExport = async () => {
     try {
       message.loading({ content: 'Exporting tickets...', key: 'export' });
@@ -371,6 +385,16 @@ const TicketDashboard = () => {
         label: 'Close Ticket',
         icon: <CheckCircleOutlined />,
         onClick: () => handleCloseTicket(ticket)
+      });
+    }
+
+    // Show "Reopen Ticket" only for closed tickets
+    if (ticket.status === 'closed') {
+      items.push({
+        key: 'reopen',
+        label: 'Reopen Ticket',
+        icon: <ReloadOutlined />,
+        onClick: () => handleReopenTicket(ticket)
       });
     }
 
@@ -704,6 +728,16 @@ const TicketDashboard = () => {
           setSelectedCloseRequest(null);
         }}
         onSuccess={handleReviewSuccess}
+      />
+
+      <ReopenTicketModal
+        visible={reopenModalVisible}
+        ticket={selectedTicket}
+        onClose={() => {
+          setReopenModalVisible(false);
+          setSelectedTicket(null);
+        }}
+        onSuccess={handleReopenSuccess}
       />
 
       <TicketDetailsDrawer

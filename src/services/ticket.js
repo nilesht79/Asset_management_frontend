@@ -204,11 +204,15 @@ const ticketService = {
 
   /**
    * Engineer requests to close a ticket
+   * @param {string} ticketId - Ticket ID
+   * @param {string} requestNotes - Resolution notes
+   * @param {string|null} serviceReportId - Service report ID (for repair/replace tickets)
    */
-  requestTicketClose: async (ticketId, requestNotes) => {
+  requestTicketClose: async (ticketId, requestNotes, serviceReportId = null) => {
     try {
       const response = await apiClient.post(`/tickets/${ticketId}/request-close`, {
-        request_notes: requestNotes
+        request_notes: requestNotes,
+        service_report_id: serviceReportId
       });
       return response;
     } catch (error) {
@@ -545,6 +549,77 @@ const ticketService = {
       return response;
     } catch (error) {
       console.error('Error exporting trend analysis:', error);
+      throw error;
+    }
+  },
+
+  // ============================================
+  // TICKET REOPEN METHODS
+  // ============================================
+
+  /**
+   * Get ticket reopen configuration
+   */
+  getReopenConfig: async () => {
+    try {
+      const response = await apiClient.get('/tickets/reopen-config');
+      return response;
+    } catch (error) {
+      console.error('Error fetching reopen config:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Update ticket reopen configuration
+   */
+  updateReopenConfig: async (configData) => {
+    try {
+      const response = await apiClient.put('/tickets/reopen-config', configData);
+      return response;
+    } catch (error) {
+      console.error('Error updating reopen config:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Check if a ticket can be reopened
+   */
+  canReopenTicket: async (ticketId) => {
+    try {
+      const response = await apiClient.get(`/tickets/${ticketId}/can-reopen`);
+      return response;
+    } catch (error) {
+      console.error('Error checking reopen eligibility:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Reopen a closed ticket
+   */
+  reopenTicket: async (ticketId, reopenReason) => {
+    try {
+      const response = await apiClient.post(`/tickets/${ticketId}/reopen`, {
+        reopen_reason: reopenReason
+      });
+      return response;
+    } catch (error) {
+      console.error('Error reopening ticket:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get reopen history for a ticket
+   */
+  getReopenHistory: async (ticketId) => {
+    try {
+      const response = await apiClient.get(`/tickets/${ticketId}/reopen-history`);
+      return response;
+    } catch (error) {
+      console.error('Error fetching reopen history:', error);
       throw error;
     }
   }

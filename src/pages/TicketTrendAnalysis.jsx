@@ -26,13 +26,15 @@ import {
   ReloadOutlined,
   LineChartOutlined,
   BarChartOutlined,
+  PieChartOutlined,
   RiseOutlined,
   FallOutlined,
   MinusOutlined,
   ClockCircleOutlined,
   FolderOutlined,
   EnvironmentOutlined,
-  TeamOutlined
+  TeamOutlined,
+  UserOutlined
 } from '@ant-design/icons';
 import {
   LineChart,
@@ -52,6 +54,7 @@ import {
 import ticketService from '../services/ticket';
 import masterService from '../services/master';
 import departmentService from '../services/department';
+import userService from '../services/user';
 
 const { Option } = Select;
 
@@ -63,12 +66,14 @@ const TicketTrendAnalysis = () => {
   const [trendData, setTrendData] = useState(null);
   const [locations, setLocations] = useState([]);
   const [departments, setDepartments] = useState([]);
+  const [engineers, setEngineers] = useState([]);
 
   // Filters
   const [monthsBack, setMonthsBack] = useState(6);
   const [locationId, setLocationId] = useState(null);
   const [departmentId, setDepartmentId] = useState(null);
   const [priority, setPriority] = useState(null);
+  const [engineerId, setEngineerId] = useState(null);
 
   // Load initial data
   useEffect(() => {
@@ -78,13 +83,15 @@ const TicketTrendAnalysis = () => {
 
   const loadFilterOptions = async () => {
     try {
-      const [locationsRes, departmentsRes] = await Promise.all([
-        masterService.getLocations(),
-        departmentService.getDepartments()
+      const [locationsRes, departmentsRes, engineersRes] = await Promise.all([
+        masterService.getLocations({ limit: 1000 }),
+        departmentService.getDepartments({ limit: 1000 }),
+        userService.getUsers({ role: 'engineer', limit: 1000 })
       ]);
 
       setLocations(locationsRes?.data?.data?.locations || locationsRes?.data?.data || []);
       setDepartments(departmentsRes?.data?.data?.departments || departmentsRes?.data?.data || []);
+      setEngineers(engineersRes?.data?.data?.users || engineersRes?.data?.users || []);
     } catch (error) {
       console.error('Error loading filter options:', error);
     }
@@ -99,6 +106,7 @@ const TicketTrendAnalysis = () => {
       if (locationId) params.location_id = locationId;
       if (departmentId) params.department_id = departmentId;
       if (priority) params.priority = priority;
+      if (engineerId) params.engineer_id = engineerId;
 
       const response = await ticketService.getTrendAnalysis(params);
       setTrendData(response?.data?.data || response?.data || null);
@@ -119,6 +127,7 @@ const TicketTrendAnalysis = () => {
       if (locationId) params.location_id = locationId;
       if (departmentId) params.department_id = departmentId;
       if (priority) params.priority = priority;
+      if (engineerId) params.engineer_id = engineerId;
 
       await ticketService.exportTrendAnalysis(params);
       message.success('Report exported successfully');
@@ -139,6 +148,7 @@ const TicketTrendAnalysis = () => {
     setLocationId(null);
     setDepartmentId(null);
     setPriority(null);
+    setEngineerId(null);
     setTimeout(() => fetchTrendData(), 0);
   };
 
@@ -370,12 +380,61 @@ const TicketTrendAnalysis = () => {
     }
   ];
 
+  // Engineer breakdown columns
+  const engineerColumns = [
+    {
+      title: 'Engineer',
+      dataIndex: 'engineer_name',
+      key: 'engineer_name',
+      width: 200
+    },
+    {
+      title: 'Total',
+      dataIndex: 'total_tickets',
+      key: 'total_tickets',
+      width: 100,
+      align: 'right',
+      sorter: (a, b) => a.total_tickets - b.total_tickets,
+      defaultSortOrder: 'descend'
+    },
+    {
+      title: 'Closed',
+      dataIndex: 'closed_tickets',
+      key: 'closed_tickets',
+      width: 100,
+      align: 'right'
+    },
+    {
+      title: 'Active',
+      dataIndex: 'active_tickets',
+      key: 'active_tickets',
+      width: 100,
+      align: 'right'
+    },
+    {
+      title: 'Avg Resolution',
+      dataIndex: 'avg_resolution_hours',
+      key: 'avg_resolution_hours',
+      width: 120,
+      align: 'right',
+      render: (val) => val ? `${Math.round(val)} hrs` : 'N/A'
+    },
+    {
+      title: 'Share',
+      dataIndex: 'percentage',
+      key: 'percentage',
+      width: 100,
+      render: (val) => `${val}%`
+    }
+  ];
+
   const summary = trendData?.summary || {};
   const monthlyVolume = trendData?.monthly_volume || [];
   const byCategory = trendData?.by_category || [];
   const byPriority = trendData?.by_priority || [];
   const byLocation = trendData?.by_location || [];
   const byDepartment = trendData?.by_department || [];
+  const byEngineer = trendData?.by_engineer || [];
 
   const tabItems = [
     {
@@ -394,7 +453,7 @@ const TicketTrendAnalysis = () => {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="period_label" tick={{ fontSize: 12 }} />
                 <YAxis />
-                <RechartsTooltip />
+                <RechartsTooltip contentStyle={{ color: '#000' }} />
                 <Legend />
                 <Line
                   type="monotone"
@@ -462,7 +521,7 @@ const TicketTrendAnalysis = () => {
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
-                  <RechartsTooltip />
+                  <RechartsTooltip contentStyle={{ color: '#000' }} />
                 </PieChart>
               </ResponsiveContainer>
             </Card>
@@ -486,7 +545,7 @@ const TicketTrendAnalysis = () => {
       key: 'priority',
       label: (
         <span>
-          <BarChartOutlined /> By Priority
+          <PieChartOutlined /> By Priority
         </span>
       ),
       children: (
@@ -494,14 +553,22 @@ const TicketTrendAnalysis = () => {
           <Col xs={24} lg={12}>
             <Card size="small" title="Priority Distribution" style={{ marginBottom: 16 }}>
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={byPriority} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis type="number" />
-                  <YAxis dataKey="priority" type="category" width={80} />
-                  <RechartsTooltip />
-                  <Bar dataKey="total_tickets" name="Total" fill="#1890ff" />
-                  <Bar dataKey="closed_tickets" name="Closed" fill="#52c41a" />
-                </BarChart>
+                <PieChart>
+                  <Pie
+                    data={byPriority}
+                    dataKey="total_tickets"
+                    nameKey="priority"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={100}
+                    label={({ priority, percentage }) => `${priority}: ${percentage}%`}
+                  >
+                    {byPriority.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <RechartsTooltip contentStyle={{ color: '#000' }} />
+                </PieChart>
               </ResponsiveContainer>
             </Card>
           </Col>
@@ -535,7 +602,7 @@ const TicketTrendAnalysis = () => {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis type="number" />
                   <YAxis dataKey="location_name" type="category" width={120} tick={{ fontSize: 11 }} />
-                  <RechartsTooltip />
+                  <RechartsTooltip contentStyle={{ color: '#000' }} />
                   <Bar dataKey="total_tickets" name="Total" fill="#722ed1" />
                 </BarChart>
               </ResponsiveContainer>
@@ -571,7 +638,7 @@ const TicketTrendAnalysis = () => {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis type="number" />
                   <YAxis dataKey="department_name" type="category" width={120} tick={{ fontSize: 11 }} />
-                  <RechartsTooltip />
+                  <RechartsTooltip contentStyle={{ color: '#000' }} />
                   <Bar dataKey="total_tickets" name="Total" fill="#13c2c2" />
                 </BarChart>
               </ResponsiveContainer>
@@ -583,6 +650,43 @@ const TicketTrendAnalysis = () => {
                 columns={departmentColumns}
                 dataSource={byDepartment}
                 rowKey="department_name"
+                size="small"
+                pagination={{ pageSize: 10 }}
+              />
+            </Card>
+          </Col>
+        </Row>
+      )
+    },
+    {
+      key: 'engineer',
+      label: (
+        <span>
+          <UserOutlined /> By Engineer
+        </span>
+      ),
+      children: (
+        <Row gutter={16}>
+          <Col xs={24} lg={12}>
+            <Card size="small" title="Engineer Distribution" style={{ marginBottom: 16 }}>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={byEngineer.slice(0, 10)} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis type="number" />
+                  <YAxis dataKey="engineer_name" type="category" width={120} tick={{ fontSize: 11 }} />
+                  <RechartsTooltip contentStyle={{ color: '#000' }} />
+                  <Bar dataKey="total_tickets" name="Total" fill="#eb2f96" />
+                  <Bar dataKey="closed_tickets" name="Closed" fill="#52c41a" />
+                </BarChart>
+              </ResponsiveContainer>
+            </Card>
+          </Col>
+          <Col xs={24} lg={12}>
+            <Card size="small" title="Engineer Breakdown">
+              <Table
+                columns={engineerColumns}
+                dataSource={byEngineer}
+                rowKey="engineer_name"
                 size="small"
                 pagination={{ pageSize: 10 }}
               />
@@ -690,7 +794,26 @@ const TicketTrendAnalysis = () => {
             </Select>
           </Col>
 
-          <Col xs={24} sm={24} md={24} lg={8}>
+          <Col xs={24} sm={12} md={6} lg={4}>
+            <label className="block text-sm font-medium mb-1">Engineer</label>
+            <Select
+              value={engineerId}
+              onChange={setEngineerId}
+              allowClear
+              placeholder="All Engineers"
+              style={{ width: '100%' }}
+              showSearch
+              optionFilterProp="children"
+            >
+              {engineers.map(eng => (
+                <Option key={eng.id} value={eng.id}>
+                  {eng.firstName} {eng.lastName}
+                </Option>
+              ))}
+            </Select>
+          </Col>
+
+          <Col xs={24} sm={24} md={24} lg={6}>
             <label className="block text-sm font-medium mb-1">&nbsp;</label>
             <Space>
               <Button

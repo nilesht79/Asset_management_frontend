@@ -20,6 +20,32 @@ const serviceReportService = {
   },
 
   /**
+   * Create a draft service report (for close request workflow)
+   */
+  createDraftReport: async (reportData) => {
+    try {
+      const response = await apiClient.post('/service-reports/draft', reportData);
+      return response;
+    } catch (error) {
+      console.error('Error creating draft service report:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get draft service report by ticket ID
+   */
+  getDraftReportByTicketId: async (ticketId) => {
+    try {
+      const response = await apiClient.get(`/service-reports/draft/ticket/${ticketId}`);
+      return response;
+    } catch (error) {
+      console.error('Error fetching draft service report:', error);
+      throw error;
+    }
+  },
+
+  /**
    * Get service report by ID
    */
   getReportById: async (reportId) => {

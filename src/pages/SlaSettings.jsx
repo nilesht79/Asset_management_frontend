@@ -5,13 +5,15 @@ import {
   ClockCircleOutlined,
   CalendarOutlined,
   ThunderboltOutlined,
-  DashboardOutlined
+  DashboardOutlined,
+  ReloadOutlined
 } from '@ant-design/icons';
 import {
   SlaRulesManager,
   BusinessHoursManager,
   HolidayCalendarManager,
-  SlaDashboard
+  SlaDashboard,
+  TicketReopenConfig
 } from '../components/modules/sla';
 
 const { Title, Text } = Typography;
@@ -63,6 +65,16 @@ const SlaSettings = () => {
         </Space>
       ),
       children: <HolidayCalendarManager />
+    },
+    {
+      key: 'reopen',
+      label: (
+        <Space>
+          <ReloadOutlined />
+          <span>Ticket Reopen</span>
+        </Space>
+      ),
+      children: <TicketReopenConfig />
     }
   ];
 

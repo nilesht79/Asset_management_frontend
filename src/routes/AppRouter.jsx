@@ -63,6 +63,7 @@ import FaultTypeManagement from '../components/modules/admin/FaultTypeManagement
 
 // SLA Settings
 import SlaSettings from '../pages/SlaSettings'
+import { TicketReopenConfig } from '../components/modules/sla'
 
 // Report Pages
 import SparePartsReport from '../pages/SparePartsReport'
@@ -252,6 +253,7 @@ const AppRouter = () => {
             <Route path="settings/org-config" element={<OrgConfig />} />
             <Route path="settings/email" element={<EmailSettings />} />
             <Route path="settings/company-branding" element={<CompanySettings />} />
+            <Route path="settings/ticket-reopen" element={<TicketReopenConfig />} />
           </>
         )}
 

@@ -64,6 +64,7 @@ const GatePasses = () => {
   const [activeTab, setActiveTab] = useState('all');
   const [dateRange, setDateRange] = useState(null);
   const [searchText, setSearchText] = useState('');
+  const [serialNumberSearch, setSerialNumberSearch] = useState('');
 
   // Dropdown data
   const [vendors, setVendors] = useState([]);
@@ -126,6 +127,7 @@ const GatePasses = () => {
         params.date_to = dateRange[1].format('YYYY-MM-DD');
       }
       if (searchText) params.search = searchText;
+      if (serialNumberSearch) params.serial_number = serialNumberSearch;
 
       const response = await gatePassService.getGatePasses(params);
       const data = response.data?.data || response.data || {};
@@ -143,7 +145,7 @@ const GatePasses = () => {
     } finally {
       setLoading(false);
     }
-  }, [activeTab, dateRange, searchText, pagination.limit]);
+  }, [activeTab, dateRange, searchText, serialNumberSearch, pagination.limit]);
 
   // Initial fetch
   useEffect(() => {
@@ -164,6 +166,7 @@ const GatePasses = () => {
   const handleClearFilters = () => {
     setDateRange(null);
     setSearchText('');
+    setSerialNumberSearch('');
     setTimeout(() => fetchGatePasses(1), 0);
   };
 
@@ -530,7 +533,7 @@ const GatePasses = () => {
 
         {/* Filters */}
         <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
-          <Col xs={24} sm={12} md={8}>
+          <Col xs={24} sm={12} md={6}>
             <RangePicker
               value={dateRange}
               onChange={setDateRange}
@@ -538,7 +541,7 @@ const GatePasses = () => {
               placeholder={['From Date', 'To Date']}
             />
           </Col>
-          <Col xs={24} sm={12} md={8}>
+          <Col xs={24} sm={12} md={6}>
             <Input
               value={searchText}
               onChange={e => setSearchText(e.target.value)}
@@ -547,7 +550,17 @@ const GatePasses = () => {
               onPressEnter={handleApplyFilter}
             />
           </Col>
-          <Col xs={24} sm={12} md={8}>
+          <Col xs={24} sm={12} md={6}>
+            <Input
+              value={serialNumberSearch}
+              onChange={e => setSerialNumberSearch(e.target.value)}
+              placeholder="Search by serial number..."
+              prefix={<SearchOutlined />}
+              onPressEnter={handleApplyFilter}
+              allowClear
+            />
+          </Col>
+          <Col xs={24} sm={12} md={6}>
             <Space>
               <Button type="primary" icon={<FilterOutlined />} onClick={handleApplyFilter}>
                 Filter

@@ -138,9 +138,9 @@ const AssetLifecycle = () => {
   const getAlertTag = (alertType, daysRemaining) => {
     const alertConfig = {
       warranty_expired: { color: 'red', icon: <WarningOutlined />, label: 'Warranty Expired' },
-      warranty_30: { color: 'red', icon: <ClockCircleOutlined />, label: '< 30 Days' },
-      warranty_60: { color: 'orange', icon: <ClockCircleOutlined />, label: '31-60 Days' },
-      warranty_90: { color: 'gold', icon: <ClockCircleOutlined />, label: '61-90 Days' },
+      warranty_30: { color: 'red', icon: <ClockCircleOutlined />, label: 'Warranty < 30d' },
+      warranty_60: { color: 'orange', icon: <ClockCircleOutlined />, label: 'Warranty 31-60d' },
+      warranty_90: { color: 'gold', icon: <ClockCircleOutlined />, label: 'Warranty 61-90d' },
       eol_reached: { color: 'red', icon: <StopOutlined />, label: 'EOL Reached' },
       eol_approaching: { color: 'orange', icon: <ExclamationCircleOutlined />, label: 'EOL Approaching' },
       eos_reached: { color: 'red', icon: <StopOutlined />, label: 'EOS Reached' },
@@ -179,9 +179,13 @@ const AssetLifecycle = () => {
       dataIndex: 'asset_tag',
       key: 'asset_tag',
       fixed: 'left',
-      width: 120,
-      render: (text, record) => (
-        <Button type="link" onClick={() => navigate(`/assets/${record.id}`)}>
+      width: 175,
+      render: (text) => (
+        <Button
+          type="link"
+          onClick={() => navigate(`/assets/inventory?search=${encodeURIComponent(text)}`)}
+          style={{ padding: 0, whiteSpace: 'nowrap' }}
+        >
           {text}
         </Button>
       )
