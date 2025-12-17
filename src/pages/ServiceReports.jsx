@@ -81,10 +81,16 @@ const ServiceReports = () => {
           departmentService.getDepartments().catch(() => ({ data: { data: { departments: [] } } }))
         ]);
 
-        setEngineers(engineersRes.data?.data || engineersRes.data || []);
-        const locData = locationsRes.data?.data?.locations || locationsRes.data?.data || [];
+        // Parse engineers - API returns { data: { users: [...] } }
+        const engData = engineersRes.data?.data?.users || engineersRes.data?.users || [];
+        setEngineers(Array.isArray(engData) ? engData : []);
+
+        // Parse locations - API returns { data: { locations: [...] } }
+        const locData = locationsRes.data?.data?.locations || locationsRes.data?.locations || [];
         setLocations(Array.isArray(locData) ? locData : []);
-        const deptData = departmentsRes.data?.data?.departments || departmentsRes.data?.data || [];
+
+        // Parse departments - API returns { data: { departments: [...] } }
+        const deptData = departmentsRes.data?.data?.departments || departmentsRes.data?.departments || [];
         setDepartments(Array.isArray(deptData) ? deptData : []);
       } catch (error) {
         console.error('Failed to fetch dropdown data:', error);
@@ -425,7 +431,7 @@ const ServiceReports = () => {
               >
                 {engineers.map(eng => (
                   <Option key={eng.user_id || eng.id} value={eng.user_id || eng.id}>
-                    {eng.first_name} {eng.last_name}
+                    {eng.firstName || eng.first_name} {eng.lastName || eng.last_name}
                   </Option>
                 ))}
               </Select>
@@ -444,11 +450,27 @@ const ServiceReports = () => {
                 showSearch
                 optionFilterProp="children"
               >
-                {locations.map(loc => (
-                  <Option key={loc.id} value={loc.id}>
-                    {loc.name}
-                  </Option>
-                ))}
+                {locations.map(loc => {
+                  const locationLabel = `${loc.name}${loc.building ? ` - ${loc.building}` : ''}${loc.floor ? ` (Floor ${loc.floor})` : ''}`;
+                  const tooltipContent = (
+                    <div>
+                      <div><strong>{loc.name}</strong></div>
+                      {loc.building && <div>Building: {loc.building}</div>}
+                      {loc.floor && <div>Floor: {loc.floor}</div>}
+                      {loc.address && <div>Address: {loc.address}</div>}
+                      {(loc.city_name || loc.state_name) && (
+                        <div>{[loc.city_name, loc.state_name].filter(Boolean).join(', ')}</div>
+                      )}
+                    </div>
+                  );
+                  return (
+                    <Option key={loc.id} value={loc.id}>
+                      <Tooltip title={tooltipContent} placement="right" mouseEnterDelay={0.5}>
+                        <span style={{ display: 'block' }}>{locationLabel}</span>
+                      </Tooltip>
+                    </Option>
+                  );
+                })}
               </Select>
             </Space>
           </Col>

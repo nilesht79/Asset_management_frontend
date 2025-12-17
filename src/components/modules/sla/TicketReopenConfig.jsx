@@ -167,30 +167,34 @@ const TicketReopenConfig = () => {
                 rules={[{ required: true, message: 'Required' }]}
                 tooltip="Determines how SLA timers are handled when reopening"
               >
-                <Select>
-                  <Option value="continue">
-                    <div>
+                <Select
+                  optionLabelProp="label"
+                  style={{ width: '100%' }}
+                  dropdownStyle={{ minWidth: 280 }}
+                >
+                  <Option value="continue" label="Continue">
+                    <div style={{ whiteSpace: 'normal', lineHeight: 1.4 }}>
                       <Text strong>Continue</Text>
                       <br />
-                      <Text type="secondary" className="text-xs">
+                      <Text type="secondary" style={{ fontSize: 12 }}>
                         SLA timer continues from where it left off
                       </Text>
                     </div>
                   </Option>
-                  <Option value="reset">
-                    <div>
+                  <Option value="reset" label="Reset">
+                    <div style={{ whiteSpace: 'normal', lineHeight: 1.4 }}>
                       <Text strong>Reset</Text>
                       <br />
-                      <Text type="secondary" className="text-xs">
+                      <Text type="secondary" style={{ fontSize: 12 }}>
                         SLA timer resets to beginning
                       </Text>
                     </div>
                   </Option>
-                  <Option value="new_sla">
-                    <div>
+                  <Option value="new_sla" label="New SLA">
+                    <div style={{ whiteSpace: 'normal', lineHeight: 1.4 }}>
                       <Text strong>New SLA</Text>
                       <br />
-                      <Text type="secondary" className="text-xs">
+                      <Text type="secondary" style={{ fontSize: 12 }}>
                         Apply a new SLA calculation
                       </Text>
                     </div>

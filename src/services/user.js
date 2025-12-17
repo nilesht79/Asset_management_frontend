@@ -7,6 +7,12 @@ const userService = {
     return api.get(`/users${queryString ? `?${queryString}` : ''}`)
   },
 
+  // Get all engineers (users with role 'engineer')
+  getEngineers: (params = {}) => {
+    const queryString = apiUtils.buildQueryString({ ...params, role: 'engineer' })
+    return api.get(`/users${queryString ? `?${queryString}` : ''}`)
+  },
+
   getUserStatistics: () => {
     return api.get('/users/statistics')
   },

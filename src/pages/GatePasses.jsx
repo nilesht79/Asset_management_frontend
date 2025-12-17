@@ -330,6 +330,7 @@ const GatePasses = () => {
         payload.vendor_id = values.vendor_id;
         payload.destination_address = values.destination_address;
         payload.service_description = values.service_description;
+        payload.carrier_name = values.carrier_name || null;
         if (values.purpose === 'repair') {
           payload.expected_return_date = values.expected_return_date?.format('YYYY-MM-DD');
         }
@@ -665,6 +666,11 @@ const GatePasses = () => {
                           {selectedGatePass.destination_address}
                         </Text>
                       )}
+                      {selectedGatePass.carrier_name && (
+                        <Text type="secondary" style={{ display: 'block', fontSize: 12, marginTop: 4 }}>
+                          Carrier: {selectedGatePass.carrier_name}
+                        </Text>
+                      )}
                     </>
                   ) : (
                     <>
@@ -795,6 +801,9 @@ const GatePasses = () => {
               <Form.Item name="service_description" label="Service Description">
                 <TextArea rows={2} placeholder="Describe the service/repair required" />
               </Form.Item>
+              <Form.Item name="carrier_name" label="Carrier Name">
+                <Input placeholder="Enter carrier/transporter name" maxLength={200} />
+              </Form.Item>
             </>
           ) : (
             <Form.Item
@@ -831,7 +840,7 @@ const GatePasses = () => {
           <Form.Item label="Search and Add Assets">
             <Select
               showSearch
-              placeholder="Search by asset tag or serial number (min 2 characters)..."
+              placeholder="Search by asset tag, serial number, or product name..."
               value={null}
               searchValue={assetSearchText}
               onSearch={handleAssetSearch}
