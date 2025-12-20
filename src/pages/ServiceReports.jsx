@@ -17,7 +17,8 @@ import {
   Descriptions,
   Divider,
   Dropdown,
-  Tooltip
+  Tooltip,
+  Checkbox
 } from 'antd';
 import {
   FileTextOutlined,
@@ -70,6 +71,9 @@ const ServiceReports = () => {
 
   // PDF export loading
   const [exportLoading, setExportLoading] = useState(false);
+
+  // Hide cost option for PDF export
+  const [hideCost, setHideCost] = useState(false);
 
   // Fetch dropdown data
   useEffect(() => {
@@ -176,7 +180,7 @@ const ServiceReports = () => {
   const handleDownloadPDF = async (record) => {
     try {
       message.loading({ content: 'Generating PDF...', key: 'pdf' });
-      await serviceReportService.downloadPDF(record.report_id, record.report_number);
+      await serviceReportService.downloadPDF(record.report_id, record.report_number, hideCost);
       message.success({ content: 'PDF downloaded successfully', key: 'pdf' });
     } catch (error) {
       message.error({ content: 'Failed to download PDF', key: 'pdf' });
@@ -207,7 +211,7 @@ const ServiceReports = () => {
       }
 
       message.loading({ content: `Generating PDF for ${reportIds.length} reports...`, key: 'bulkPdf' });
-      await serviceReportService.downloadBulkPDF(reportIds);
+      await serviceReportService.downloadBulkPDF(reportIds, hideCost);
       message.success({ content: 'Bulk PDF downloaded successfully', key: 'bulkPdf' });
     } catch (error) {
       message.error({ content: 'Failed to download bulk PDF', key: 'bulkPdf' });
@@ -523,6 +527,12 @@ const ServiceReports = () => {
                   >
                     Apply Filters
                   </Button>
+                  <Checkbox
+                    checked={hideCost}
+                    onChange={(e) => setHideCost(e.target.checked)}
+                  >
+                    Hide Cost in PDF
+                  </Checkbox>
                   <Dropdown
                     menu={{ items: exportMenuItems }}
                     trigger={['click']}

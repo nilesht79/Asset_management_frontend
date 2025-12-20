@@ -34,7 +34,8 @@ const AssetSelector = ({
   selectedAssets = [],
   onSelectionChange,
   disabled = false,
-  maxSelections = null
+  maxSelections = null,
+  isSelfService = false // When true, uses /my-assets endpoint for current user
 }) => {
   const [loading, setLoading] = useState(false);
   const [assets, setAssets] = useState([]);
@@ -42,15 +43,23 @@ const AssetSelector = ({
   const [expandedKeys, setExpandedKeys] = useState([]);
 
   useEffect(() => {
-    if (userId) {
-      fetchEmployeeAssets(userId);
+    if (isSelfService) {
+      // Employee self-service: fetch their own assets
+      fetchAssets();
+    } else if (userId) {
+      // Coordinator mode: fetch specific employee's assets
+      fetchAssets(userId);
     }
-  }, [userId]);
+  }, [userId, isSelfService]);
 
-  const fetchEmployeeAssets = async (uid) => {
+  const fetchAssets = async (uid = null) => {
     setLoading(true);
     try {
-      const response = await ticketService.getEmployeeAssets(uid);
+      // Use appropriate endpoint based on mode
+      const response = isSelfService
+        ? await ticketService.getMyAssets()
+        : await ticketService.getEmployeeAssets(uid);
+
       const data = response.data?.data || response.data;
       setAssets(data.assets || []);
 
@@ -215,7 +224,7 @@ const AssetSelector = ({
     );
   }
 
-  if (!userId) {
+  if (!isSelfService && !userId) {
     return (
       <Card size="small">
         <Empty

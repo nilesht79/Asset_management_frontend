@@ -504,7 +504,7 @@ const Sidebar = () => {
         {
           key: '/deliveries/my-deliveries',
           icon: <DeliveredProcedureOutlined />,
-          label: 'My Deliveries',
+          label: 'Asset Deliveries',
         },
         {
           key: '/engineer/tickets',
@@ -512,26 +512,14 @@ const Sidebar = () => {
           label: 'My Tickets',
         },
         {
+          key: '/consumables/requests',
+          icon: <InboxOutlined />,
+          label: 'Consumable Requests',
+        },
+        {
           key: '/reconciliation',
           icon: <CheckCircleOutlined />,
           label: 'Inventory Reconciliation',
-        },
-        {
-          key: 'assets',
-          icon: <DesktopOutlined />,
-          label: 'Assets',
-          children: [
-            {
-              key: '/assets/view',
-              label: 'View Assets',
-            },
-          ],
-        },
-        // Reports for Engineers
-        {
-          key: '/reports/service-reports',
-          icon: <FileTextOutlined />,
-          label: 'Service Reports',
         }
       )
     }

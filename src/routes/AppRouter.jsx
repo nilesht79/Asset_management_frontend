@@ -79,6 +79,10 @@ import GatePasses from '../pages/GatePasses'
 // Company Settings
 import CompanySettings from '../pages/CompanySettings'
 
+// Employee Pages
+import MyAssets from '../pages/MyAssets'
+import EmployeeTicketDashboard from '../pages/EmployeeTicketDashboard'
+
 const AppRouter = () => {
   const { user } = useSelector(state => state.auth)
 
@@ -129,8 +133,10 @@ const AppRouter = () => {
         )}
 
 
-        {/* Employee Routes */}
-        <Route path="my-assets" element={<div>My Assets (To be implemented)</div>} />
+        {/* Employee Routes - Available to all users */}
+        <Route path="my-assets" element={<MyAssets />} />
+        <Route path="my-tickets" element={<EmployeeTicketDashboard />} />
+        <Route path="create-ticket" element={<EmployeeTicketDashboard />} />
 
         {/* Requisition Routes - Available to all employees */}
         <Route path="requisitions/my-requisitions" element={<MyRequisitions />} />

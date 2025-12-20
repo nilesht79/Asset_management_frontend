@@ -203,6 +203,19 @@ const ticketService = {
   },
 
   /**
+   * Get tickets created by current user (for employees)
+   */
+  getMyCreatedTickets: async (params = {}) => {
+    try {
+      const response = await apiClient.get('/tickets/my-created-tickets', { params });
+      return response;
+    } catch (error) {
+      console.error('Error fetching my created tickets:', error);
+      throw error;
+    }
+  },
+
+  /**
    * Engineer requests to close a ticket
    * @param {string} ticketId - Ticket ID
    * @param {string} requestNotes - Resolution notes

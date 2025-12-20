@@ -41,11 +41,15 @@ import {
   EnvironmentOutlined,
   TeamOutlined,
   LaptopOutlined,
-  InboxOutlined
+  InboxOutlined,
+  ApiOutlined,
+  DesktopOutlined,
+  ReloadOutlined
 } from '@ant-design/icons'
 import consumableService from '../../../services/consumable'
 import assetService from '../../../services/asset'
 import userService from '../../../services/user'
+import useResponsive from '../../../hooks/useResponsive'
 
 const { Search } = Input
 const { Option } = Select
@@ -62,13 +66,15 @@ const statusConfig = {
 
 const ConsumableRequests = () => {
   const { user } = useSelector(state => state.auth)
+  const { isMobile, isTablet } = useResponsive()
   const isCoordinator = ['coordinator', 'admin', 'superadmin'].includes(user?.role)
+  const canRequestOnBehalf = ['coordinator', 'admin', 'superadmin', 'engineer'].includes(user?.role)
 
   const [activeTab, setActiveTab] = useState(isCoordinator ? 'all' : 'my')
   const [requests, setRequests] = useState([])
   const [loading, setLoading] = useState(false)
   const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 })
-  const [filters, setFilters] = useState({ search: '', status: '' })
+  const [filters, setFilters] = useState({ search: '', status: '', priority: '' })
 
   // Modal states
   const [createModalOpen, setCreateModalOpen] = useState(false)
@@ -102,19 +108,25 @@ const ConsumableRequests = () => {
   const [stockInfo, setStockInfo] = useState(null)
   const [stockLoading, setStockLoading] = useState(false)
 
+  // Loading states for buttons to prevent multiple clicks
+  const [submitLoading, setSubmitLoading] = useState(false)
+  const [actionLoading, setActionLoading] = useState(false)
+
   useEffect(() => {
     loadRequests()
     if (isCoordinator) {
       loadStats()
+      loadEngineers()
+    }
+    if (canRequestOnBehalf) {
       loadEligibleUsers()
       loadDepartments()
-      loadEngineers()
     }
   }, [pagination.current, pagination.pageSize, filters])
 
   useEffect(() => {
-    // Only load own assets for non-coordinators
-    if (!isCoordinator) {
+    // Only load own assets for users who cannot request on behalf (employees)
+    if (!canRequestOnBehalf) {
       loadUserAssets()
     }
   }, [])
@@ -122,8 +134,11 @@ const ConsumableRequests = () => {
   const loadRequests = async () => {
     setLoading(true)
     try {
-      // Coordinators always see all requests, regular users see their own
-      const service = isCoordinator ? consumableService.getRequests : consumableService.getMyRequests
+      // Coordinators and engineers use getRequests (backend handles filtering)
+      // Regular employees use getMyRequests
+      const service = (isCoordinator || user?.role === 'engineer')
+        ? consumableService.getRequests
+        : consumableService.getMyRequests
       const response = await service({
         page: pagination.current,
         limit: pagination.pageSize,
@@ -167,8 +182,8 @@ const ConsumableRequests = () => {
 
   const loadEligibleUsers = async () => {
     try {
-      // Get users who are eligible to request consumables (employee, dept_head, it_head)
-      const response = await userService.getUsers({ role: 'employee,dept_head,it_head', limit: 500 })
+      // Get users who are eligible to request consumables (employee, dept_head, it_head, engineer)
+      const response = await userService.getUsers({ role: 'employee,dept_head,it_head,engineer', limit: 500 })
       if (response.data.success) {
         setEligibleUsers(response.data.data.users || response.data.data || [])
       }
@@ -297,21 +312,27 @@ const ConsumableRequests = () => {
     setWizardStep(0)
     setDepartmentFilter(null)
     setCreateModalOpen(true)
+    // For employees, reload their assets when modal opens
+    if (!canRequestOnBehalf) {
+      loadUserAssets()
+    }
   }
 
   const handleSubmitRequest = async () => {
     try {
-      // For coordinators, validate that a user is selected
-      if (isCoordinator && !selectedUserId) {
+      // For coordinators/engineers, validate that a user is selected
+      if (canRequestOnBehalf && !selectedUserId) {
         message.error('Please select a user to create the request for')
         return
       }
 
       const values = await form.validateFields()
-      // For coordinators, add requested_for
-      if (isCoordinator && selectedUserId) {
+      // For coordinators/engineers, add requested_for
+      if (canRequestOnBehalf && selectedUserId) {
         values.requested_for = selectedUserId
       }
+
+      setSubmitLoading(true)
       await consumableService.createRequest(values)
       message.success('Request submitted successfully')
       setCreateModalOpen(false)
@@ -322,6 +343,8 @@ const ConsumableRequests = () => {
     } catch (error) {
       if (error.errorFields) return
       message.error(error.response?.data?.message || 'Failed to submit request')
+    } finally {
+      setSubmitLoading(false)
     }
   }
 
@@ -356,6 +379,8 @@ const ConsumableRequests = () => {
       const values = await actionForm.validateFields()
       const id = selectedRequest.id
 
+      setActionLoading(true)
+
       switch (actionType) {
         case 'approve':
           await consumableService.approveRequest(id, values)
@@ -385,70 +410,114 @@ const ConsumableRequests = () => {
     } catch (error) {
       if (error.errorFields) return
       message.error(error.response?.data?.message || 'Action failed')
+    } finally {
+      setActionLoading(false)
     }
   }
 
+  // Responsive columns - hide some on mobile
   const columns = [
     {
       title: 'Request #',
       dataIndex: 'request_number',
       key: 'request_number',
-      width: 150,
-      render: (text) => <Text code>{text}</Text>
+      width: isMobile ? 120 : 150,
+      fixed: isMobile ? false : 'left',
+      render: (text, record) => isMobile ? (
+        <Space direction="vertical" size={0}>
+          <Text code strong style={{ fontSize: 12 }}>{text}</Text>
+          <Text type="secondary" style={{ fontSize: 11 }}>{record.consumable_name}</Text>
+          <Tag size="small" icon={statusConfig[record.status]?.icon} color={statusConfig[record.status]?.color}>
+            {statusConfig[record.status]?.text || record.status}
+          </Tag>
+        </Space>
+      ) : (
+        <Text code strong>{text}</Text>
+      ),
+      sorter: (a, b) => (a.request_number || '').localeCompare(b.request_number || '')
     },
-    {
+    // Hide Consumable column on mobile (shown in Request # column)
+    ...(!isMobile ? [{
       title: 'Consumable',
       dataIndex: 'consumable_name',
       key: 'consumable_name',
+      width: 220,
+      ellipsis: true,
       render: (text, record) => (
         <Space direction="vertical" size={0}>
-          <Text strong>{text}</Text>
+          <Text strong style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>{text}</Text>
           <Text type="secondary" style={{ fontSize: 12 }}>{record.consumable_sku}</Text>
         </Space>
       )
-    },
-    {
+    }] : []),
+    // Hide Asset column on mobile
+    ...(!isMobile ? [{
       title: 'Asset',
       dataIndex: 'asset_tag',
       key: 'asset_tag',
       width: 180,
       render: (text) => text || '-'
-    },
+    }] : []),
     {
-      title: 'Quantity',
+      title: isMobile ? 'Qty' : 'Quantity',
       dataIndex: 'quantity_requested',
       key: 'quantity_requested',
-      width: 80,
+      width: isMobile ? 50 : 80,
       align: 'center'
     },
-    ...(activeTab === 'all' ? [
+    // Show additional columns for coordinators (all tab) OR engineers - hide on mobile
+    ...((activeTab === 'all' || user?.role === 'engineer') && !isMobile ? [
       {
-        title: 'Requested By',
+        title: 'Requested For',
         dataIndex: 'requested_by_name',
         key: 'requested_by_name',
-        width: 150
-      },
-      {
-        title: 'Location',
-        dataIndex: 'requester_location_name',
-        key: 'requester_location_name',
-        width: 120,
-        render: (text) => text ? (
-          <Space size={4}>
-            <EnvironmentOutlined style={{ color: '#1890ff' }} />
-            <span>{text}</span>
+        width: 150,
+        render: (text, record) => (
+          <Space direction="vertical" size={0}>
+            <Text>{text}</Text>
+            {record.requester_location_name && (
+              <Text type="secondary" style={{ fontSize: 11 }}>
+                <EnvironmentOutlined style={{ marginRight: 4 }} />
+                {record.requester_location_name}
+              </Text>
+            )}
           </Space>
-        ) : '-'
+        )
       },
-      {
-        title: 'Engineer',
-        dataIndex: 'assigned_engineer_name',
-        key: 'assigned_engineer_name',
-        width: 130,
-        render: (text) => text || '-'
-      }
+      ...(activeTab === 'all' ? [
+        {
+          title: 'Created By',
+          dataIndex: 'created_by_name',
+          key: 'created_by_name',
+          width: 140,
+          render: (text, record) => {
+            // Show created_by only if different from requested_by (on-behalf request)
+            if (text && text !== record.requested_by_name) {
+              return (
+                <Tooltip title="Request created on behalf">
+                  <Space size={4}>
+                    <UserOutlined style={{ color: '#722ed1' }} />
+                    <span>{text}</span>
+                  </Space>
+                </Tooltip>
+              )
+            }
+            return '-'
+          }
+        }
+      ] : []),
+      ...(activeTab === 'all' ? [
+        {
+          title: 'Engineer',
+          dataIndex: 'assigned_engineer_name',
+          key: 'assigned_engineer_name',
+          width: 130,
+          render: (text) => text || '-'
+        }
+      ] : [])
     ] : []),
-    {
+    // Hide Status column on mobile (shown in Request # column)
+    ...(!isMobile ? [{
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
@@ -461,18 +530,22 @@ const ConsumableRequests = () => {
           </Tag>
         )
       }
-    },
-    {
+    }] : []),
+    // Hide Created column on mobile
+    ...(!isMobile ? [{
       title: 'Created',
       dataIndex: 'created_at',
       key: 'created_at',
       width: 120,
-      render: (date) => date ? new Date(date).toLocaleDateString() : '-'
-    },
+      render: (date) => date ? new Date(date).toLocaleDateString() : '-',
+      sorter: (a, b) => new Date(a.created_at) - new Date(b.created_at),
+      defaultSortOrder: 'descend'
+    }] : []),
     {
       title: 'Actions',
       key: 'actions',
-      width: 200,
+      width: isMobile ? 100 : 200,
+      fixed: isMobile ? 'right' : false,
       render: (_, record) => {
         const actions = []
 
@@ -519,7 +592,7 @@ const ConsumableRequests = () => {
           )
         }
 
-        return <Space size="small">{actions}</Space>
+        return <Space size={isMobile ? 0 : 'small'} wrap={isMobile}>{actions}</Space>
       }
     }
   ]
@@ -537,46 +610,49 @@ const ConsumableRequests = () => {
       }]
     : [{
         key: 'my',
-        label: 'My Requests'
+        label: user?.role === 'engineer' ? 'Requests Created' : 'My Requests'
       }]
 
   return (
-    <div style={{ padding: 24 }}>
+    <div style={{ padding: isMobile ? 12 : 24 }}>
       {isCoordinator && (
-        <Row gutter={16} style={{ marginBottom: 24 }}>
-          <Col span={6}>
+        <Row gutter={[12, 12]} style={{ marginBottom: isMobile ? 16 : 24 }}>
+          <Col xs={12} sm={12} md={6}>
             <Card size="small">
               <Statistic
                 title="Pending"
                 value={stats.pending || 0}
                 prefix={<ClockCircleOutlined style={{ color: '#faad14' }} />}
+                valueStyle={{ fontSize: isMobile ? 20 : 24 }}
               />
             </Card>
           </Col>
-          <Col span={6}>
+          <Col xs={12} sm={12} md={6}>
             <Card size="small">
               <Statistic
-                title="Approved (Awaiting Delivery)"
+                title={isMobile ? "Approved" : "Approved (Awaiting Delivery)"}
                 value={stats.approved || 0}
                 prefix={<CheckCircleOutlined style={{ color: '#1890ff' }} />}
+                valueStyle={{ fontSize: isMobile ? 20 : 24 }}
               />
             </Card>
           </Col>
-          <Col span={6}>
+          <Col xs={12} sm={12} md={6}>
             <Card size="small">
               <Statistic
                 title="Delivered"
                 value={stats.delivered || 0}
                 prefix={<GiftOutlined style={{ color: '#52c41a' }} />}
+                valueStyle={{ fontSize: isMobile ? 20 : 24 }}
               />
             </Card>
           </Col>
-          <Col span={6}>
+          <Col xs={12} sm={12} md={6}>
             <Card size="small">
               <Statistic
-                title="Urgent Pending"
+                title={isMobile ? "Urgent" : "Urgent Pending"}
                 value={stats.urgent_pending || 0}
-                valueStyle={{ color: stats.urgent_pending > 0 ? '#ff4d4f' : undefined }}
+                valueStyle={{ color: stats.urgent_pending > 0 ? '#ff4d4f' : undefined, fontSize: isMobile ? 20 : 24 }}
                 prefix={<WarningOutlined style={{ color: '#ff4d4f' }} />}
               />
             </Card>
@@ -585,15 +661,27 @@ const ConsumableRequests = () => {
       )}
 
       <Card>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <div style={{
+          display: 'flex',
+          flexDirection: isMobile ? 'column' : 'row',
+          justifyContent: 'space-between',
+          alignItems: isMobile ? 'stretch' : 'center',
+          marginBottom: 16,
+          gap: isMobile ? 12 : 0
+        }}>
           <div>
-            <Title level={4} style={{ margin: 0 }}>
+            <Title level={isMobile ? 5 : 4} style={{ margin: 0 }}>
               <GiftOutlined style={{ marginRight: 8 }} />
               Consumable Requests
             </Title>
-            <Text type="secondary">Request and manage consumables for your assets</Text>
+            {!isMobile && <Text type="secondary">Request and manage consumables for your assets</Text>}
           </div>
-          <Button type="primary" icon={<PlusOutlined />} onClick={handleCreateRequest}>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={handleCreateRequest}
+            block={isMobile}
+          >
             New Request
           </Button>
         </div>
@@ -601,24 +689,81 @@ const ConsumableRequests = () => {
         <Tabs activeKey={activeTab} onChange={setActiveTab} items={tabItems} />
 
         {/* Filters */}
-        <div style={{ display: 'flex', gap: 16, marginBottom: 16 }}>
-          <Search
-            placeholder="Search by request number..."
-            allowClear
-            style={{ width: 300 }}
-            onSearch={(value) => setFilters(prev => ({ ...prev, search: value }))}
-          />
-          <Select
-            placeholder="Status"
-            allowClear
-            style={{ width: 150 }}
-            onChange={(value) => setFilters(prev => ({ ...prev, status: value || '' }))}
-          >
-            {Object.entries(statusConfig).map(([key, config]) => (
-              <Option key={key} value={key}>{config.text}</Option>
-            ))}
-          </Select>
-        </div>
+        <Row gutter={[8, 8]} style={{ marginBottom: 16 }}>
+          <Col xs={24} sm={12} md={8} lg={6}>
+            <Search
+              placeholder={isMobile ? "Search..." : "Search request #, consumable, asset..."}
+              allowClear
+              style={{ width: '100%' }}
+              onSearch={(value) => {
+                setPagination(prev => ({ ...prev, current: 1 }))
+                setFilters(prev => ({ ...prev, search: value }))
+              }}
+              onChange={(e) => {
+                if (!e.target.value) {
+                  setPagination(prev => ({ ...prev, current: 1 }))
+                  setFilters(prev => ({ ...prev, search: '' }))
+                }
+              }}
+            />
+          </Col>
+          <Col xs={12} sm={6} md={4} lg={3}>
+            <Select
+              placeholder="Status"
+              allowClear
+              style={{ width: '100%' }}
+              onChange={(value) => {
+                setPagination(prev => ({ ...prev, current: 1 }))
+                setFilters(prev => ({ ...prev, status: value || '' }))
+              }}
+            >
+              {Object.entries(statusConfig).map(([key, config]) => (
+                <Option key={key} value={key}>{config.text}</Option>
+              ))}
+            </Select>
+          </Col>
+          <Col xs={12} sm={6} md={4} lg={3}>
+            <Select
+              placeholder="Priority"
+              allowClear
+              style={{ width: '100%' }}
+              onChange={(value) => {
+                setPagination(prev => ({ ...prev, current: 1 }))
+                setFilters(prev => ({ ...prev, priority: value || '' }))
+              }}
+            >
+              <Option value="urgent">Urgent</Option>
+              <Option value="high">High</Option>
+              <Option value="normal">Normal</Option>
+              <Option value="low">Low</Option>
+            </Select>
+          </Col>
+          <Col xs={12} sm={6} md={4} lg={2}>
+            <Button
+              icon={<SyncOutlined />}
+              onClick={() => {
+                setPagination(prev => ({ ...prev, current: 1 }))
+                setFilters({ search: '', status: '', priority: '' })
+              }}
+              block={isMobile}
+            >
+              {isMobile ? 'Reset' : 'Reset'}
+            </Button>
+          </Col>
+          <Col xs={12} sm={6} md={4} lg={2}>
+            <Button
+              icon={<ReloadOutlined />}
+              onClick={() => {
+                loadRequests()
+                if (isCoordinator) loadStats()
+              }}
+              loading={loading}
+              block={isMobile}
+            >
+              {isMobile ? '' : 'Refresh'}
+            </Button>
+          </Col>
+        </Row>
 
         <Table
           columns={columns}
@@ -627,12 +772,17 @@ const ConsumableRequests = () => {
           loading={loading}
           pagination={{
             ...pagination,
-            showSizeChanger: true,
-            showQuickJumper: true,
-            showTotal: (total) => `Total ${total} requests`
+            showSizeChanger: !isMobile,
+            showQuickJumper: !isMobile,
+            showTotal: isMobile ? undefined : (total, range) => `${range[0]}-${range[1]} of ${total} requests`,
+            pageSizeOptions: ['10', '20', '50', '100'],
+            size: isMobile ? 'small' : 'default'
           }}
-          onChange={(pag) => setPagination(prev => ({ ...prev, current: pag.current, pageSize: pag.pageSize }))}
-          size="middle"
+          onChange={(pag, _filters, sorter) => {
+            setPagination(prev => ({ ...prev, current: pag.current, pageSize: pag.pageSize }))
+          }}
+          scroll={{ x: isMobile ? 400 : 1200 }}
+          size={isMobile ? 'small' : 'middle'}
         />
       </Card>
 
@@ -641,11 +791,14 @@ const ConsumableRequests = () => {
         title={
           <Space>
             <InboxOutlined />
-            {isCoordinator ? "New Consumable Request (On Behalf)" : "New Consumable Request"}
+            {canRequestOnBehalf
+              ? (isMobile ? "New Request (On Behalf)" : "New Consumable Request (On Behalf)")
+              : (isMobile ? "New Request" : "New Consumable Request")}
           </Space>
         }
         open={createModalOpen}
         onCancel={() => {
+          if (submitLoading) return
           setCreateModalOpen(false)
           form.resetFields()
           setSelectedUserId(null)
@@ -654,13 +807,18 @@ const ConsumableRequests = () => {
           setWizardStep(0)
           setDepartmentFilter(null)
         }}
+        closable={!submitLoading}
+        maskClosable={!submitLoading}
         onOk={handleSubmitRequest}
         okText="Submit Request"
-        okButtonProps={{ disabled: isCoordinator && !selectedUserId }}
-        width={650}
+        okButtonProps={{ disabled: canRequestOnBehalf && !selectedUserId, loading: submitLoading }}
+        cancelButtonProps={{ disabled: submitLoading }}
+        width={isMobile ? '100%' : 650}
+        style={isMobile ? { top: 20, maxWidth: '100%', margin: '0 auto' } : undefined}
+        bodyStyle={isMobile ? { padding: '12px 16px' } : undefined}
       >
-        {/* Wizard Steps for Coordinators */}
-        {isCoordinator && (
+        {/* Wizard Steps for Coordinators/Engineers */}
+        {canRequestOnBehalf && (
           <Steps
             current={wizardStep}
             size="small"
@@ -673,8 +831,8 @@ const ConsumableRequests = () => {
         )}
 
         <Form form={form} layout="vertical">
-          {/* For coordinators: Select which user to create request for */}
-          {isCoordinator && (
+          {/* For coordinators/engineers: Select which user to create request for */}
+          {canRequestOnBehalf && (
             <>
               {/* Department Filter */}
               <div style={{ marginBottom: 16 }}>
@@ -796,7 +954,7 @@ const ConsumableRequests = () => {
             name="for_asset_id"
             label={<Space><LaptopOutlined /> Asset</Space>}
             extra={
-              isCoordinator && !selectedUserId
+              canRequestOnBehalf && !selectedUserId
                 ? "Select an employee first to see their assets"
                 : userAssets.length === 0 && selectedUserId
                   ? "This employee has no assigned assets"
@@ -808,10 +966,21 @@ const ConsumableRequests = () => {
               allowClear
               showSearch
               loading={assetsLoading}
-              disabled={(isCoordinator && !selectedUserId) || assetsLoading}
-              filterOption={(input, option) =>
-                option?.children?.toLowerCase()?.includes(input.toLowerCase())
-              }
+              disabled={(canRequestOnBehalf && !selectedUserId) || assetsLoading}
+              filterOption={(input, option) => {
+                // Search in option label text
+                const label = option?.label || option?.children
+                if (typeof label === 'string') {
+                  return label.toLowerCase().includes(input.toLowerCase())
+                }
+                // For complex labels, search in asset tag and product name
+                const asset = userAssets.find(a => a.id === option?.value)
+                if (asset) {
+                  const searchText = `${asset.asset_tag} ${asset.product_name || asset.asset_product_name} ${asset.serial_number || ''}`.toLowerCase()
+                  return searchText.includes(input.toLowerCase())
+                }
+                return false
+              }}
               onChange={handleAssetChange}
               notFoundContent={
                 assetsLoading ? (
@@ -821,15 +990,88 @@ const ConsumableRequests = () => {
                 )
               }
             >
-              {userAssets.map(a => (
-                <Option key={a.id} value={a.id}>
-                  <Space>
-                    <LaptopOutlined />
-                    <span>{a.asset_tag} - {a.product_name || a.asset_product_name}</span>
-                    {a.serial_number && <Text type="secondary" style={{ fontSize: 11 }}>({a.serial_number})</Text>}
-                  </Space>
-                </Option>
-              ))}
+              {(() => {
+                // Separate parent/standalone assets from components
+                const parentAssets = userAssets.filter(a => !a.is_component && a.asset_type !== 'component')
+                const components = userAssets.filter(a => a.is_component || a.asset_type === 'component')
+
+                // Create a map of parent_asset_id to components
+                const componentMap = {}
+                components.forEach(comp => {
+                  const parentId = comp.parent_asset_id
+                  if (parentId) {
+                    if (!componentMap[parentId]) {
+                      componentMap[parentId] = []
+                    }
+                    componentMap[parentId].push(comp)
+                  }
+                })
+
+                // Build options with parent assets and their components
+                const options = []
+                parentAssets.forEach(asset => {
+                  const hasComponents = componentMap[asset.id] && componentMap[asset.id].length > 0
+
+                  // Add parent/standalone asset
+                  options.push(
+                    <Option key={asset.id} value={asset.id}>
+                      <Space>
+                        {hasComponents ? (
+                          <DesktopOutlined style={{ color: '#1890ff' }} />
+                        ) : (
+                          <LaptopOutlined style={{ color: '#595959' }} />
+                        )}
+                        <span>{asset.asset_tag} - {asset.product_name || asset.asset_product_name}</span>
+                        {asset.serial_number && <Text type="secondary" style={{ fontSize: 11 }}>({asset.serial_number})</Text>}
+                        {hasComponents && (
+                          <Tag color="blue" style={{ fontSize: 10, marginLeft: 4 }}>
+                            {componentMap[asset.id].length} comp
+                          </Tag>
+                        )}
+                      </Space>
+                    </Option>
+                  )
+
+                  // Add components under parent
+                  if (hasComponents) {
+                    componentMap[asset.id].forEach(comp => {
+                      options.push(
+                        <Option key={comp.id} value={comp.id}>
+                          <Space style={{ paddingLeft: 20 }}>
+                            <ApiOutlined style={{ color: '#52c41a' }} />
+                            <span>{comp.asset_tag} - {comp.product_name || comp.asset_product_name}</span>
+                            {comp.serial_number && <Text type="secondary" style={{ fontSize: 11 }}>({comp.serial_number})</Text>}
+                            <Tag color="green" style={{ fontSize: 10 }}>Component</Tag>
+                          </Space>
+                        </Option>
+                      )
+                    })
+                  }
+                })
+
+                // Add orphan components (components without a parent in the list)
+                components.forEach(comp => {
+                  if (!comp.parent_asset_id || !parentAssets.find(p => p.id === comp.parent_asset_id)) {
+                    options.push(
+                      <Option key={comp.id} value={comp.id}>
+                        <Space>
+                          <ApiOutlined style={{ color: '#52c41a' }} />
+                          <span>{comp.asset_tag} - {comp.product_name || comp.asset_product_name}</span>
+                          {comp.serial_number && <Text type="secondary" style={{ fontSize: 11 }}>({comp.serial_number})</Text>}
+                          <Tag color="green" style={{ fontSize: 10 }}>Component</Tag>
+                          {comp.parent_asset_tag && (
+                            <Text type="secondary" style={{ fontSize: 10 }}>
+                              (of {comp.parent_asset_tag})
+                            </Text>
+                          )}
+                        </Space>
+                      </Option>
+                    )
+                  }
+                })
+
+                return options
+              })()}
             </Select>
           </Form.Item>
 
@@ -843,7 +1085,7 @@ const ConsumableRequests = () => {
             <Select
               placeholder={selectedAssetId ? "Select compatible consumable" : "Select an asset first"}
               showSearch
-              disabled={(isCoordinator && !selectedUserId) || !selectedAssetId}
+              disabled={(canRequestOnBehalf && !selectedUserId) || !selectedAssetId}
               filterOption={(input, option) => {
                 const consumable = consumablesForAsset.find(c => c.id === option.value)
                 if (!consumable) return false
@@ -933,11 +1175,13 @@ const ConsumableRequests = () => {
         open={detailModalOpen}
         onCancel={() => setDetailModalOpen(false)}
         footer={null}
-        width={600}
+        width={isMobile ? '100%' : 600}
+        style={isMobile ? { top: 20, maxWidth: '100%', margin: '0 auto' } : undefined}
+        bodyStyle={isMobile ? { padding: '12px 16px' } : undefined}
       >
         {selectedRequest && (
           <div style={{ marginTop: 16 }}>
-            <Descriptions bordered column={2} size="small">
+            <Descriptions bordered column={isMobile ? 1 : 2} size="small">
               <Descriptions.Item label="Request #" span={2}>
                 <Text code>{selectedRequest.request_number}</Text>
               </Descriptions.Item>
@@ -953,6 +1197,15 @@ const ConsumableRequests = () => {
                   </Space>
                 ) : '-'}
               </Descriptions.Item>
+              {selectedRequest.created_by_name && selectedRequest.created_by_name !== selectedRequest.requested_by_name && (
+                <Descriptions.Item label="Created By" span={2}>
+                  <Space size={4}>
+                    <UserOutlined style={{ color: '#722ed1' }} />
+                    {selectedRequest.created_by_name}
+                    <Tag color="purple" size="small">On Behalf</Tag>
+                  </Space>
+                </Descriptions.Item>
+              )}
               <Descriptions.Item label="Status">
                 <Tag color={statusConfig[selectedRequest.status]?.color}>
                   {statusConfig[selectedRequest.status]?.text}
@@ -989,6 +1242,11 @@ const ConsumableRequests = () => {
               <Timeline style={{ marginTop: 8 }}>
                 <Timeline.Item color="blue">
                   Created on {new Date(selectedRequest.created_at).toLocaleString()}
+                  {selectedRequest.created_by_name && selectedRequest.created_by_name !== selectedRequest.requested_by_name && (
+                    <div style={{ fontSize: 12, color: '#722ed1' }}>
+                      Created by {selectedRequest.created_by_name} on behalf of {selectedRequest.requested_by_name}
+                    </div>
+                  )}
                 </Timeline.Item>
                 {selectedRequest.approved_at && (
                   <Timeline.Item color="green">
@@ -1021,17 +1279,24 @@ const ConsumableRequests = () => {
         title={`${actionType.charAt(0).toUpperCase() + actionType.slice(1)} Request`}
         open={actionModalOpen}
         onCancel={() => {
+          if (actionLoading) return
           setActionModalOpen(false)
           actionForm.resetFields()
           setStockInfo(null)
         }}
+        closable={!actionLoading}
+        maskClosable={!actionLoading}
         onOk={handleActionSubmit}
         okText={actionType.charAt(0).toUpperCase() + actionType.slice(1)}
         okButtonProps={{
           danger: ['reject', 'cancel'].includes(actionType),
-          disabled: actionType === 'approve' && (!stockInfo?.has_sufficient_anywhere || stockLoading)
+          disabled: actionType === 'approve' && (!stockInfo?.has_sufficient_anywhere || stockLoading),
+          loading: actionLoading
         }}
-        width={actionType === 'approve' ? 600 : 500}
+        cancelButtonProps={{ disabled: actionLoading }}
+        width={isMobile ? '100%' : (actionType === 'approve' ? 600 : 500)}
+        style={isMobile ? { top: 20, maxWidth: '100%', margin: '0 auto' } : undefined}
+        bodyStyle={isMobile ? { padding: '12px 16px' } : undefined}
       >
         <Form form={actionForm} layout="vertical" style={{ marginTop: 16 }}>
           {actionType === 'reject' && (
@@ -1062,20 +1327,20 @@ const ConsumableRequests = () => {
                 </div>
               ) : stockInfo ? (
                 <Card size="small" style={{ marginBottom: 16 }}>
-                  <Row gutter={16}>
-                    <Col span={12}>
+                  <Row gutter={[16, 12]}>
+                    <Col xs={24} sm={12}>
                       <Text type="secondary">Consumable</Text>
                       <div><Text strong>{stockInfo.consumable?.name}</Text></div>
                       <Text type="secondary" style={{ fontSize: 12 }}>{stockInfo.consumable?.sku}</Text>
                     </Col>
-                    <Col span={12}>
+                    <Col xs={24} sm={12}>
                       <Text type="secondary">Quantity Requested</Text>
                       <div><Text strong style={{ fontSize: 18 }}>{stockInfo.quantity_requested}</Text> {stockInfo.consumable?.unit_of_measure || 'units'}</div>
                     </Col>
                   </Row>
                   <Divider style={{ margin: '12px 0' }} />
-                  <Row gutter={16}>
-                    <Col span={12}>
+                  <Row gutter={[16, 12]}>
+                    <Col xs={24} sm={12}>
                       <Text type="secondary">Requester Location</Text>
                       <div>
                         <Space>
@@ -1084,7 +1349,7 @@ const ConsumableRequests = () => {
                         </Space>
                       </div>
                     </Col>
-                    <Col span={12}>
+                    <Col xs={24} sm={12}>
                       <Text type="secondary">Total Available Stock</Text>
                       <div>
                         <Text

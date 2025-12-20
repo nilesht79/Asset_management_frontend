@@ -7,7 +7,7 @@ import AssetSelector from './AssetSelector';
 const { Option } = Select;
 const { TextArea } = Input;
 
-const CreateTicketModal = ({ visible, onClose, onSuccess, currentUser }) => {
+const CreateTicketModal = ({ visible, onClose, onSuccess, currentUser, preSelectedAsset }) => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [employees, setEmployees] = useState([]);
@@ -24,21 +24,40 @@ const CreateTicketModal = ({ visible, onClose, onSuccess, currentUser }) => {
   // Check if current user is an engineer (not coordinator/admin)
   const isEngineerRole = currentUser?.role === 'engineer';
 
+  // Check if current user is a regular employee (self-service mode)
+  const isEmployeeSelfService = ['employee', 'dept_head', 'it_head'].includes(currentUser?.role);
+
   useEffect(() => {
     if (visible) {
-      fetchEmployees();
-      // Only fetch engineers if user is coordinator/admin (not engineer)
-      if (!isEngineerRole) {
-        fetchEngineers();
+      // For employee self-service, auto-select themselves
+      if (isEmployeeSelfService) {
+        setSelectedEmployee(currentUser?.id);
+        setEmployeeInfo({
+          name: `${currentUser?.firstName || ''} ${currentUser?.lastName || ''}`.trim() || currentUser?.email,
+          email: currentUser?.email,
+          department: currentUser?.department?.name || 'Not Assigned',
+          location: currentUser?.location?.name || 'Not Assigned',
+          employee_id: currentUser?.employeeId
+        });
+        // Pre-select asset if provided
+        if (preSelectedAsset) {
+          setSelectedAssets([preSelectedAsset.id]);
+        }
+      } else {
+        fetchEmployees();
+        // Only fetch engineers if user is coordinator/admin (not engineer)
+        if (!isEngineerRole) {
+          fetchEngineers();
+        }
+        form.resetFields();
+        setEmployeeInfo(null);
+        setSelectedEmployee(null);
+        setIsGuestMode(false);
+        setSearchText('');
+        setSelectedAssets([]);
       }
-      form.resetFields();
-      setEmployeeInfo(null);
-      setSelectedEmployee(null);
-      setIsGuestMode(false);
-      setSearchText('');
-      setSelectedAssets([]);
     }
-  }, [visible, isEngineerRole]);
+  }, [visible, isEngineerRole, isEmployeeSelfService, currentUser, preSelectedAsset]);
 
   const fetchEmployees = async () => {
     try {
@@ -135,7 +154,8 @@ const CreateTicketModal = ({ visible, onClose, onSuccess, currentUser }) => {
         category: values.category,
         ticket_type: values.ticket_type || 'incident',
         service_type: values.service_type || 'general',
-        assigned_to_engineer_id: values.assigned_to_engineer_id || null
+        assigned_to_engineer_id: values.assigned_to_engineer_id || null,
+        asset_ids: selectedAssets.length > 0 ? selectedAssets : undefined // Include asset_ids if any selected
       };
 
       if (isGuestMode) {
@@ -144,24 +164,16 @@ const CreateTicketModal = ({ visible, onClose, onSuccess, currentUser }) => {
         ticketData.guest_email = values.guest_email;
         ticketData.guest_phone = values.guest_phone || null;
         ticketData.created_by_user_id = null;
+      } else if (isEmployeeSelfService) {
+        // Employee self-service ticket (creating for themselves)
+        ticketData.created_by_user_id = currentUser?.id;
       } else {
-        // Employee ticket
+        // Coordinator/Admin/Engineer creating ticket for selected employee
         ticketData.created_by_user_id = values.created_by_user_id;
       }
 
-      // Create the ticket first
+      // Create ticket with assets (backend will link them before SLA initialization)
       const response = await ticketService.createTicket(ticketData);
-      const ticketId = response.data?.data?.ticket_id || response.data?.ticket_id;
-
-      // If assets were selected, link them to the ticket
-      if (selectedAssets.length > 0 && ticketId) {
-        try {
-          await ticketService.linkMultipleAssets(ticketId, selectedAssets);
-        } catch (assetError) {
-          console.error('Failed to link assets:', assetError);
-          message.warning('Ticket created but failed to link some assets');
-        }
-      }
 
       form.resetFields();
       setEmployeeInfo(null);
@@ -182,11 +194,11 @@ const CreateTicketModal = ({ visible, onClose, onSuccess, currentUser }) => {
 
   return (
     <Modal
-      title="Create Support Ticket"
+      title={isEmployeeSelfService ? "Report an Issue" : "Create Support Ticket"}
       open={visible}
       onCancel={onClose}
       onOk={() => form.submit()}
-      okText="Create Ticket"
+      okText={isEmployeeSelfService ? "Submit Issue" : "Create Ticket"}
       confirmLoading={loading}
       width={700}
       destroyOnClose
@@ -201,45 +213,47 @@ const CreateTicketModal = ({ visible, onClose, onSuccess, currentUser }) => {
           service_type: 'general'
         }}
       >
-        {/* Employee/Guest Selection */}
-        <Form.Item
-          name="created_by_user_id"
-          label="Create Ticket For"
-          rules={[
-            {
-              required: !isGuestMode,
-              message: 'Please select an employee or choose guest'
-            }
-          ]}
-        >
-          <Select
-            showSearch
-            placeholder="Search employee name or type for guest"
-            onChange={handleEmployeeChange}
-            onSearch={handleSearch}
-            filterOption={(input, option) => {
-              if (!option?.children) return false;
-              const searchText = typeof option.children === 'string'
-                ? option.children
-                : option.children.join(' ');
-              return searchText.toLowerCase().includes(input.toLowerCase());
-            }}
-            notFoundContent={notFoundContent}
+        {/* Employee/Guest Selection - Only for coordinators/admins/engineers */}
+        {!isEmployeeSelfService && (
+          <Form.Item
+            name="created_by_user_id"
+            label="Create Ticket For"
+            rules={[
+              {
+                required: !isGuestMode,
+                message: 'Please select an employee or choose guest'
+              }
+            ]}
           >
-            {employees.map((emp) => (
-              <Option key={emp.user_id} value={emp.user_id}>
-                {emp.full_name || `${emp.first_name} ${emp.last_name}`} ({emp.email})
-              </Option>
-            ))}
-          </Select>
-        </Form.Item>
+            <Select
+              showSearch
+              placeholder="Search employee name or type for guest"
+              onChange={handleEmployeeChange}
+              onSearch={handleSearch}
+              filterOption={(input, option) => {
+                if (!option?.children) return false;
+                const searchText = typeof option.children === 'string'
+                  ? option.children
+                  : option.children.join(' ');
+                return searchText.toLowerCase().includes(input.toLowerCase());
+              }}
+              notFoundContent={notFoundContent}
+            >
+              {employees.map((emp) => (
+                <Option key={emp.user_id} value={emp.user_id}>
+                  {emp.full_name || `${emp.first_name} ${emp.last_name}`} ({emp.email})
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
+        )}
 
         {/* Display Employee Info (Inherited Data) */}
         {employeeInfo && !isGuestMode && (
           <Card size="small" className="mb-4" style={{ backgroundColor: '#e6f7ff', borderColor: '#91d5ff' }}>
             <div className="text-sm">
               <div className="font-semibold mb-2" style={{ color: '#0050b3' }}>
-                Ticket will be created for:
+                {isEmployeeSelfService ? 'Creating ticket for yourself:' : 'Ticket will be created for:'}
               </div>
               <Row gutter={16}>
                 <Col span={12}>
@@ -352,17 +366,33 @@ const CreateTicketModal = ({ visible, onClose, onSuccess, currentUser }) => {
         {selectedEmployee && !isGuestMode && (
           <>
             <Divider style={{ margin: '16px 0' }}>
-              <LaptopOutlined /> Related Assets (Optional)
+              <LaptopOutlined /> Related Assets {isEmployeeSelfService ? '' : '(Optional)'}
             </Divider>
+            {/* Show pre-selected asset info */}
+            {preSelectedAsset && isEmployeeSelfService && (
+              <Alert
+                message={
+                  <span>
+                    <LaptopOutlined style={{ marginRight: 8 }} />
+                    Reporting issue for: <strong>{preSelectedAsset.asset_tag}</strong> - {preSelectedAsset.product_name}
+                  </span>
+                }
+                type="info"
+                style={{ marginBottom: 12 }}
+              />
+            )}
             <AssetSelector
               userId={selectedEmployee}
               selectedAssets={selectedAssets}
               onSelectionChange={setSelectedAssets}
               disabled={loading}
+              isSelfService={isEmployeeSelfService}
             />
             <div style={{ marginTop: 8, marginBottom: 16 }}>
               <span style={{ color: '#8c8c8c', fontSize: '12px' }}>
-                Select assets that are related to this issue. This helps engineers identify and track affected equipment.
+                {isEmployeeSelfService
+                  ? 'Your asset is pre-selected. You can add more assets if needed.'
+                  : 'Select assets that are related to this issue. This helps engineers identify and track affected equipment.'}
               </span>
             </div>
           </>
@@ -460,8 +490,8 @@ const CreateTicketModal = ({ visible, onClose, onSuccess, currentUser }) => {
           </Col>
         </Row>
 
-        {/* Auto-Assign Engineer (Optional) - Only visible to coordinators/admins */}
-        {!isEngineerRole && (
+        {/* Auto-Assign Engineer (Optional) - Only visible to coordinators/admins, hidden from employees */}
+        {!isEngineerRole && !isEmployeeSelfService && (
           <Form.Item
             name="assigned_to_engineer_id"
             label="Assign to Engineer (Optional)"

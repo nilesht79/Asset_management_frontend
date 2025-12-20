@@ -52,7 +52,8 @@ const RECIPIENT_TYPES = [
   { value: 'admin', label: 'Admin' },
   { value: 'superadmin', label: 'Super Admin' },
   { value: 'custom_role', label: 'Custom Role' },
-  { value: 'custom_designation', label: 'Custom Designation' }
+  { value: 'custom_designation', label: 'Custom Designation' },
+  { value: 'custom_email', label: 'Custom Email Recipients' }
 ];
 
 const REFERENCE_THRESHOLDS = [
@@ -112,6 +113,18 @@ const EscalationRulesManager = ({ slaRuleId, slaRuleName, onClose }) => {
   useEffect(() => {
     if (modalVisible && editingRule) {
       setTimeout(() => {
+        // Parse custom_emails from JSON string if present
+        let customEmailsArray = [];
+        if (editingRule.custom_emails) {
+          try {
+            customEmailsArray = typeof editingRule.custom_emails === 'string'
+              ? JSON.parse(editingRule.custom_emails)
+              : editingRule.custom_emails;
+          } catch (error) {
+            console.error('Error parsing custom_emails:', error);
+          }
+        }
+
         form.setFieldsValue({
           escalation_level: editingRule.escalation_level,
           trigger_type: editingRule.trigger_type,
@@ -121,6 +134,7 @@ const EscalationRulesManager = ({ slaRuleId, slaRuleName, onClose }) => {
           max_repeat_count: editingRule.max_repeat_count,
           recipient_type: editingRule.recipient_type,
           recipient_role: editingRule.recipient_role,
+          custom_emails: customEmailsArray,
           number_of_recipients: editingRule.number_of_recipients,
           notification_template: editingRule.notification_template,
           include_ticket_details: editingRule.include_ticket_details === true || editingRule.include_ticket_details === 1,
@@ -190,6 +204,7 @@ const EscalationRulesManager = ({ slaRuleId, slaRuleName, onClose }) => {
         max_repeat_count: values.max_repeat_count || null,
         recipient_type: values.recipient_type,
         recipient_role: values.recipient_role || null,
+        custom_emails: values.custom_emails || null,
         number_of_recipients: values.number_of_recipients,
         escalation_type: 'notification', // Always email notification
         notification_template: values.notification_template || null,
@@ -256,19 +271,40 @@ const EscalationRulesManager = ({ slaRuleId, slaRuleName, onClose }) => {
     {
       title: 'Recipients',
       key: 'recipients',
-      render: (_, record) => (
-        <Space direction="vertical" size={0}>
-          <Text>{getRecipientLabel(record.recipient_type)}</Text>
-          {record.recipient_role && (
-            <Text type="secondary" style={{ fontSize: '11px' }}>
-              {record.recipient_type === 'custom_designation' ? 'Designation' : 'Role'}: {record.recipient_role}
-            </Text>
-          )}
-          <Text type="secondary" style={{ fontSize: '11px' }}>
-            Count: {record.number_of_recipients}
-          </Text>
-        </Space>
-      )
+      render: (_, record) => {
+        // Parse custom_emails if present
+        let customEmailsList = [];
+        if (record.recipient_type === 'custom_email' && record.custom_emails) {
+          try {
+            customEmailsList = typeof record.custom_emails === 'string'
+              ? JSON.parse(record.custom_emails)
+              : record.custom_emails;
+          } catch (error) {
+            console.error('Error parsing custom_emails:', error);
+          }
+        }
+
+        return (
+          <Space direction="vertical" size={0}>
+            <Text>{getRecipientLabel(record.recipient_type)}</Text>
+            {record.recipient_type === 'custom_email' && customEmailsList.length > 0 ? (
+              <Text type="secondary" style={{ fontSize: '11px' }}>
+                {customEmailsList.slice(0, 2).join(', ')}
+                {customEmailsList.length > 2 && ` +${customEmailsList.length - 2} more`}
+              </Text>
+            ) : record.recipient_role ? (
+              <Text type="secondary" style={{ fontSize: '11px' }}>
+                {record.recipient_type === 'custom_designation' ? 'Designation' : 'Role'}: {record.recipient_role}
+              </Text>
+            ) : null}
+            {record.recipient_type !== 'custom_email' && (
+              <Text type="secondary" style={{ fontSize: '11px' }}>
+                Count: {record.number_of_recipients}
+              </Text>
+            )}
+          </Space>
+        );
+      }
     },
     {
       title: 'Repeat',
@@ -523,6 +559,42 @@ const EscalationRulesManager = ({ slaRuleId, slaRuleName, onClose }) => {
               </Form.Item>
             </Col>
           </Row>
+
+          {recipientType === 'custom_email' && (
+            <Row gutter={16}>
+              <Col span={24}>
+                <Form.Item
+                  name="custom_emails"
+                  label="Email Addresses"
+                  tooltip="Enter email addresses and press Enter. You can add multiple emails."
+                  rules={[{
+                    required: true,
+                    message: 'At least one email address is required'
+                  }, {
+                    validator: (_, value) => {
+                      if (!value || value.length === 0) {
+                        return Promise.reject('At least one email address is required');
+                      }
+                      // Validate each email
+                      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                      const invalidEmails = value.filter(email => !emailRegex.test(email));
+                      if (invalidEmails.length > 0) {
+                        return Promise.reject(`Invalid email(s): ${invalidEmails.join(', ')}`);
+                      }
+                      return Promise.resolve();
+                    }
+                  }]}
+                >
+                  <Select
+                    mode="tags"
+                    placeholder="Type email and press Enter..."
+                    tokenSeparators={[',', ' ', ';']}
+                    style={{ width: '100%' }}
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
+          )}
 
           <Divider>Notification</Divider>
 

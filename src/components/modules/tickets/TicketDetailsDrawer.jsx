@@ -234,9 +234,9 @@ const TicketDetailsDrawer = ({ visible, ticket, onClose, onUpdate }) => {
                   <div className="flex items-center space-x-2">
                     <Avatar size="small" icon={<UserOutlined />} />
                     <div>
-                      <div className="font-medium">{ticket.created_by_user_name}</div>
+                      <div className="font-medium">{ticket.created_by_user_name || 'N/A'}</div>
                       <div className="text-xs text-gray-500">
-                        {ticket.created_by_user_email}
+                        {ticket.created_by_user_email || ''}
                       </div>
                     </div>
                   </div>
@@ -246,9 +246,11 @@ const TicketDetailsDrawer = ({ visible, ticket, onClose, onUpdate }) => {
                   <div className="flex items-center space-x-2">
                     <Avatar size="small" icon={<UserOutlined />} />
                     <div>
-                      <div className="font-medium">{ticket.coordinator_name}</div>
+                      <div className="font-medium">
+                        {ticket.coordinator_name || ticket.created_by_user_name || 'Self'}
+                      </div>
                       <div className="text-xs text-gray-500">
-                        {ticket.coordinator_email}
+                        {ticket.coordinator_email || (ticket.coordinator_name ? '' : ticket.created_by_user_email) || ''}
                       </div>
                     </div>
                   </div>

@@ -19,6 +19,7 @@ import { logout } from '../../../store/slices/authSlice'
 import { toggleSidebar, selectSidebarCollapsed } from '../../../store/slices/uiSlice'
 import { getThemeByRole, applyTheme } from '../../../utils/roleThemes'
 import { useNavigate } from 'react-router-dom'
+import NotificationBell from '../Notifications/NotificationBell'
 
 const { Header: AntHeader } = Layout
 const { Text } = Typography
@@ -131,23 +132,7 @@ const Header = () => {
       <div className="flex items-center space-x-6">
 
         {/* Notifications */}
-        <Tooltip title="Notifications">
-          <Badge count={5} size="small" color={theme.accent} offset={[-6, 4]}>
-            <Button
-              type="text"
-              icon={<BellOutlined />}
-              className="text-gray-600 hover:text-current transition-colors duration-200"
-              style={{
-                color: theme.accent,
-                fontSize: '18px',
-                padding: '4px 8px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}
-            />
-          </Badge>
-        </Tooltip>
+        <NotificationBell theme={theme} />
 
         {/* User menu */}
         <Dropdown

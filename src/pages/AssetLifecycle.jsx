@@ -26,7 +26,8 @@ import {
   DeleteOutlined,
   ReloadOutlined,
   SafetyCertificateOutlined,
-  ToolOutlined
+  ToolOutlined,
+  DownloadOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -43,6 +44,7 @@ const AssetLifecycle = () => {
   // States
   const [loading, setLoading] = useState(false);
   const [statsLoading, setStatsLoading] = useState(false);
+  const [exportLoading, setExportLoading] = useState(false);
   const [assets, setAssets] = useState([]);
   const [statistics, setStatistics] = useState(null);
   const [pagination, setPagination] = useState({ current: 1, pageSize: 20, total: 0 });
@@ -132,6 +134,99 @@ const AssetLifecycle = () => {
       pageSize: paginationConfig.pageSize,
       total: pagination.total
     });
+  };
+
+  // Export to CSV
+  const handleExportCSV = async () => {
+    setExportLoading(true);
+    try {
+      const params = {};
+
+      // Set alertType based on tab or specific filter
+      if (alertType) {
+        params.alertType = alertType;
+      } else if (activeTab === 'warranty') {
+        params.alertType = 'all_warranty';
+      } else if (activeTab === 'eol') {
+        params.alertType = 'all_eol';
+      } else if (activeTab === 'eos') {
+        params.alertType = 'all_eos';
+      }
+
+      if (searchText) {
+        params.search = searchText;
+      }
+
+      // Fetch all data for export (no pagination)
+      params.export = true;
+
+      const response = await assetService.getLifecycleAssets(params);
+      if (response.data?.success) {
+        const exportData = response.data.data.assets;
+
+        // Convert to CSV
+        const csvHeaders = [
+          'Asset Tag',
+          'Product Name',
+          'Model',
+          'Category',
+          'Serial Number',
+          'Alert Type',
+          'Days Remaining',
+          'Warranty End Date',
+          'EOL Date',
+          'EOS Date',
+          'Assigned To',
+          'Department',
+          'Location',
+          'Recommended Action'
+        ];
+
+        const csvRows = exportData.map(asset => [
+          asset.asset_tag || '',
+          asset.product_name || '',
+          asset.product_model || '',
+          asset.category_name || '',
+          asset.serial_number || '',
+          asset.alert_type || '',
+          asset.days_remaining || '',
+          asset.warranty_end_date ? dayjs(asset.warranty_end_date).format('DD MMM YYYY') : '',
+          asset.eol_date ? dayjs(asset.eol_date).format('DD MMM YYYY') : '',
+          asset.eos_date ? dayjs(asset.eos_date).format('DD MMM YYYY') : '',
+          asset.assigned_to_name || 'Unassigned',
+          asset.department_name || '',
+          asset.location_name || '',
+          asset.recommended_action || ''
+        ]);
+
+        // Create CSV content
+        const csvContent = [
+          csvHeaders.join(','),
+          ...csvRows.map(row => row.map(cell => `"${cell}"`).join(','))
+        ].join('\n');
+
+        // Create and download file
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+
+        const filename = `Asset_Lifecycle_${activeTab}_${dayjs().format('YYYY-MM-DD')}.csv`;
+
+        link.setAttribute('href', url);
+        link.setAttribute('download', filename);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        message.success(`Exported ${exportData.length} assets to CSV`);
+      }
+    } catch (error) {
+      console.error('Error exporting data:', error);
+      message.error('Failed to export data');
+    } finally {
+      setExportLoading(false);
+    }
   };
 
   // Get alert tag styling
@@ -471,13 +566,23 @@ const AssetLifecycle = () => {
           <Title level={isMobile ? 5 : 4} style={{ marginBottom: 0 }}>Asset Lifecycle Management</Title>
           {!isMobile && <Text type="secondary">Monitor warranty, EOL, and EOS status of assets</Text>}
         </div>
-        <Button
-          icon={<ReloadOutlined />}
-          onClick={() => { fetchAssets(); fetchStatistics(); }}
-          size={isMobile ? 'small' : 'middle'}
-        >
-          Refresh
-        </Button>
+        <Space size={isMobile ? 'small' : 'middle'}>
+          <Button
+            icon={<DownloadOutlined />}
+            onClick={handleExportCSV}
+            loading={exportLoading}
+            size={isMobile ? 'small' : 'middle'}
+          >
+            {!isMobile && 'Export CSV'}
+          </Button>
+          <Button
+            icon={<ReloadOutlined />}
+            onClick={() => { fetchAssets(); fetchStatistics(); }}
+            size={isMobile ? 'small' : 'middle'}
+          >
+            {!isMobile && 'Refresh'}
+          </Button>
+        </Space>
       </div>
 
       {/* Statistics Cards */}

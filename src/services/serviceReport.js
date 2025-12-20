@@ -139,9 +139,10 @@ const serviceReportService = {
   /**
    * Download PDF for a single service report
    */
-  downloadPDF: async (reportId, reportNumber) => {
+  downloadPDF: async (reportId, reportNumber, hideCost = false) => {
     try {
       const response = await apiClient.get(`/service-reports/${reportId}/pdf`, {
+        params: { hideCost: hideCost ? 'true' : 'false' },
         responseType: 'blob'
       });
 
@@ -166,10 +167,11 @@ const serviceReportService = {
   /**
    * Download bulk PDF for multiple service reports
    */
-  downloadBulkPDF: async (reportIds) => {
+  downloadBulkPDF: async (reportIds, hideCost = false) => {
     try {
       const response = await apiClient.post('/service-reports/pdf/bulk', {
-        report_ids: reportIds
+        report_ids: reportIds,
+        hideCost: hideCost
       }, {
         responseType: 'blob'
       });

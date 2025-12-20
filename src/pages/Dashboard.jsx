@@ -9,6 +9,7 @@ import EmployeeDashboard from '../components/modules/dashboards/employee/Employe
 import CoordinatorDashboard from '../components/modules/dashboards/coordinator/CoordinatorDashboard'
 import DepartmentHeadDashboard from '../components/modules/dashboards/department-head/DepartmentHeadDashboard'
 import ITHeadDashboard from '../components/modules/dashboards/it-head/ITHeadDashboard'
+import EngineerDashboard from '../components/modules/dashboards/engineer/EngineerDashboard'
 
 const { Title, Text } = Typography
 
@@ -64,14 +65,18 @@ const Dashboard = () => {
     return <ITHeadDashboard />
   }
 
-  // For other roles (engineer), show Phase 2 notice
+  if (user.role === 'engineer') {
+    return <EngineerDashboard />
+  }
+
+  // For other roles, show fallback
   return (
     <div className="min-h-screen flex items-center justify-center">
       <div className="text-center p-8">
         <Title level={2}>Welcome to Asset Management System</Title>
         <Text className="text-gray-600">
-          Your role ({user.role}) dashboard will be available in Phase 2.<br/>
-          Asset operations, ticketing, and approval workflows are coming soon.
+          Your role ({user.role}) dashboard is not configured yet.<br/>
+          Please contact your system administrator.
         </Text>
       </div>
     </div>
