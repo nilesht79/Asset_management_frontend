@@ -39,6 +39,10 @@ const { Option } = Select;
 const DepartmentHeadApprovals = () => {
   const dispatch = useDispatch();
   const { pendingApprovals = [], pagination = { page: 1, limit: 10, total: 0 }, loading = false, filters = {} } = useSelector((state) => state.requisitions || {});
+  const user = useSelector((state) => state.auth.user);
+
+  // Dynamic role title
+  const roleTitle = user?.role === 'department_coordinator' ? 'Department Coordinator' : 'Department Head';
 
   const [approvalModalVisible, setApprovalModalVisible] = useState(false);
   const [selectedRequisition, setSelectedRequisition] = useState(null);
@@ -232,7 +236,7 @@ const DepartmentHeadApprovals = () => {
       {/* Header */}
       <div className="page-header">
         <div>
-          <h2>Department Head Approvals</h2>
+          <h2>{roleTitle} Approvals</h2>
           <p className="page-description">Review and approve asset requisitions from your department</p>
         </div>
       </div>
@@ -326,7 +330,7 @@ const DepartmentHeadApprovals = () => {
           onSubmit={handleApprovalSubmit}
           requisition={selectedRequisition}
           action={approvalAction}
-          role="Department Head"
+          role={roleTitle}
           loading={processingId === selectedRequisition.requisition_id}
         />
       )}

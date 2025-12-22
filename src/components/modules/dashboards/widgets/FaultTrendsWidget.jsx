@@ -65,12 +65,12 @@ const FaultTrendsWidget = ({ compact = false }) => {
       const [statsResponse, flagsResponse, problematicResponse] = await Promise.all([
         faultAnalysisService.getFlagStats().catch(() => ({ data: { data: null } })),
         faultAnalysisService.getActiveFlags({ limit: 5 }).catch(() => ({ data: { data: { flags: [] } } })),
-        faultAnalysisService.getProblematicAssetsReport({ limit: 5 }).catch(() => ({ data: { data: { assets: [] } } }))
+        faultAnalysisService.getProblematicAssetsReport().catch(() => ({ data: { data: { report: [] } } }))
       ]);
 
       setStats(statsResponse.data?.data || null);
       setActiveFlags(flagsResponse.data?.data?.flags || []);
-      setProblematicAssets(problematicResponse.data?.data?.assets || []);
+      setProblematicAssets(problematicResponse.data?.data?.report || []);
     } catch (error) {
       console.error('Failed to load fault data:', error);
     } finally {

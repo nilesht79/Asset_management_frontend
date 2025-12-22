@@ -19,10 +19,12 @@ import Documentation from './pages/Documentation'
 import Login from './pages/Login'
 import ForgotPassword from './pages/ForgotPassword'
 import ResetPassword from './pages/ResetPassword'
+import ForcePasswordChange from './pages/ForcePasswordChange'
 
 function App() {
   const dispatch = useDispatch()
-  const { isAuthenticated, isLoading: authLoading } = useSelector(state => state.auth)
+  const { isAuthenticated, isLoading: authLoading, user } = useSelector(state => state.auth)
+  const mustChangePassword = isAuthenticated && user?.mustChangePassword
   const { theme: currentTheme } = useSelector(state => state.ui)
   const hasInitialized = useRef(false)
 
@@ -79,21 +81,25 @@ function App() {
           <Route
             path="/"
             element={
-              isAuthenticated ? <Navigate to="/dashboard" replace /> : <Landing />
+              isAuthenticated ? (
+                mustChangePassword ? <Navigate to="/force-password-change" replace /> : <Navigate to="/dashboard" replace />
+              ) : <Landing />
             }
           />
 
           {/* Documentation Page */}
-          <Route 
-            path="/documentation" 
-            element={<Documentation />} 
+          <Route
+            path="/documentation"
+            element={<Documentation />}
           />
 
           {/* Login Route */}
           <Route
             path="/login"
             element={
-              isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login />
+              isAuthenticated ? (
+                mustChangePassword ? <Navigate to="/force-password-change" replace /> : <Navigate to="/dashboard" replace />
+              ) : <Login />
             }
           />
 
@@ -113,11 +119,23 @@ function App() {
             }
           />
 
+          {/* Force Password Change Route (for first-time login) */}
+          <Route
+            path="/force-password-change"
+            element={
+              !isAuthenticated ? <Navigate to="/login" replace /> :
+              !mustChangePassword ? <Navigate to="/dashboard" replace /> :
+              <ForcePasswordChange />
+            }
+          />
+
           {/* Protected routes */}
           <Route
             path="*"
             element={
-              isAuthenticated ? <AppRouter /> : <Navigate to="/login" replace />
+              !isAuthenticated ? <Navigate to="/login" replace /> :
+              mustChangePassword ? <Navigate to="/force-password-change" replace /> :
+              <AppRouter />
             }
           />
         </Routes>

@@ -29,6 +29,7 @@ import {
 } from '@ant-design/icons';
 import {
   fetchMyRequisitions,
+  fetchAllRequisitions,
   cancelRequisition,
   setFilters,
   clearFilters
@@ -45,6 +46,18 @@ const MyRequisitions = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { requisitions, pagination, loading, filters } = useSelector((state) => state.requisitions);
+  const user = useSelector((state) => state.auth.user);
+
+  // Check if user is department head or coordinator - they should see all department requisitions
+  const isDeptHeadOrCoordinator = ['department_head', 'department_coordinator'].includes(user?.role);
+
+  // Dynamic titles based on role
+  const pageTitle = isDeptHeadOrCoordinator
+    ? (user?.role === 'department_coordinator' ? 'Department Requisitions' : 'Department Requisitions')
+    : 'My Asset Requisitions';
+  const pageDescription = isDeptHeadOrCoordinator
+    ? 'View and manage all asset requisitions from your department'
+    : 'View and manage your asset requisition requests';
 
   const [cancelForm] = Form.useForm();
   const [cancelModalVisible, setCancelModalVisible] = useState(false);
@@ -66,7 +79,7 @@ const MyRequisitions = () => {
   // Load requisitions on mount and when filters/pagination change
   useEffect(() => {
     loadRequisitions();
-  }, [filters, pagination.page]);
+  }, [filters, pagination.page, isDeptHeadOrCoordinator]);
 
   // Calculate statistics when requisitions change
   useEffect(() => {
@@ -101,7 +114,12 @@ const MyRequisitions = () => {
       }
     });
 
-    dispatch(fetchMyRequisitions(params));
+    // Use fetchAllRequisitions for department heads/coordinators to see all department requisitions
+    if (isDeptHeadOrCoordinator) {
+      dispatch(fetchAllRequisitions(params));
+    } else {
+      dispatch(fetchMyRequisitions(params));
+    }
   };
 
   const handleFilterChange = (key, value) => {
@@ -113,7 +131,8 @@ const MyRequisitions = () => {
   };
 
   const handlePageChange = (page, pageSize) => {
-    dispatch(fetchMyRequisitions({
+    const fetchFn = isDeptHeadOrCoordinator ? fetchAllRequisitions : fetchMyRequisitions;
+    dispatch(fetchFn({
       page,
       limit: pageSize,
       ...filters
@@ -168,8 +187,8 @@ const MyRequisitions = () => {
       {/* Header */}
       <div className="page-header">
         <div>
-          <h2>My Asset Requisitions</h2>
-          <p className="page-description">View and manage your asset requisition requests</p>
+          <h2>{pageTitle}</h2>
+          <p className="page-description">{pageDescription}</p>
         </div>
         <Button
           type="primary"
@@ -283,11 +302,11 @@ const MyRequisitions = () => {
         <Spin spinning={loading}>
           {requisitions.length === 0 && !loading ? (
             <Empty
-              description="No requisitions found"
+              description={isDeptHeadOrCoordinator ? "No requisitions in your department" : "No requisitions found"}
               image={Empty.PRESENTED_IMAGE_SIMPLE}
             >
               <Button type="primary" icon={<PlusOutlined />} onClick={handleNewRequisition}>
-                Create Your First Requisition
+                Create New Requisition
               </Button>
             </Empty>
           ) : (
@@ -296,8 +315,8 @@ const MyRequisitions = () => {
                 <RequisitionCard
                   key={requisition.requisition_id}
                   requisition={requisition}
-                  onCancel={handleCancelClick}
-                  onSignForDelivery={handleSignForDelivery}
+                  onCancel={isDeptHeadOrCoordinator ? null : handleCancelClick}
+                  onSignForDelivery={isDeptHeadOrCoordinator ? null : handleSignForDelivery}
                   showActions={true}
                 />
               ))}

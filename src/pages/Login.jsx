@@ -12,14 +12,19 @@ const Login = () => {
   const [form] = Form.useForm()
   const dispatch = useDispatch()
   const navigate = useNavigate()
-  const { isLoading, error, isAuthenticated } = useSelector(state => state.auth)
+  const { isLoading, error, isAuthenticated, user } = useSelector(state => state.auth)
   const [showError, setShowError] = useState(false)
 
+  // Handle redirect if already authenticated (e.g., page refresh while logged in)
   useEffect(() => {
-    if (isAuthenticated) {
-      navigate('/dashboard', { replace: true })
+    if (isAuthenticated && user) {
+      if (user.mustChangePassword) {
+        navigate('/force-password-change', { replace: true })
+      } else {
+        navigate('/dashboard', { replace: true })
+      }
     }
-  }, [isAuthenticated, navigate])
+  }, [isAuthenticated, user, navigate])
 
   useEffect(() => {
     if (error) {
@@ -31,8 +36,16 @@ const Login = () => {
     try {
       dispatch(clearError())
       setShowError(false)
-      
-      await dispatch(login(values)).unwrap()
+
+      // Get the login result directly to check mustChangePassword
+      const result = await dispatch(login(values)).unwrap()
+
+      // Immediately redirect based on mustChangePassword flag
+      if (result.user?.mustChangePassword) {
+        navigate('/force-password-change', { replace: true })
+      } else {
+        navigate('/dashboard', { replace: true })
+      }
     } catch (err) {
       console.error('Login failed:', err)
     }

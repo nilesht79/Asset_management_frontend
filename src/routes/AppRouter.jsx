@@ -243,8 +243,8 @@ const AppRouter = () => {
           <Route path="gate-passes" element={<GatePasses />} />
         )}
 
-        {/* Reconciliation Routes - Admin, Superadmin, Engineer */}
-        {['admin', 'superadmin', 'engineer'].includes(user?.role) && (
+        {/* Reconciliation Routes - Coordinator, Admin, Superadmin, Engineer */}
+        {['coordinator', 'admin', 'superadmin', 'engineer'].includes(user?.role) && (
           <>
             <Route path="reconciliation" element={<ReconciliationList />} />
             <Route path="reconciliation/:id/assets" element={<ReconciliationAssets />} />
@@ -273,8 +273,8 @@ const AppRouter = () => {
           <Route path="admin/fault-types" element={<FaultTypeManagement />} />
         )}
 
-        {/* SLA Settings - Admin/Superadmin */}
-        {['admin', 'superadmin'].includes(user?.role) && (
+        {/* SLA Settings - Coordinator/Admin/Superadmin */}
+        {['coordinator', 'admin', 'superadmin'].includes(user?.role) && (
           <Route path="settings/sla" element={<SlaSettings />} />
         )}
 

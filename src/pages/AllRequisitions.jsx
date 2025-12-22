@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import {
   Card,
   Button,
@@ -30,6 +31,16 @@ const { Option } = Select;
 
 const AllRequisitions = () => {
   const navigate = useNavigate();
+  const user = useSelector((state) => state.auth.user);
+
+  // Check if user is department head or coordinator - they see department requisitions only
+  const isDeptHeadOrCoordinator = ['department_head', 'department_coordinator'].includes(user?.role);
+
+  // Dynamic titles based on role
+  const pageTitle = isDeptHeadOrCoordinator ? 'Department Requisitions' : 'All Asset Requisitions';
+  const pageDescription = isDeptHeadOrCoordinator
+    ? 'View and track all requisition requests from your department'
+    : 'View and track all requisition requests across the organization';
   const [requisitions, setRequisitions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [filters, setFilters] = useState({
@@ -194,8 +205,8 @@ const AllRequisitions = () => {
       {/* Header */}
       <div className="page-header">
         <div>
-          <h2>All Asset Requisitions</h2>
-          <p className="page-description">View and track all requisition requests across the organization</p>
+          <h2>{pageTitle}</h2>
+          <p className="page-description">{pageDescription}</p>
         </div>
       </div>
 

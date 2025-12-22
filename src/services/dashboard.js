@@ -11,6 +11,21 @@ const dashboardService = {
     return api.get('/dashboard/admin')
   },
 
+  // Get Coordinator dashboard data
+  getCoordinatorDashboard: () => {
+    return api.get('/dashboard/coordinator')
+  },
+
+  // Get Engineer dashboard data
+  getEngineerDashboard: () => {
+    return api.get('/dashboard/engineer')
+  },
+
+  // Get Employee dashboard data
+  getEmployeeDashboard: () => {
+    return api.get('/dashboard/employee')
+  },
+
   // Get system health metrics
   getSystemHealth: () => {
     return api.get('/dashboard/system-health')

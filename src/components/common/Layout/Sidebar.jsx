@@ -292,7 +292,7 @@ const Sidebar = () => {
     }
 
     // Coordinator items - Asset allocation, movement, ticketing workflows
-    if (['coordinator', 'department_coordinator'].includes(user?.role)) {
+    if (['coordinator'].includes(user?.role)) {
       baseItems.push(
         {
           key: 'assets',
@@ -364,22 +364,54 @@ const Sidebar = () => {
           icon: <CustomerServiceOutlined />,
           label: 'Ticket Management',
         },
+        // Inventory Reconciliation
+        {
+          key: '/reconciliation',
+          icon: <CheckCircleOutlined />,
+          label: 'Inventory Reconciliation',
+        },
         // Software License Management
         {
           key: '/licenses',
           icon: <SafetyCertificateOutlined />,
           label: 'Software Licenses',
         },
-        // Reports for Coordinators
+        // Fault Analysis
+        {
+          key: '/fault-analysis',
+          icon: <WarningOutlined />,
+          label: 'Fault Analysis',
+        },
+        // Reports & Analytics for Coordinators
         {
           key: 'reports',
           icon: <BarChartOutlined />,
-          label: 'Reports',
+          label: 'Reports & Analytics',
           children: [
             {
               key: '/reports/service-reports',
               icon: <FileTextOutlined />,
               label: 'Service Reports',
+            },
+            {
+              key: '/reports/spare-parts',
+              icon: <ToolOutlined />,
+              label: 'Spare Parts Consumption',
+            },
+            {
+              key: '/reports/sla-compliance',
+              icon: <ClockCircleOutlined />,
+              label: 'SLA Compliance Reports',
+            },
+            {
+              key: '/reports/ticket-trends',
+              icon: <BarChartOutlined />,
+              label: 'Ticket Trend Analysis',
+            },
+            {
+              key: '/reports/consumables-consumption',
+              icon: <InboxOutlined />,
+              label: 'Consumables Consumption',
             },
             {
               key: '/reports/asset-job-reports',
@@ -393,48 +425,63 @@ const Sidebar = () => {
           key: '/gate-passes',
           icon: <ExportOutlined />,
           label: 'Gate Passes',
+        },
+        // SLA Settings
+        {
+          key: '/settings/sla',
+          icon: <ClockCircleOutlined />,
+          label: 'SLA Configuration',
         }
       )
     }
 
-    // Department Head items - Department-scoped asset and ticket management
+    // Department Head items - Department-scoped asset and ticket management + Employee features
     if (['department_head', 'department_coordinator'].includes(user?.role)) {
       baseItems.push(
+        // Approval functionality
         {
           key: '/approvals/department-head',
           icon: <CheckCircleOutlined />,
           label: 'Requisition Approvals',
         },
         {
-          key: '/requisitions/all-requisitions',
+          key: '/requisitions/my-requisitions',
           icon: <FileTextOutlined />,
-          label: 'All Requisitions',
+          label: 'Department Requisitions',
         },
-        // {
-        //   key: 'department',
-        //   icon: <UserOutlined />,
-        //   label: 'Department Management',
-        //   children: [
-        //     {
-        //       key: '/department/assets',
-        //       label: 'Department Assets',
-        //     },
-        //     {
-        //       key: '/department/tickets',
-        //       label: 'Department Tickets',
-        //     },
-        //     {
-        //       key: '/department/reports',
-        //       label: 'Department Reports',
-        //     },
-        //   ],
-        // }
+        // Employee features - personal use
+        {
+          key: '/my-assets',
+          icon: <DesktopOutlined />,
+          label: 'My Assets',
+        },
+        {
+          key: '/requisitions/new',
+          icon: <ShoppingOutlined />,
+          label: 'New Requisition',
+        },
+        {
+          key: '/consumables/requests',
+          icon: <InboxOutlined />,
+          label: 'Consumable Requests',
+        },
+        {
+          key: '/create-ticket',
+          icon: <CustomerServiceOutlined />,
+          label: 'Report Issue',
+        },
+        {
+          key: '/my-tickets',
+          icon: <FileTextOutlined />,
+          label: 'My Tickets',
+        }
       )
     }
 
-    // IT Head items - IT approval workflow and asset management
+    // IT Head items - IT approval workflow and asset management + Employee features
     if (['it_head'].includes(user?.role)) {
       baseItems.push(
+        // IT Approval functionality
         {
           key: '/approvals/it-head',
           icon: <CheckCircleOutlined />,
@@ -445,6 +492,33 @@ const Sidebar = () => {
           icon: <FileTextOutlined />,
           label: 'All Requisitions',
         },
+        // Employee features - personal use
+        {
+          key: '/my-assets',
+          icon: <DesktopOutlined />,
+          label: 'My Assets',
+        },
+        {
+          key: '/requisitions/new',
+          icon: <ShoppingOutlined />,
+          label: 'New Requisition',
+        },
+        {
+          key: '/consumables/requests',
+          icon: <InboxOutlined />,
+          label: 'Consumable Requests',
+        },
+        {
+          key: '/create-ticket',
+          icon: <CustomerServiceOutlined />,
+          label: 'Report Issue',
+        },
+        {
+          key: '/my-tickets',
+          icon: <FileTextOutlined />,
+          label: 'My Tickets',
+        },
+        // IT Management features
         {
           key: 'assets',
           icon: <DesktopOutlined />,
@@ -453,10 +527,6 @@ const Sidebar = () => {
             {
               key: '/assets/inventory',
               label: 'Asset Inventory',
-            },
-            {
-              key: '/assets/components',
-              label: 'Component Management',
             },
           ],
         },

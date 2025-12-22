@@ -218,7 +218,7 @@ const DepartmentHeadDashboard = () => {
           <Row justify="space-between" align="middle">
             <Col>
               <Title level={2} style={{ margin: 0, fontSize: '24px', fontWeight: 600, color: '#262626' }}>
-                Department Head Dashboard
+                {user?.role === 'department_coordinator' ? 'Department Coordinator Dashboard' : 'Department Head Dashboard'}
               </Title>
               <Text type="secondary" style={{ fontSize: '14px' }}>
                 Welcome back, {user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : 'User'} • {user?.department?.name || 'Department'}

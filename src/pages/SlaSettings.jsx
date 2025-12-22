@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Tabs, Card, Space, Typography } from 'antd';
+import { useSelector } from 'react-redux';
 import {
   SettingOutlined,
   ClockCircleOutlined,
@@ -24,8 +25,12 @@ const { Title, Text } = Typography;
  */
 const SlaSettings = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
+  const { user } = useSelector(state => state.auth);
 
-  const tabItems = [
+  // Coordinators only see the Dashboard tab
+  const isCoordinator = user?.role === 'coordinator';
+
+  const allTabItems = [
     {
       key: 'dashboard',
       label: (
@@ -77,6 +82,11 @@ const SlaSettings = () => {
       children: <TicketReopenConfig />
     }
   ];
+
+  // Filter tabs based on role - coordinators only see dashboard
+  const tabItems = isCoordinator
+    ? allTabItems.filter(tab => tab.key === 'dashboard')
+    : allTabItems;
 
   return (
     <div className="space-y-6">

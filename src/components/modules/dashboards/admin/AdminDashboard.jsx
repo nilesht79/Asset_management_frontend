@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { 
   Card, 
   Row, 
@@ -67,30 +67,32 @@ const AdminDashboard = () => {
     masterDataStats: {},
     departmentOverview: []
   })
-  const [recentActivities, setRecentActivities] = useState([])
-  const [pendingApprovals, setPendingApprovals] = useState([])
   const navigate = useNavigate()
   const dispatch = useDispatch()
   const standbyStatistics = useSelector(selectStandbyStatistics)
+  const chartRef = useRef(null)
 
   useEffect(() => {
     loadDashboardData()
     dispatch(fetchStandbyStatistics())
   }, [])
 
+  // Resize chart after loading completes
+  useEffect(() => {
+    if (!loading && chartRef.current) {
+      const chart = chartRef.current.getEchartsInstance()
+      if (chart) {
+        setTimeout(() => chart.resize(), 100)
+      }
+    }
+  }, [loading])
+
   const loadDashboardData = async () => {
     setLoading(true)
-    
-    try {
-      const [dashboardResponse, activitiesResponse, approvalsResponse] = await Promise.all([
-        dashboardService.getAdminDashboard(),
-        dashboardService.getRecentActivities({ limit: 8 }),
-        dashboardService.getPendingApprovals({ limit: 5 })
-      ])
 
+    try {
+      const dashboardResponse = await dashboardService.getAdminDashboard()
       setDashboardData(dashboardResponse.data.data)
-      setRecentActivities(activitiesResponse.data.data)
-      setPendingApprovals(approvalsResponse.data.data)
     } catch (error) {
       console.error('Failed to load dashboard data:', error)
       message.error('Failed to load dashboard data')
@@ -142,7 +144,7 @@ const AdminDashboard = () => {
         bottom: 0,
         textStyle: { color: THEME.gray }
       },
-      grid: { left: 60, right: 60, bottom: 60, top: 40, containLabel: true },
+      grid: { left: 50, right: 30, bottom: 60, top: 40, containLabel: true },
       xAxis: {
         type: 'category',
         data: data.map(item => item.name),
@@ -205,71 +207,6 @@ const AdminDashboard = () => {
         }
       ]
     }
-  }
-
-  const getDepartmentDistributionConfig = () => {
-    const data = dashboardData.departmentOverview?.map(dept => ({
-      name: dept.name,
-      value: dept.users,
-      itemStyle: { color: dept.status === 'active' ? THEME.success : THEME.gray }
-    })) || []
-
-    return {
-      tooltip: {
-        trigger: 'item',
-        formatter: '{b}: {c} users ({d}%)',
-        backgroundColor: 'rgba(255, 255, 255, 0.95)',
-        borderColor: THEME.border,
-        borderWidth: 1,
-        textStyle: { color: THEME.dark }
-      },
-      legend: {
-        orient: 'vertical',
-        right: 10,
-        top: 'center',
-        textStyle: { color: THEME.gray, fontSize: 12 }
-      },
-      series: [{
-        type: 'pie',
-        radius: ['40%', '70%'],
-        center: ['40%', '50%'],
-        data: data,
-        emphasis: {
-          itemStyle: {
-            shadowBlur: 10,
-            shadowOffsetX: 0,
-            shadowColor: 'rgba(0, 0, 0, 0.5)'
-          }
-        },
-        label: {
-          show: false
-        }
-      }]
-    }
-  }
-
-  const getActivityIcon = (type) => {
-    const icons = {
-      user_created: <UserOutlined />,
-      oem_created: <BankOutlined />,
-      category_created: <AppstoreOutlined />,
-      product_created: <ToolOutlined />,
-      location_created: <GlobalOutlined />,
-      master_data_updated: <DatabaseOutlined />,
-      system_alert: <AlertOutlined />,
-      backup_completed: <CheckCircleOutlined />
-    }
-    return icons[type] || <AlertOutlined />
-  }
-
-  const getActivityColor = (severity) => {
-    const colors = {
-      info: THEME.info,
-      success: THEME.success,
-      warning: THEME.warning,
-      error: THEME.danger
-    }
-    return colors[severity] || THEME.gray
   }
 
   const userEngagementRate = dashboardData.masterStats?.totalUsers ? Math.round((dashboardData.masterStats?.activeUsers / dashboardData.masterStats?.totalUsers) * 100) : 0
@@ -412,22 +349,24 @@ const AdminDashboard = () => {
           </Col>
 
           <Col xs={24} sm={12} lg={6}>
-            <Card style={{ 
-              borderRadius: '16px', 
+            <Card style={{
+              borderRadius: '16px',
               border: 'none',
               boxShadow: `0 8px 25px ${THEME.shadow}`,
               background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)'
             }}>
               <Statistic
-                title={<span style={{ fontSize: '14px', fontWeight: 500, color: THEME.dark }}>Pending Approvals</span>}
-                value={pendingApprovals?.length || 0}
-                prefix={<AlertOutlined style={{ color: THEME.danger, fontSize: '20px' }} />}
-                valueStyle={{ color: THEME.danger, fontSize: '28px', fontWeight: 600 }}
+                title={<span style={{ fontSize: '14px', fontWeight: 500, color: THEME.dark }}>Total Products</span>}
+                value={dashboardData.masterDataStats?.products?.total || 0}
+                prefix={<ToolOutlined style={{ color: THEME.purple, fontSize: '20px' }} />}
+                valueStyle={{ color: THEME.purple, fontSize: '28px', fontWeight: 600 }}
               />
               <div style={{ marginTop: '16px' }}>
-                <Badge status="processing" text="Requires Action" />
+                <Text style={{ fontSize: '12px', color: THEME.success, fontWeight: 500 }}>
+                  {dashboardData.masterDataStats?.products?.active || 0} Active
+                </Text>
                 <Text style={{ fontSize: '12px', color: THEME.gray, display: 'block', marginTop: '4px' }}>
-                  User registrations
+                  Product catalog
                 </Text>
               </div>
             </Card>
@@ -520,12 +459,12 @@ const AdminDashboard = () => {
         {/* Analytics Section */}
         <Row gutter={[24, 24]} style={{ marginBottom: '32px' }}>
           {/* Master Data Overview Chart */}
-          <Col xs={24} lg={16}>
-            <Card 
+          <Col span={24}>
+            <Card
               title={
-                <div style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
                   justifyContent: 'space-between',
                   paddingBottom: '12px',
                   borderBottom: `1px solid ${THEME.border}`
@@ -541,369 +480,24 @@ const AdminDashboard = () => {
                   </Tag>
                 </div>
               }
-              style={{ 
-                borderRadius: '12px', 
+              style={{
+                borderRadius: '12px',
                 border: 'none',
                 boxShadow: `0 4px 12px ${THEME.shadow}`
               }}
               bodyStyle={{ padding: '20px' }}
             >
-              <ReactECharts 
-                option={getMasterDataOverviewConfig()} 
-                style={{ height: '350px', width: '100%' }}
-                opts={{ renderer: 'svg' }}
+              <ReactECharts
+                ref={chartRef}
+                option={getMasterDataOverviewConfig()}
+                style={{ height: '350px' }}
+                notMerge={true}
+                lazyUpdate={true}
               />
-            </Card>
-          </Col>
-
-          {/* Department Distribution */}
-          <Col xs={24} lg={8}>
-            <Card 
-              title={
-                <div style={{ 
-                  display: 'flex', 
-                  alignItems: 'center',
-                  paddingBottom: '12px',
-                  borderBottom: `1px solid ${THEME.border}`
-                }}>
-                  <PieChartOutlined style={{ marginRight: '8px', color: THEME.primary, fontSize: '16px' }} />
-                  <span style={{ fontSize: '16px', fontWeight: 600, color: THEME.dark }}>
-                    Department Users
-                  </span>
-                </div>
-              }
-              style={{ 
-                borderRadius: '12px', 
-                border: 'none',
-                boxShadow: `0 4px 12px ${THEME.shadow}`,
-                height: '100%'
-              }}
-              bodyStyle={{ padding: '20px' }}
-            >
-              <ReactECharts 
-                option={getDepartmentDistributionConfig()} 
-                style={{ height: '280px', width: '100%' }}
-                opts={{ renderer: 'svg' }}
-              />
-              <Divider style={{ margin: '16px 0' }} />
-              <div style={{ textAlign: 'center' }}>
-                <Statistic
-                  title="Total Users"
-                  value={dashboardData.masterStats?.totalUsers || 0}
-                  valueStyle={{ color: THEME.primary, fontSize: '20px', fontWeight: 600 }}
-                />
-              </div>
             </Card>
           </Col>
         </Row>
 
-        {/* Activities and Tasks */}
-        <Row gutter={[24, 24]} style={{ marginBottom: '32px' }}>
-          {/* Recent Activities */}
-          <Col xs={24} lg={12}>
-            <Card 
-              title={
-                <div style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'space-between',
-                  paddingBottom: '12px',
-                  borderBottom: `1px solid ${THEME.border}`
-                }}>
-                  <div>
-                    <RiseOutlined style={{ marginRight: '8px', color: THEME.primary, fontSize: '16px' }} />
-                    <span style={{ fontSize: '16px', fontWeight: 600, color: THEME.dark }}>
-                      Recent Activities
-                    </span>
-                  </div>
-                  <Badge status="processing" text="Live" style={{ fontSize: '11px', fontWeight: 500 }} />
-                </div>
-              }
-              style={{ 
-                borderRadius: '12px', 
-                border: 'none',
-                boxShadow: `0 4px 12px ${THEME.shadow}`
-              }}
-              bodyStyle={{ padding: '0' }}
-            >
-              {recentActivities && recentActivities.length > 0 ? (
-                <List
-                  dataSource={recentActivities}
-                  style={{ maxHeight: '300px', overflow: 'auto' }}
-                  renderItem={(activity, index) => (
-                    <List.Item style={{ 
-                      padding: '16px 20px', 
-                      borderBottom: index < recentActivities.length - 1 ? `1px solid ${THEME.border}` : 'none',
-                      transition: 'all 0.2s ease'
-                    }}>
-                      <List.Item.Meta
-                        avatar={
-                          <div style={{ 
-                            width: '40px', 
-                            height: '40px', 
-                            borderRadius: '50%', 
-                            background: `linear-gradient(135deg, ${getActivityColor(activity.severity)}20 0%, ${getActivityColor(activity.severity)}10 100%)`,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: '16px',
-                            color: getActivityColor(activity.severity),
-                            border: `2px solid ${getActivityColor(activity.severity)}30`
-                          }}>
-                            {getActivityIcon(activity.type)}
-                          </div>
-                        }
-                        title={
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                            <div style={{ flex: 1 }}>
-                              <div style={{ 
-                                fontSize: '14px', 
-                                fontWeight: 500, 
-                                color: THEME.dark, 
-                                lineHeight: '1.4',
-                                marginBottom: '4px'
-                              }}>
-                                {activity.description}
-                              </div>
-                              {activity.details && (
-                                <div style={{
-                                  fontSize: '12px',
-                                  color: THEME.gray,
-                                  lineHeight: '1.3',
-                                  fontWeight: 400
-                                }}>
-                                  {activity.details}
-                                </div>
-                              )}
-                            </div>
-                            <Tag 
-                              color={getActivityColor(activity.severity)} 
-                              style={{ 
-                                margin: '0 0 0 12px',
-                                fontSize: '10px',
-                                fontWeight: 500,
-                                borderRadius: '8px',
-                                textTransform: 'uppercase',
-                                flexShrink: 0
-                              }}
-                            >
-                              {activity.severity}
-                            </Tag>
-                          </div>
-                        }
-                        description={
-                          <div style={{ marginTop: '8px' }}>
-                            <Text style={{ fontSize: '12px', color: THEME.gray, fontWeight: 400 }}>
-                              <ClockCircleOutlined style={{ marginRight: '4px', fontSize: '10px' }} />
-                              {activity.time}
-                            </Text>
-                          </div>
-                        }
-                      />
-                    </List.Item>
-                  )}
-                />
-              ) : (
-                <div style={{ textAlign: 'center', padding: '60px 0' }}>
-                  <Empty 
-                    description={
-                      <span style={{ color: THEME.gray, fontSize: '14px' }}>
-                        No recent activities
-                      </span>
-                    }
-                  />
-                </div>
-              )}
-            </Card>
-          </Col>
-
-          {/* Pending Approvals */}
-          <Col xs={24} lg={12}>
-            <Card 
-              title={
-                <div style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'space-between',
-                  paddingBottom: '12px',
-                  borderBottom: `1px solid ${THEME.border}`
-                }}>
-                  <div>
-                    <AlertOutlined style={{ marginRight: '8px', color: THEME.primary, fontSize: '16px' }} />
-                    <span style={{ fontSize: '16px', fontWeight: 600, color: THEME.dark }}>
-                      Pending Approvals
-                    </span>
-                  </div>
-                  <Badge count={pendingApprovals?.length || 0} showZero />
-                </div>
-              }
-              style={{ 
-                borderRadius: '12px', 
-                border: 'none',
-                boxShadow: `0 4px 12px ${THEME.shadow}`
-              }}
-              bodyStyle={{ padding: '0' }}
-            >
-              {pendingApprovals && pendingApprovals.length > 0 ? (
-                <List
-                  dataSource={pendingApprovals}
-                  style={{ maxHeight: '300px', overflow: 'auto' }}
-                  renderItem={(approval, index) => (
-                    <List.Item style={{ 
-                      padding: '16px 20px', 
-                      borderBottom: index < pendingApprovals.length - 1 ? `1px solid ${THEME.border}` : 'none'
-                    }}>
-                      <List.Item.Meta
-                        avatar={
-                          <div style={{
-                            width: '40px',
-                            height: '40px',
-                            borderRadius: '50%',
-                            background: `linear-gradient(135deg, ${THEME.warning}20 0%, ${THEME.warning}10 100%)`,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: '16px',
-                            color: THEME.warning,
-                            border: `2px solid ${THEME.warning}30`
-                          }}>
-                            <UserOutlined />
-                          </div>
-                        }
-                        title={
-                          <div>
-                            <Text strong style={{ fontSize: '14px', color: THEME.dark }}>
-                              {approval.type}
-                            </Text>
-                            <Tag 
-                              color={approval.priority === 'high' ? 'red' : approval.priority === 'medium' ? 'orange' : 'blue'}
-                              size="small"
-                              style={{ marginLeft: '8px', fontSize: '10px' }}
-                            >
-                              {approval.priority?.toUpperCase()}
-                            </Tag>
-                          </div>
-                        }
-                        description={
-                          <div>
-                            <div style={{ fontSize: '13px', color: THEME.gray, marginBottom: '4px' }}>
-                              {approval.item}
-                            </div>
-                            <Text style={{ fontSize: '11px', color: THEME.gray }}>
-                              {approval.date}
-                            </Text>
-                          </div>
-                        }
-                      />
-                    </List.Item>
-                  )}
-                />
-              ) : (
-                <div style={{ textAlign: 'center', padding: '60px 0' }}>
-                  <Empty 
-                    description={
-                      <span style={{ color: THEME.gray, fontSize: '14px' }}>
-                        No pending approvals
-                      </span>
-                    }
-                  />
-                </div>
-              )}
-            </Card>
-          </Col>
-        </Row>
-
-        {/* Quick Actions */}
-        <Card 
-          title={
-            <div style={{ 
-              display: 'flex', 
-              alignItems: 'center',
-              paddingBottom: '12px',
-              borderBottom: `1px solid ${THEME.border}`
-            }}>
-              <AppstoreOutlined style={{ marginRight: '8px', color: THEME.primary, fontSize: '16px' }} />
-              <span style={{ fontSize: '16px', fontWeight: 600, color: THEME.dark }}>
-                Admin Actions
-              </span>
-            </div>
-          }
-          style={{ 
-            borderRadius: '12px', 
-            border: 'none',
-            boxShadow: `0 4px 12px ${THEME.shadow}`
-          }}
-          bodyStyle={{ padding: '20px' }}
-        >
-          <Row gutter={[16, 16]}>
-            {[
-              { key: '/users', icon: UserOutlined, title: 'User Management', desc: 'Manage users & access', color: THEME.primary },
-              { key: '/masters/oem', icon: DatabaseOutlined, title: 'Master Data', desc: 'OEMs, Categories, Products', color: THEME.success },
-              { key: '/masters/locations', icon: GlobalOutlined, title: 'Locations', desc: 'Site & facility data', color: THEME.warning },
-              { key: '/departments', icon: TeamOutlined, title: 'Departments', desc: 'Department management', color: THEME.purple },
-              { key: '/admin/reports', icon: BarChartOutlined, title: 'Reports', desc: 'Analytics & insights', color: THEME.info },
-              { key: '/admin/settings', icon: DatabaseOutlined, title: 'Settings', desc: 'System configuration', color: THEME.gray }
-            ].map(item => (
-              <Col xs={12} sm={8} lg={4} key={item.key}>
-                <Card 
-                  hoverable
-                  style={{ 
-                    textAlign: 'center', 
-                    cursor: 'pointer',
-                    border: 'none',
-                    borderRadius: '8px',
-                    background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
-                    boxShadow: `0 2px 8px ${THEME.shadow}`,
-                    transition: 'all 0.2s ease',
-                    height: '120px'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-4px)'
-                    e.currentTarget.style.boxShadow = `0 8px 25px ${THEME.shadow}`
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'translateY(0px)'
-                    e.currentTarget.style.boxShadow = `0 2px 8px ${THEME.shadow}`
-                  }}
-                  onClick={() => navigate(item.key)}
-                  bodyStyle={{ padding: '16px 12px' }}
-                >
-                  <div style={{
-                    width: '48px',
-                    height: '48px',
-                    borderRadius: '50%',
-                    background: `linear-gradient(135deg, ${item.color}20 0%, ${item.color}10 100%)`,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    margin: '0 auto 8px',
-                    border: `2px solid ${item.color}30`,
-                  }}>
-                    <item.icon style={{ 
-                      fontSize: '20px', 
-                      color: item.color
-                    }} />
-                  </div>
-                  <div style={{ 
-                    fontSize: '13px', 
-                    fontWeight: 500, 
-                    color: THEME.dark,
-                    marginBottom: '4px'
-                  }}>
-                    {item.title}
-                  </div>
-                  <div style={{ 
-                    fontSize: '11px', 
-                    color: THEME.gray,
-                    lineHeight: '1.2'
-                  }}>
-                    {item.desc}
-                  </div>
-                </Card>
-              </Col>
-            ))}
-          </Row>
-        </Card>
       </Spin>
     </div>
   )

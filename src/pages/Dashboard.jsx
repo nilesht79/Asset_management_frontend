@@ -53,11 +53,11 @@ const Dashboard = () => {
     return <EmployeeDashboard />
   }
 
-  if (user.role === 'coordinator' || user.role === 'department_coordinator') {
+  if (user.role === 'coordinator') {
     return <CoordinatorDashboard />
   }
 
-  if (user.role === 'department_head' || user.role === 'dept_head') {
+  if (user.role === 'department_head' || user.role === 'dept_head' || user.role === 'department_coordinator') {
     return <DepartmentHeadDashboard />
   }
 

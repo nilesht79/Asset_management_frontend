@@ -11,7 +11,6 @@ import {
   Statistic,
   Empty,
   Spin,
-  Timeline,
   Badge,
   Tooltip
 } from 'antd';
@@ -21,7 +20,6 @@ import {
   ClockCircleOutlined,
   CloseCircleOutlined,
   EyeOutlined,
-  HistoryOutlined,
   TeamOutlined
 } from '@ant-design/icons';
 import { useSelector, useDispatch } from 'react-redux';
@@ -33,7 +31,7 @@ import FaultTrendsWidget from '../widgets/FaultTrendsWidget';
 
 dayjs.extend(relativeTime);
 
-const { Title, Text, Paragraph } = Typography;
+const { Title, Text } = Typography;
 
 const ITHeadDashboard = () => {
   const dispatch = useDispatch();
@@ -46,7 +44,6 @@ const ITHeadDashboard = () => {
     rejected: 0,
     totalRequests: 0
   });
-  const [recentActivity, setRecentActivity] = useState([]);
 
   // Redux state
   const user = useSelector(state => state.auth.user);
@@ -58,7 +55,6 @@ const ITHeadDashboard = () => {
 
   useEffect(() => {
     calculateStats();
-    prepareRecentActivity();
   }, [pendingApprovals, requisitions]);
 
   const loadDashboardData = async () => {
@@ -86,36 +82,6 @@ const ITHeadDashboard = () => {
       totalRequests: requisitions?.length || 0
     };
     setStats(newStats);
-  };
-
-  const prepareRecentActivity = () => {
-    // Combine pending IT approvals and requisitions already acted on by IT head
-    const myActivity = [];
-
-    // Add pending IT approvals (need action)
-    if (pendingApprovals && pendingApprovals.length > 0) {
-      myActivity.push(...pendingApprovals);
-    }
-
-    // Add requisitions IT head already approved or rejected
-    if (requisitions && requisitions.length > 0) {
-      const myActedRequisitions = requisitions.filter(r =>
-        ['approved_by_it_head', 'rejected_by_it_head', 'pending_assignment', 'assigned', 'delivered', 'completed'].includes(r.status)
-      );
-      myActivity.push(...myActedRequisitions);
-    }
-
-    if (myActivity.length === 0) {
-      setRecentActivity([]);
-      return;
-    }
-
-    // Sort by most recent and take top 5
-    const sorted = myActivity
-      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-      .slice(0, 5);
-
-    setRecentActivity(sorted);
   };
 
   const getStatusTag = (status) => {
@@ -335,13 +301,12 @@ const ITHeadDashboard = () => {
             </Card>
           </Col>
 
-          {/* Right Column - Quick Actions & Recent Activity */}
+          {/* Right Column - Quick Actions */}
           <Col xs={24} lg={8}>
             {/* Quick Actions */}
             <Card
               title={<Text strong>Quick Actions</Text>}
               bordered={false}
-              style={{ marginBottom: '16px' }}
             >
               <Space direction="vertical" style={{ width: '100%' }} size="small">
                 <Button
@@ -352,59 +317,6 @@ const ITHeadDashboard = () => {
                   View All Requisitions
                 </Button>
               </Space>
-            </Card>
-
-            {/* Recent Activity */}
-            <Card
-              title={
-                <Space>
-                  <HistoryOutlined />
-                  <Text strong>Recent Activity</Text>
-                </Space>
-              }
-              bordered={false}
-            >
-              {recentActivity.length > 0 ? (
-                <Timeline>
-                  {recentActivity.map((activity) => (
-                    <Timeline.Item
-                      key={activity.requisition_id}
-                      color={
-                        activity.status === 'completed' ? 'green' :
-                        activity.status.includes('rejected') ? 'red' :
-                        activity.status.includes('approved') ? 'blue' : 'orange'
-                      }
-                    >
-                      <Space direction="vertical" size={4} style={{ width: '100%' }}>
-                        <Text strong code style={{ fontSize: '12px' }}>
-                          {activity.requisition_number}
-                        </Text>
-                        <Text style={{ fontSize: '12px' }}>
-                          {activity.requester_name || 'Unknown User'} • {activity.department_name}
-                        </Text>
-                        <Space size={4} wrap>
-                          {getStatusTag(activity.status)}
-                          {getUrgencyTag(activity.urgency)}
-                        </Space>
-                        <Paragraph
-                          ellipsis={{ rows: 2 }}
-                          style={{ marginBottom: 4, color: '#8c8c8c', fontSize: '13px' }}
-                        >
-                          {activity.purpose}
-                        </Paragraph>
-                        <Text type="secondary" style={{ fontSize: '12px' }}>
-                          {dayjs(activity.created_at).fromNow()}
-                        </Text>
-                      </Space>
-                    </Timeline.Item>
-                  ))}
-                </Timeline>
-              ) : (
-                <Empty
-                  description="No recent activity"
-                  image={Empty.PRESENTED_IMAGE_SIMPLE}
-                />
-              )}
             </Card>
           </Col>
         </Row>
