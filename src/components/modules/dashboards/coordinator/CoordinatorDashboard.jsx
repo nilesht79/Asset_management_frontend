@@ -31,7 +31,6 @@ import {
   Zap,
   Shield,
   PackageCheck,
-  TriangleAlert,
   CheckCircle,
   XCircle,
   Timer,
@@ -329,7 +328,7 @@ const CoordinatorDashboard = () => {
               message={alert.message}
               type={alert.type}
               showIcon
-              icon={<TriangleAlert size={16} />}
+              icon={<AlertTriangle size={16} />}
               banner
               className="rounded-lg"
             />
