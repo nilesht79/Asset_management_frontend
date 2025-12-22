@@ -17,12 +17,8 @@ if (typeof window !== 'undefined') {
 import Landing from './pages/Landing'
 import Documentation from './pages/Documentation'
 import Login from './pages/Login'
-import CoordinatorLogin from './pages/auth/CoordinatorLogin'
-import EngineerLogin from './pages/auth/EngineerLogin'
-import DepartmentHeadLogin from './pages/auth/DepartmentHeadLogin'
-import DepartmentCoordinatorLogin from './pages/auth/DepartmentCoordinatorLogin'
-import AdminLogin from './pages/auth/AdminLogin'
-import SuperAdminLogin from './pages/auth/SuperAdminLogin'
+import ForgotPassword from './pages/ForgotPassword'
+import ResetPassword from './pages/ResetPassword'
 
 function App() {
   const dispatch = useDispatch()
@@ -93,70 +89,30 @@ function App() {
             element={<Documentation />} 
           />
 
-          {/* Public Login Routes */}
-          <Route 
-            path="/login" 
+          {/* Login Route */}
+          <Route
+            path="/login"
             element={
               isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login />
-            } 
+            }
           />
-          
-          <Route 
-            path="/coordinator/login" 
+
+          {/* Forgot Password Route */}
+          <Route
+            path="/forgot-password"
             element={
-              isAuthenticated ? <Navigate to="/dashboard" replace /> : <CoordinatorLogin />
-            } 
+              isAuthenticated ? <Navigate to="/dashboard" replace /> : <ForgotPassword />
+            }
           />
-          
-          <Route 
-            path="/engineer/login" 
+
+          {/* Reset Password Route */}
+          <Route
+            path="/reset-password"
             element={
-              isAuthenticated ? <Navigate to="/dashboard" replace /> : <EngineerLogin />
-            } 
+              isAuthenticated ? <Navigate to="/dashboard" replace /> : <ResetPassword />
+            }
           />
-          
-          <Route 
-            path="/department-head/login" 
-            element={
-              isAuthenticated ? <Navigate to="/dashboard" replace /> : <DepartmentHeadLogin />
-            } 
-          />
-          
-          <Route 
-            path="/department-coordinator/login" 
-            element={
-              isAuthenticated ? <Navigate to="/dashboard" replace /> : <DepartmentCoordinatorLogin />
-            } 
-          />
-          
-          <Route 
-            path="/admin/login" 
-            element={
-              isAuthenticated ? <Navigate to="/dashboard" replace /> : <AdminLogin />
-            } 
-          />
-          
-          <Route 
-            path="/admin/login/register" 
-            element={
-              isAuthenticated ? <Navigate to="/dashboard" replace /> : <AdminLogin />
-            } 
-          />
-          
-          <Route 
-            path="/superadmin/login" 
-            element={
-              isAuthenticated ? <Navigate to="/dashboard" replace /> : <SuperAdminLogin />
-            } 
-          />
-          
-          <Route 
-            path="/superadmin/login/register" 
-            element={
-              isAuthenticated ? <Navigate to="/dashboard" replace /> : <SuperAdminLogin />
-            } 
-          />
-          
+
           {/* Protected routes */}
           <Route
             path="*"

@@ -6,17 +6,8 @@
  * @returns {string} - The login route for the role
  */
 export const getRoleBasedLoginRoute = (userRole) => {
-  const roleLoginMap = {
-    'superadmin': '/superadmin/login',
-    'admin': '/admin/login',
-    'department_head': '/department-head/login',
-    'coordinator': '/coordinator/login',
-    'department_coordinator': '/department-coordinator/login',
-    'engineer': '/engineer/login',
-    'employee': '/login'
-  }
-
-  return roleLoginMap[userRole] || '/login'
+  // All roles use the same login page
+  return '/login'
 }
 
 /**

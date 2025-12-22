@@ -140,7 +140,7 @@ const uiSlice = createSlice({
     },
     setPageTitle: (state, action) => {
       state.pageTitle = action.payload
-      document.title = action.payload ? `${action.payload} - Asset Management System` : 'Asset Management System'
+      document.title = action.payload ? `${action.payload} - Unified ITSM Platform` : 'Unified ITSM Platform'
     },
 
     // Errors

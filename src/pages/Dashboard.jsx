@@ -73,7 +73,7 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen flex items-center justify-center">
       <div className="text-center p-8">
-        <Title level={2}>Welcome to Asset Management System</Title>
+        <Title level={2}>Welcome to Unified ITSM Platform</Title>
         <Text className="text-gray-600">
           Your role ({user.role}) dashboard is not configured yet.<br/>
           Please contact your system administrator.

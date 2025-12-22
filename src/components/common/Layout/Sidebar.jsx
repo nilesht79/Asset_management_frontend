@@ -722,31 +722,27 @@ const Sidebar = () => {
       <div className="h-20 flex items-center justify-center px-4 border-b-2 border-opacity-30"
            style={{ borderBottomColor: theme.sidebar.active }}>
         {collapsed ? (
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center"
-               style={{ backgroundColor: theme.accent }}>
+          <div className="flex items-center justify-center">
             <img
               src="/logo.png"
               alt="PolePlus"
-              className="w-6 h-6 object-contain filter brightness-0 invert"
+              className="h-10 w-auto object-contain"
             />
           </div>
         ) : (
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center"
-                 style={{ backgroundColor: theme.accent }}>
-              <img
-                src="/logo.png"
-                alt="PolePlus"
-                className="w-6 h-6 object-contain filter brightness-0 invert"
-              />
-            </div>
+            <img
+              src="/logo.png"
+              alt="PolePlus"
+              className="h-10 w-auto object-contain"
+            />
             <div>
               <div className="text-white font-bold text-lg leading-none">
                 PolePlus
               </div>
               <div className="text-xs opacity-75 leading-none mt-1"
                    style={{ color: theme.sidebar.icon }}>
-                Asset Management
+                Unified ITSM Platform
               </div>
             </div>
           </div>

@@ -1,14 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { Modal, Table, Input, Select, Space, Tag, Button, message, Empty, Alert } from 'antd';
+import { Modal, Table, Input, Select, Space, Tag, Button, message, Empty, Alert, Collapse, Row, Col } from 'antd';
 import {
   SearchOutlined,
   CheckCircleOutlined,
-  FilterOutlined
+  FilterOutlined,
+  InfoCircleOutlined,
+  ReloadOutlined
 } from '@ant-design/icons';
 import api from '../../services/api';
 import './AssetSelectionModal.css';
 
 const { Option } = Select;
+const { Panel } = Collapse;
 
 const AssetSelectionModal = ({
   visible,
@@ -21,14 +24,50 @@ const AssetSelectionModal = ({
   const [selectedAsset, setSelectedAsset] = useState(null);
   const [filters, setFilters] = useState({
     search: '',
-    status: 'available'
+    status: 'available',
+    category_id: undefined,
+    product_type_id: undefined,
+    product_id: undefined
   });
+
+  // Dropdown options
+  const [categories, setCategories] = useState([]);
+  const [productTypes, setProductTypes] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [loadingOptions, setLoadingOptions] = useState(false);
+
+  useEffect(() => {
+    if (visible) {
+      loadAvailableAssets();
+      loadFilterOptions();
+    }
+  }, [visible]);
 
   useEffect(() => {
     if (visible) {
       loadAvailableAssets();
     }
-  }, [visible, filters]);
+  }, [filters]);
+
+  // Load filter dropdown options
+  const loadFilterOptions = async () => {
+    try {
+      setLoadingOptions(true);
+      const [catRes, ptRes, prodRes] = await Promise.all([
+        api.get('/masters/categories', { params: { limit: 1000 } }),
+        api.get('/masters/product-types', { params: { limit: 1000 } }),
+        api.get('/masters/products', { params: { limit: 1000 } })
+      ]);
+
+      setCategories(catRes.data.data?.categories || catRes.data.categories || catRes.data.data || []);
+      setProductTypes(ptRes.data.data?.productTypes || ptRes.data.productTypes || ptRes.data.data || []);
+      setProducts(prodRes.data.data?.products || prodRes.data.products || prodRes.data.data || []);
+    } catch (error) {
+      console.error('Failed to load filter options:', error);
+    } finally {
+      setLoadingOptions(false);
+    }
+  };
 
   const loadAvailableAssets = async () => {
     try {
@@ -36,29 +75,16 @@ const AssetSelectionModal = ({
 
       const params = {
         status: 'available',
-        ...filters
+        limit: 100
       };
 
-      // Filter by requisition criteria if available
-      if (requisition?.asset_category_id) {
-        params.category_id = requisition?.asset_category_id;
-      }
-      if (requisition?.product_type_id) {
-        params.product_type_id = requisition?.product_type_id;
-      }
-      if (requisition?.requested_product_id) {
-        params.product_id = requisition?.requested_product_id;
-      }
-
-      // Remove empty filters
-      Object.keys(params).forEach(key => {
-        if (params[key] === '' || params[key] === null || params[key] === undefined) {
-          delete params[key];
-        }
-      });
+      // Apply manual filters only (no automatic filtering by requisition)
+      if (filters.search) params.search = filters.search;
+      if (filters.category_id) params.category_id = filters.category_id;
+      if (filters.product_type_id) params.product_type_id = filters.product_type_id;
+      if (filters.product_id) params.product_id = filters.product_id;
 
       const response = await api.get('/assets', { params });
-      // API returns { success: true, data: { assets: [...], pagination: {...} } }
       const assetsData = response.data.data?.assets || response.data.assets || [];
       setAssets(Array.isArray(assetsData) ? assetsData : []);
     } catch (error) {
@@ -74,7 +100,13 @@ const AssetSelectionModal = ({
   };
 
   const handleClearFilters = () => {
-    setFilters({ search: '', status: 'available' });
+    setFilters({
+      search: '',
+      status: 'available',
+      category_id: undefined,
+      product_type_id: undefined,
+      product_id: undefined
+    });
   };
 
   const handleRowClick = (record) => {
@@ -170,53 +202,107 @@ const AssetSelectionModal = ({
       }}
       className="asset-selection-modal"
     >
-      {/* Requisition Info */}
-      <Alert
-        message="Requisition Requirements"
-        description={
-          <div>
-            <div><strong>Requester:</strong> {requisition?.requester_name || 'N/A'}</div>
-            <div><strong>Department:</strong> {requisition?.department_name || 'N/A'}</div>
-            {requisition?.category_name && <div><strong>Category:</strong> {requisition?.category_name}</div>}
-            {requisition?.product_type_name && <div><strong>Product Type:</strong> {requisition?.product_type_name}</div>}
-            {requisition?.product_name && <div><strong>Preferred Product:</strong> {requisition?.product_name}</div>}
-            <div><strong>Quantity:</strong> {requisition?.quantity || 1}</div>
-          </div>
-        }
-        type="info"
-        showIcon
-        style={{ marginBottom: 16 }}
-      />
+      {/* Collapsible Requisition Info */}
+      <Collapse
+        ghost
+        defaultActiveKey={[]}
+        style={{ marginBottom: 16, background: '#f0f7ff', borderRadius: 8 }}
+      >
+        <Panel
+          header={
+            <span>
+              <InfoCircleOutlined style={{ marginRight: 8 }} />
+              Requisition Requirements (Optional Reference)
+            </span>
+          }
+          key="1"
+        >
+          <Row gutter={16}>
+            <Col span={12}>
+              <div><strong>Requester:</strong> {requisition?.requester_name || 'N/A'}</div>
+              <div><strong>Department:</strong> {requisition?.department_name || 'N/A'}</div>
+              <div><strong>Quantity:</strong> {requisition?.quantity || 1}</div>
+            </Col>
+            <Col span={12}>
+              {requisition?.category_name && <div><strong>Requested Category:</strong> {requisition?.category_name}</div>}
+              {requisition?.product_type_name && <div><strong>Requested Type:</strong> {requisition?.product_type_name}</div>}
+              {requisition?.product_name && <div><strong>Preferred Product:</strong> {requisition?.product_name}</div>}
+            </Col>
+          </Row>
+        </Panel>
+      </Collapse>
 
       {/* Filters */}
-      <Space size="middle" wrap style={{ width: '100%', marginBottom: 16 }}>
-        <Input
-          placeholder="Search by asset tag or serial number"
-          prefix={<SearchOutlined />}
-          value={filters.search}
-          onChange={(e) => handleFilterChange('search', e.target.value)}
-          style={{ width: 300 }}
-          allowClear
-        />
-
-        <Select
-          placeholder="Filter by Status"
-          value={filters.status}
-          onChange={(value) => handleFilterChange('status', value)}
-          style={{ width: 150 }}
-        >
-          <Option value="available">Available</Option>
-          <Option value="in_use">In Use</Option>
-          <Option value="maintenance">Maintenance</Option>
-        </Select>
-
-        <Button
-          icon={<FilterOutlined />}
-          onClick={handleClearFilters}
-        >
-          Clear Filters
-        </Button>
-      </Space>
+      <div style={{ marginBottom: 16 }}>
+        <Row gutter={[12, 12]}>
+          <Col xs={24} sm={12} md={6}>
+            <Input
+              placeholder="Search asset tag / serial"
+              prefix={<SearchOutlined />}
+              value={filters.search}
+              onChange={(e) => handleFilterChange('search', e.target.value)}
+              allowClear
+            />
+          </Col>
+          <Col xs={24} sm={12} md={5}>
+            <Select
+              placeholder="Category"
+              value={filters.category_id}
+              onChange={(value) => handleFilterChange('category_id', value)}
+              style={{ width: '100%' }}
+              allowClear
+              showSearch
+              optionFilterProp="children"
+              loading={loadingOptions}
+            >
+              {categories.map(cat => (
+                <Option key={cat.id} value={cat.id}>{cat.name}</Option>
+              ))}
+            </Select>
+          </Col>
+          <Col xs={24} sm={12} md={5}>
+            <Select
+              placeholder="Product Type"
+              value={filters.product_type_id}
+              onChange={(value) => handleFilterChange('product_type_id', value)}
+              style={{ width: '100%' }}
+              allowClear
+              showSearch
+              optionFilterProp="children"
+              loading={loadingOptions}
+            >
+              {productTypes.map(pt => (
+                <Option key={pt.id} value={pt.id}>{pt.name}</Option>
+              ))}
+            </Select>
+          </Col>
+          <Col xs={24} sm={12} md={5}>
+            <Select
+              placeholder="Product"
+              value={filters.product_id}
+              onChange={(value) => handleFilterChange('product_id', value)}
+              style={{ width: '100%' }}
+              allowClear
+              showSearch
+              optionFilterProp="children"
+              loading={loadingOptions}
+            >
+              {products.map(p => (
+                <Option key={p.id} value={p.id}>{p.name}</Option>
+              ))}
+            </Select>
+          </Col>
+          <Col xs={24} sm={24} md={3}>
+            <Button
+              icon={<ReloadOutlined />}
+              onClick={handleClearFilters}
+              block
+            >
+              Reset
+            </Button>
+          </Col>
+        </Row>
+      </div>
 
       {/* Assets Table */}
       <Table

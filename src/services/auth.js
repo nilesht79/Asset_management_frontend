@@ -72,14 +72,19 @@ const authService = {
     return api.put('/auth/change-password', passwordData)
   },
 
-  // Forgot password (if implemented)
+  // Forgot password - request password reset email
   forgotPassword: (email) => {
     return api.post('/auth/forgot-password', { email })
   },
 
-  // Reset password (if implemented)
-  resetPassword: (data) => {
-    return api.post('/auth/reset-password', data)
+  // Reset password with token
+  resetPassword: (token, new_password) => {
+    return api.post('/auth/reset-password', { token, new_password })
+  },
+
+  // Verify reset token is valid
+  verifyResetToken: (token) => {
+    return api.get(`/auth/verify-reset-token?token=${encodeURIComponent(token)}`)
   },
 
   // Verify email (if implemented)

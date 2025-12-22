@@ -296,7 +296,7 @@ const Landing = () => {
                     PolePlus
                   </div>
                   <div className="text-sm text-gray-600 font-medium tracking-wide">
-                    Enterprise Asset Management Platform
+                    Enterprise level IT Services Management (ITSM) platform
                   </div>
                 </div>
               </div>
@@ -379,7 +379,7 @@ const Landing = () => {
                 isVisible('hero') ? 'transform translate-y-0 opacity-100' : 'transform translate-y-8 opacity-0'
               }`}
             >
-              Enterprise Asset Management
+              Enterprise level IT Services Management
               <br />
               <span style={{ color: '#E30613' }}>Platform</span>
             </Title>
@@ -387,9 +387,7 @@ const Landing = () => {
             <Paragraph className={`text-2xl text-gray-600 max-w-5xl mx-auto mb-16 leading-relaxed transition-all duration-1000 delay-500 ${
               isVisible('hero') ? 'transform translate-y-0 opacity-100' : 'transform translate-y-8 opacity-0'
             }`}>
-              Comprehensive asset lifecycle management with SLA-driven ticketing, automated workflows,
-              and advanced analytics. Built for enterprise-scale operations with role-based access control
-              and multi-department coordination.
+              A unified platform for IT helpdesk management, asset tracking, and  SLA monitoring—designed to improve service efficiency
             </Paragraph>
 
             <div className={`flex flex-col sm:flex-row gap-6 justify-center items-center mb-20 transition-all duration-1000 delay-700 ${
@@ -435,7 +433,7 @@ const Landing = () => {
             <Row gutter={[48, 48]} className="text-center">
               <Col xs={12} md={6}>
                 <Statistic
-                  title={<span className="text-gray-600 font-semibold text-base">Total Assets Under Management</span>}
+                  title={<span className="text-gray-600 font-semibold text-base">Total AUM</span>}
                   value={stats.totalAssets}
                   valueStyle={{ color: '#E30613', fontSize: '3rem', fontWeight: 'bold' }}
                   prefix={<DatabaseOutlined />}
@@ -885,12 +883,12 @@ const Landing = () => {
                     PolePlus
                   </div>
                   <div className="text-gray-400">
-                    Enterprise Asset Management Platform
+                    Enterprise level IT Services Management (ITSM) platform
                   </div>
                 </div>
               </div>
               <Paragraph className="text-gray-600 leading-relaxed max-w-md">
-                Comprehensive asset lifecycle management with SLA-driven ticketing,
+                Streamline IT service delivery with SLA-driven ticketing,
                 automated workflows, and enterprise-grade reporting capabilities.
               </Paragraph>
             </div>
@@ -927,7 +925,7 @@ const Landing = () => {
 
           <div className="border-t border-gray-300 pt-8 flex flex-col md:flex-row justify-center items-center">
             <div className="text-gray-500 mb-4 md:mb-0">
-              © 2024 PolePlus Enterprise Asset Management. All rights reserved.
+              © 2024 PolePlus Unified ITSM Platform. All rights reserved.
             </div>
           </div>
         </div>

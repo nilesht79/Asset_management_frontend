@@ -52,11 +52,13 @@ const Login = () => {
           </Link>
         {/* Logo and Title */}
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <span className="text-white font-bold text-xl">AMS</span>
-          </div>
+          <img
+            src="/logo.png"
+            alt="PolePlus"
+            className="h-16 w-auto mx-auto mb-4"
+          />
           <Title level={2} className="mb-2">
-            Asset Management System
+            Unified ITSM Platform
           </Title>
           <Text className="text-gray-600">
             Sign in to access your account
@@ -135,16 +137,10 @@ const Login = () => {
             </Form.Item>
           </Form>
 
-          {/* Demo Credentials */}
-          <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-            <Text className="text-sm text-gray-600 block mb-2">
-              <strong>Demo Credentials:</strong>
-            </Text>
-            <div className="space-y-1 text-xs text-gray-500">
-              <div>Admin: admin@company.com / Admin123!</div>
-              <div>Manager: manager@company.com / Manager123!</div>
-              <div>Employee: employee@company.com / Employee123!</div>
-            </div>
+          <div className="mt-4 text-center">
+            <Link to="/forgot-password" className="text-red-600 hover:text-red-700 text-sm">
+              Forgot Password?
+            </Link>
           </div>
         </Card>
 

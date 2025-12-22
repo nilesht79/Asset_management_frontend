@@ -35,12 +35,8 @@ const EngineerAssignmentModal = ({
   const loadEngineers = async () => {
     try {
       setLoadingEngineers(true);
-      // Filter engineers by the requisition's department
-      const params = {};
-      if (requisition?.department_id) {
-        params.department_id = requisition.department_id;
-      }
-      const response = await api.get('/users/engineers/available', { params });
+      // Load all available engineers (no department filter)
+      const response = await api.get('/users/engineers/available');
       setEngineers(response.data.data?.engineers || []);
     } catch (error) {
       console.error('Failed to load engineers:', error);

@@ -117,9 +117,14 @@ const Header = () => {
 
         {/* Logo and title */}
         <div className="flex items-center space-x-3">
+          <img
+            src="/logo.png"
+            alt="PolePlus"
+            className="h-8 w-auto"
+          />
           <div>
             <div className="text-lg font-bold text-gray-800">
-              PolePlus Asset Management
+              PolePlus Unified ITSM Platform
             </div>
             <div className="text-xs font-medium" style={{ color: theme.accent }}>
               {getRoleDisplayName(user?.role)} Portal

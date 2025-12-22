@@ -298,6 +298,7 @@ const Users = () => {
       location_id: user.location?.id,
       employee_id: user.employeeId,
       designation: user.designation,
+      room_no: user.roomNo,
       status: user.status,
       is_vip: user.isVip || false,
       allow_multi_assets: user.allowMultiAssets || false
@@ -1171,7 +1172,12 @@ const Users = () => {
               </Form.Item>
             </Col>
             <Col span={12}>
-              <div style={{ height: '32px' }}></div>
+              <Form.Item
+                label="Room No"
+                name="room_no"
+              >
+                <Input placeholder="e.g., 101, A-12, Conference Room 3" />
+              </Form.Item>
             </Col>
           </Row>
 
@@ -1307,6 +1313,7 @@ const Users = () => {
               <div><strong>Designation:</strong> {selectedUserDetails.designation || 'N/A'}</div>
               <div><strong>Department:</strong> {selectedUserDetails.department?.name || 'No Department'}</div>
               <div><strong>Location:</strong> {selectedUserDetails.location?.name || 'No Location'}</div>
+              <div><strong>Room No:</strong> {selectedUserDetails.roomNo || 'N/A'}</div>
               <div>
                 <strong>Status:</strong>
                 <Tag color={selectedUserDetails.isActive ? 'green' : 'red'} className="ml-2">
