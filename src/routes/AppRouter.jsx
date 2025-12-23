@@ -76,6 +76,12 @@ import AssetJobReports from '../pages/AssetJobReports'
 // Gate Pass Management
 import GatePasses from '../pages/GatePasses'
 
+// Audit Logs
+import AuditLogs from '../pages/AuditLogs'
+
+// Backup Management
+import BackupManagement from '../pages/BackupManagement'
+
 // Company Settings
 import CompanySettings from '../pages/CompanySettings'
 
@@ -241,6 +247,16 @@ const AppRouter = () => {
         {/* Gate Pass Management - Coordinator, Admin, Superadmin, IT Head */}
         {['it_head', 'coordinator', 'admin', 'superadmin'].includes(user?.role) && (
           <Route path="gate-passes" element={<GatePasses />} />
+        )}
+
+        {/* Audit Logs - Admin, Superadmin, IT Head */}
+        {['it_head', 'admin', 'superadmin'].includes(user?.role) && (
+          <Route path="audit-logs" element={<AuditLogs />} />
+        )}
+
+        {/* Backup Management - Superadmin only */}
+        {user?.role === 'superadmin' && (
+          <Route path="backup-management" element={<BackupManagement />} />
         )}
 
         {/* Reconciliation Routes - Coordinator, Admin, Superadmin, Engineer */}

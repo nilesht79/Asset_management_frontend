@@ -29,7 +29,9 @@ import {
   ClockCircleOutlined,
   MailOutlined,
   ExportOutlined,
-  ReloadOutlined
+  ReloadOutlined,
+  HistoryOutlined,
+  CloudServerOutlined
 } from '@ant-design/icons'
 import { selectSidebarCollapsed } from '../../../store/slices/uiSlice'
 import { getThemeByRole } from '../../../utils/roleThemes'
@@ -238,6 +240,18 @@ const Sidebar = () => {
             },
           ],
         },
+        // Audit Logs
+        {
+          key: '/audit-logs',
+          icon: <HistoryOutlined />,
+          label: 'Audit Logs',
+        },
+        // Backup Management (Superadmin only)
+        ...(user?.role === 'superadmin' ? [{
+          key: '/backup-management',
+          icon: <CloudServerOutlined />,
+          label: 'Backup Management',
+        }] : []),
         // Settings Module
         {
           key: 'settings',
@@ -564,6 +578,12 @@ const Sidebar = () => {
           key: '/gate-passes',
           icon: <ExportOutlined />,
           label: 'Gate Passes',
+        },
+        // Audit Logs
+        {
+          key: '/audit-logs',
+          icon: <HistoryOutlined />,
+          label: 'Audit Logs',
         }
       )
     }

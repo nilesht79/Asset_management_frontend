@@ -120,7 +120,7 @@ const LocationMainForm = ({ open, mode, location, onClose, onSuccess }) => {
       const payload = {
         name: values.name,
         address: values.address,
-        client_id: values.client_id,
+        client_id: values.client_id || null,
         location_type_id: values.location_type_id,
         pincode: values.pincode,
         state_name: values.state_name,
@@ -128,8 +128,8 @@ const LocationMainForm = ({ open, mode, location, onClose, onSuccess }) => {
         area_name: values.area_name,
         building: values.building || '',
         floor: values.floor || '',
-        contact_person: values.contact_person,
-        contact_email: values.contact_email,
+        contact_person: values.contact_person || '',
+        contact_email: values.contact_email || '',
         contact_phone: values.contact_phone || ''
       }
       
@@ -196,12 +196,12 @@ const LocationMainForm = ({ open, mode, location, onClose, onSuccess }) => {
               <Form.Item
                 label="Select Client"
                 name="client_id"
-                rules={[{ required: true, message: 'Please select client' }]}
               >
-                <Select 
-                  placeholder="Select client" 
+                <Select
+                  placeholder="Select client (optional)"
                   loading={!Array.isArray(clients) || clients.length === 0}
                   showSearch
+                  allowClear
                   filterOption={(input, option) =>
                     option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
                   }
@@ -244,11 +244,10 @@ const LocationMainForm = ({ open, mode, location, onClose, onSuccess }) => {
                 label="Contact Person"
                 name="contact_person"
                 rules={[
-                  { required: true, message: 'Please enter contact person name' },
                   { min: 2, max: 100, message: 'Name must be between 2-100 characters' }
                 ]}
               >
-                <Input placeholder="Enter contact person name" />
+                <Input placeholder="Enter contact person name (optional)" />
               </Form.Item>
             </Col>
           </Row>
@@ -259,11 +258,10 @@ const LocationMainForm = ({ open, mode, location, onClose, onSuccess }) => {
                 label="Contact Email"
                 name="contact_email"
                 rules={[
-                  { required: true, message: 'Please enter contact email' },
                   { type: 'email', message: 'Please enter a valid email' }
                 ]}
               >
-                <Input placeholder="Enter contact email" />
+                <Input placeholder="Enter contact email (optional)" />
               </Form.Item>
             </Col>
             <Col span={12}>

@@ -49,8 +49,16 @@ const EmployeeTicketDashboard = () => {
 
   const [loading, setLoading] = useState(true);
   const [tickets, setTickets] = useState([]);
-  const [filteredTickets, setFilteredTickets] = useState([]);
-  const [searchText, setSearchText] = useState('');
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 10,
+    total: 0
+  });
+  const [filters, setFilters] = useState({
+    search: '',
+    status: '',
+    priority: ''
+  });
   const [stats, setStats] = useState({
     total: 0,
     open: 0,
@@ -68,7 +76,8 @@ const EmployeeTicketDashboard = () => {
 
   useEffect(() => {
     loadTickets();
-  }, []);
+    loadStats();
+  }, [pagination.current, pagination.pageSize, filters]);
 
   // Auto-open create modal when navigating to /create-ticket
   useEffect(() => {
@@ -81,40 +90,61 @@ const EmployeeTicketDashboard = () => {
     }
   }, [location]);
 
-  useEffect(() => {
-    if (searchText) {
-      const filtered = tickets.filter(ticket =>
-        ticket.ticket_number?.toLowerCase().includes(searchText.toLowerCase()) ||
-        ticket.title?.toLowerCase().includes(searchText.toLowerCase()) ||
-        ticket.category?.toLowerCase().includes(searchText.toLowerCase())
-      );
-      setFilteredTickets(filtered);
-    } else {
-      setFilteredTickets(tickets);
-    }
-  }, [searchText, tickets]);
-
   const loadTickets = async () => {
     try {
       setLoading(true);
-      const response = await ticketService.getMyCreatedTickets();
-      const ticketData = response.data?.data?.tickets || response.data?.tickets || [];
-      setTickets(ticketData);
-      setFilteredTickets(ticketData);
+      const params = {
+        page: pagination.current,
+        limit: pagination.pageSize,
+        ...filters
+      };
 
-      // Calculate stats
-      setStats({
-        total: ticketData.length,
-        open: ticketData.filter(t => t.status === 'open').length,
-        inProgress: ticketData.filter(t => ['assigned', 'in_progress'].includes(t.status)).length,
-        resolved: ticketData.filter(t => ['resolved', 'closed'].includes(t.status)).length
-      });
+      const response = await ticketService.getMyCreatedTickets(params);
+      const data = response.data?.data || response.data;
+      const ticketData = data.tickets || [];
+
+      setTickets(ticketData);
+      setPagination(prev => ({
+        ...prev,
+        total: data.pagination?.total || ticketData.length
+      }));
     } catch (error) {
       message.error('Failed to load tickets');
       console.error(error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadStats = async () => {
+    try {
+      // Fetch all tickets just for stats (without pagination) or use a dedicated stats endpoint
+      const response = await ticketService.getMyCreatedTickets({ page: 1, limit: 1000 });
+      const data = response.data?.data || response.data;
+      const allTickets = data.tickets || [];
+
+      setStats({
+        total: data.pagination?.total || allTickets.length,
+        open: allTickets.filter(t => t.status === 'open').length,
+        inProgress: allTickets.filter(t => ['assigned', 'in_progress'].includes(t.status)).length,
+        resolved: allTickets.filter(t => ['resolved', 'closed'].includes(t.status)).length
+      });
+    } catch (error) {
+      console.error('Failed to load stats:', error);
+    }
+  };
+
+  const handleTableChange = (paginationInfo) => {
+    setPagination(prev => ({
+      ...prev,
+      current: paginationInfo.current,
+      pageSize: paginationInfo.pageSize
+    }));
+  };
+
+  const handleSearch = (value) => {
+    setFilters(prev => ({ ...prev, search: value }));
+    setPagination(prev => ({ ...prev, current: 1 }));
   };
 
   const getStatusTag = (status) => {
@@ -150,11 +180,17 @@ const EmployeeTicketDashboard = () => {
     setCreateModalVisible(false);
     setPreSelectedAsset(null);
     loadTickets();
+    loadStats();
     message.success('Ticket created successfully');
     // Navigate to my-tickets if we came from create-ticket route
     if (location.pathname === '/create-ticket') {
       navigate('/my-tickets', { replace: true });
     }
+  };
+
+  const handleRefresh = () => {
+    loadTickets();
+    loadStats();
   };
 
   const handleCreateModalClose = () => {
@@ -327,13 +363,12 @@ const EmployeeTicketDashboard = () => {
             placeholder="Search tickets..."
             allowClear
             style={{ width: isMobile ? '100%' : 300 }}
-            onSearch={setSearchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            prefix={<SearchOutlined />}
+            onSearch={handleSearch}
+            enterButton={<SearchOutlined />}
           />
           <Button
             icon={<ReloadOutlined />}
-            onClick={loadTickets}
+            onClick={handleRefresh}
             loading={loading}
           >
             {!isMobile && 'Refresh'}
@@ -352,14 +387,17 @@ const EmployeeTicketDashboard = () => {
         {/* Table */}
         <Table
           columns={columns}
-          dataSource={filteredTickets}
+          dataSource={tickets}
           rowKey="ticket_id"
           loading={loading}
           pagination={{
-            defaultPageSize: 10,
+            current: pagination.current,
+            pageSize: pagination.pageSize,
+            total: pagination.total,
             showSizeChanger: true,
             showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} tickets`
           }}
+          onChange={handleTableChange}
           scroll={{ x: 'max-content' }}
           locale={{
             emptyText: (
@@ -397,7 +435,7 @@ const EmployeeTicketDashboard = () => {
           setDetailsDrawerVisible(false);
           setSelectedTicket(null);
         }}
-        onUpdate={loadTickets}
+        onUpdate={handleRefresh}
       />
 
       {/* Mobile Floating Action Button */}

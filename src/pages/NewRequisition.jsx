@@ -26,7 +26,7 @@ import {
   CheckCircleOutlined
 } from '@ant-design/icons';
 import { createRequisition } from '../store/slices/requisitionSlice';
-import { fetchCategories, fetchProductTypes, fetchProducts } from '../store/slices/masterSlice';
+import { fetchCategories, fetchProductTypes } from '../store/slices/masterSlice';
 import './NewRequisition.css';
 import moment from 'moment';
 
@@ -42,7 +42,6 @@ const NewRequisition = () => {
   const master = useSelector((state) => state.master || {});
   const categories = master.categories?.data || [];
   const productTypes = master.productTypes?.data || [];
-  const products = master.products?.data || [];
 
   const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -52,32 +51,7 @@ const NewRequisition = () => {
   useEffect(() => {
     dispatch(fetchCategories({ limit: 1000 }));
     dispatch(fetchProductTypes({ limit: 1000 }));
-    dispatch(fetchProducts({ limit: 1000 }));  // Fetch all products
   }, [dispatch]);
-
-  // Filter products based on selected category and product type
-  const [filteredProducts, setFilteredProducts] = useState([]);
-  const [selectedCategoryId, setSelectedCategoryId] = useState(null);
-  const [selectedProductTypeId, setSelectedProductTypeId] = useState(null);
-
-  useEffect(() => {
-    if (selectedCategoryId || selectedProductTypeId) {
-      let filtered = products || [];
-
-      if (selectedCategoryId) {
-        filtered = filtered.filter(p => p.category_id === selectedCategoryId);
-      }
-
-      if (selectedProductTypeId) {
-        // Product uses 'type_id' not 'product_type_id'
-        filtered = filtered.filter(p => p.type_id === selectedProductTypeId);
-      }
-
-      setFilteredProducts(filtered);
-    } else {
-      setFilteredProducts(products || []);
-    }
-  }, [selectedCategoryId, selectedProductTypeId, products]);
 
   const steps = [
     {
@@ -153,14 +127,11 @@ const NewRequisition = () => {
               placeholder="Select category"
               allowClear
               onChange={(value) => {
-                setSelectedCategoryId(value);
                 setFormData({ ...formData, asset_category_id: value });
                 if (!value) {
-                  // Reset product type and product when category is cleared
-                  setSelectedProductTypeId(null);
-                  form.setFieldsValue({ product_type_id: undefined, requested_product_id: undefined });
+                  form.setFieldsValue({ product_type_id: undefined });
                 } else {
-                  form.setFieldsValue({ product_type_id: undefined, requested_product_id: undefined });
+                  form.setFieldsValue({ product_type_id: undefined });
                 }
               }}
               showSearch
@@ -185,9 +156,7 @@ const NewRequisition = () => {
               placeholder="Select product type"
               allowClear
               onChange={(value) => {
-                setSelectedProductTypeId(value);
                 setFormData({ ...formData, product_type_id: value });
-                form.setFieldsValue({ requested_product_id: undefined });
               }}
               showSearch
               optionFilterProp="children"
@@ -203,32 +172,6 @@ const NewRequisition = () => {
       </Row>
 
       <Row gutter={16}>
-        <Col xs={24} md={12}>
-          <Form.Item
-            name="requested_product_id"
-            label="Specific Product (Optional)"
-            help={filteredProducts.length === 0 && (selectedCategoryId || selectedProductTypeId)
-              ? "No products found for selected filters"
-              : "Select a specific product model if you have a preference"}
-          >
-            <Select
-              placeholder={filteredProducts.length === 0 && (selectedCategoryId || selectedProductTypeId)
-                ? "No products available"
-                : "Select product"}
-              showSearch
-              optionFilterProp="children"
-              allowClear
-              notFoundContent={filteredProducts.length === 0 ? "No products found for selected category/type" : "No products"}
-            >
-              {filteredProducts.map((prod) => (
-                <Option key={prod.id} value={prod.id}>
-                  {prod.name} {prod.model ? `- ${prod.model}` : ''}
-                </Option>
-              ))}
-            </Select>
-          </Form.Item>
-        </Col>
-
         <Col xs={24} md={12}>
           <Form.Item
             name="quantity"
@@ -300,10 +243,8 @@ const NewRequisition = () => {
 
       <Form.Item
         name="purpose"
-        label="Purpose"
+        label="Purpose (Optional)"
         rules={[
-          { required: true, message: 'Please provide the purpose' },
-          { min: 20, message: 'Purpose must be at least 20 characters' },
           { max: 500, message: 'Purpose must not exceed 500 characters' }
         ]}
       >
@@ -317,10 +258,8 @@ const NewRequisition = () => {
 
       <Form.Item
         name="justification"
-        label="Business Justification"
+        label="Business Justification (Optional)"
         rules={[
-          { required: true, message: 'Please provide justification' },
-          { min: 50, message: 'Justification must be at least 50 characters' },
           { max: 1000, message: 'Justification must not exceed 1000 characters' }
         ]}
         help="Explain how this asset will benefit your work and the organization"
@@ -349,7 +288,6 @@ const NewRequisition = () => {
 
     const selectedCategory = categories.find(c => c.id === allData.asset_category_id);
     const selectedProductType = productTypes.find(pt => pt.id === allData.product_type_id);
-    const selectedProduct = products.find(p => p.id === allData.requested_product_id);
 
     const urgencyColors = {
       low: 'green',
@@ -373,16 +311,6 @@ const NewRequisition = () => {
             <Col span={12}>
               <Text type="secondary">Product Type:</Text>
               <div><Text strong>{selectedProductType?.name || 'N/A'}</Text></div>
-            </Col>
-            <Col span={12}>
-              <Text type="secondary">Specific Product:</Text>
-              <div>
-                <Text strong>
-                  {selectedProduct
-                    ? `${selectedProduct.name} ${selectedProduct.model || ''}`
-                    : 'Any suitable product'}
-                </Text>
-              </div>
             </Col>
             <Col span={12}>
               <Text type="secondary">Quantity:</Text>
@@ -424,18 +352,24 @@ const NewRequisition = () => {
           </Row>
         </Card>
 
-        <Card title="Purpose & Justification" className="review-section" style={{ marginTop: 16 }}>
-          <Row gutter={[16, 16]}>
-            <Col span={24}>
-              <Text type="secondary">Purpose:</Text>
-              <div><Text>{allData.purpose}</Text></div>
-            </Col>
-            <Col span={24}>
-              <Text type="secondary">Justification:</Text>
-              <div><Text>{allData.justification}</Text></div>
-            </Col>
-          </Row>
-        </Card>
+        {(allData.purpose || allData.justification) && (
+          <Card title="Purpose & Justification" className="review-section" style={{ marginTop: 16 }}>
+            <Row gutter={[16, 16]}>
+              {allData.purpose && (
+                <Col span={24}>
+                  <Text type="secondary">Purpose:</Text>
+                  <div><Text>{allData.purpose}</Text></div>
+                </Col>
+              )}
+              {allData.justification && (
+                <Col span={24}>
+                  <Text type="secondary">Justification:</Text>
+                  <div><Text>{allData.justification}</Text></div>
+                </Col>
+              )}
+            </Row>
+          </Card>
+        )}
 
         <Alert
           message="Ready to Submit"

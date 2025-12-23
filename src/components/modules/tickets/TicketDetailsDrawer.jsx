@@ -21,11 +21,14 @@ import {
   ClockCircleOutlined,
   SendOutlined,
   CommentOutlined,
-  LinkOutlined
+  LinkOutlined,
+  EditOutlined
 } from '@ant-design/icons';
 import ticketService from '../../../services/ticket';
 import { useSelector } from 'react-redux';
 import LinkedAssets from './LinkedAssets';
+import LinkedSoftware from './LinkedSoftware';
+import EditTicketModal from './EditTicketModal';
 import AssetRepairHistory from '../assets/AssetRepairHistory';
 import { SlaStatusBadge } from '../sla';
 
@@ -39,6 +42,7 @@ const TicketDetailsDrawer = ({ visible, ticket, onClose, onUpdate }) => {
   const [closeRequestHistory, setCloseRequestHistory] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [repairHistoryModal, setRepairHistoryModal] = useState({ visible: false, assetId: null, assetTag: null });
+  const [editModalVisible, setEditModalVisible] = useState(false);
 
   const { user: currentUser } = useSelector((state) => state.auth);
 
@@ -48,6 +52,19 @@ const TicketDetailsDrawer = ({ visible, ticket, onClose, onUpdate }) => {
     currentUser.role === 'coordinator' ||
     (currentUser.role === 'engineer' && ticket?.assigned_to_engineer_id === currentUser.user_id)
   ) && ticket?.status !== 'closed';
+
+  // Check if user can edit ticket (coordinators and admins only, not closed tickets)
+  const canEditTicket = currentUser && (
+    ['coordinator', 'admin', 'superadmin', 'it_head', 'department_coordinator'].includes(currentUser.role)
+  ) && ticket?.status !== 'closed' && ticket?.status !== 'cancelled';
+
+  const handleEditSuccess = () => {
+    setEditModalVisible(false);
+    if (onUpdate) {
+      onUpdate();
+    }
+    message.success('Ticket updated successfully');
+  };
 
   useEffect(() => {
     if (visible && ticket) {
@@ -124,6 +141,17 @@ const TicketDetailsDrawer = ({ visible, ticket, onClose, onUpdate }) => {
       open={visible}
       width={700}
       destroyOnClose
+      extra={
+        canEditTicket && (
+          <Button
+            type="primary"
+            icon={<EditOutlined />}
+            onClick={() => setEditModalVisible(true)}
+          >
+            Edit Ticket
+          </Button>
+        )
+      }
     >
       <div className="space-y-4">
         {/* Ticket Header */}
@@ -310,16 +338,26 @@ const TicketDetailsDrawer = ({ visible, ticket, onClose, onUpdate }) => {
           </Descriptions>
         </Card>
 
-        {/* Linked Assets Section */}
-        <LinkedAssets
-          ticketId={ticket.ticket_id}
-          canEdit={canEditLinkedAssets}
-          showRepairHistory={true}
-          onViewRepairHistory={(assetId) => {
-            // Find the asset tag from the linked assets if available
-            handleViewRepairHistory(assetId, null);
-          }}
-        />
+        {/* Linked Assets Section - Show for Hardware category or when no category */}
+        {(!ticket.category || ticket.category === 'Hardware') && (
+          <LinkedAssets
+            ticketId={ticket.ticket_id}
+            canEdit={canEditLinkedAssets}
+            showRepairHistory={true}
+            onViewRepairHistory={(assetId) => {
+              // Find the asset tag from the linked assets if available
+              handleViewRepairHistory(assetId, null);
+            }}
+          />
+        )}
+
+        {/* Linked Software Section - Show for Software category */}
+        {ticket.category === 'Software' && (
+          <LinkedSoftware
+            ticketId={ticket.ticket_id}
+            canEdit={canEditLinkedAssets}
+          />
+        )}
 
         {/* Close Request History Section */}
         {closeRequestHistory.length > 0 && (
@@ -543,6 +581,15 @@ const TicketDetailsDrawer = ({ visible, ticket, onClose, onUpdate }) => {
           </div>
         )}
       </Modal>
+
+      {/* Edit Ticket Modal */}
+      <EditTicketModal
+        visible={editModalVisible}
+        ticket={ticket}
+        onClose={() => setEditModalVisible(false)}
+        onSuccess={handleEditSuccess}
+        currentUser={currentUser}
+      />
     </Drawer>
   );
 };

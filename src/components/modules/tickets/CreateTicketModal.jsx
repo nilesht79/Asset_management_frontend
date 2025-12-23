@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Modal, Form, Input, Select, Card, Row, Col, message, Button, Divider, Alert } from 'antd';
-import { UserAddOutlined, LaptopOutlined, ToolOutlined } from '@ant-design/icons';
+import { UserAddOutlined, LaptopOutlined, ToolOutlined, AppstoreOutlined } from '@ant-design/icons';
 import ticketService from '../../../services/ticket';
 import AssetSelector from './AssetSelector';
+import SoftwareSelector from './SoftwareSelector';
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -17,6 +18,8 @@ const CreateTicketModal = ({ visible, onClose, onSuccess, currentUser, preSelect
   const [isGuestMode, setIsGuestMode] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [selectedAssets, setSelectedAssets] = useState([]);
+  const [selectedSoftware, setSelectedSoftware] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState(null);
 
   // Watch service_type to show alert for repair/replace
   const serviceType = Form.useWatch('service_type', form);
@@ -55,6 +58,8 @@ const CreateTicketModal = ({ visible, onClose, onSuccess, currentUser, preSelect
         setIsGuestMode(false);
         setSearchText('');
         setSelectedAssets([]);
+        setSelectedSoftware([]);
+        setSelectedCategory(null);
       }
     }
   }, [visible, isEngineerRole, isEmployeeSelfService, currentUser, preSelectedAsset]);
@@ -90,6 +95,7 @@ const CreateTicketModal = ({ visible, onClose, onSuccess, currentUser, preSelect
     setSelectedEmployee(userId);
     setIsGuestMode(false);
     setSelectedAssets([]); // Reset asset selection when employee changes
+    setSelectedSoftware([]); // Reset software selection when employee changes
 
     if (employee) {
       setEmployeeInfo({
@@ -102,6 +108,13 @@ const CreateTicketModal = ({ visible, onClose, onSuccess, currentUser, preSelect
     }
   };
 
+  const handleCategoryChange = (category) => {
+    setSelectedCategory(category);
+    // Reset selections when category changes
+    setSelectedAssets([]);
+    setSelectedSoftware([]);
+  };
+
   const handleSearch = (value) => {
     setSearchText(value || '');
   };
@@ -111,6 +124,7 @@ const CreateTicketModal = ({ visible, onClose, onSuccess, currentUser, preSelect
     setSelectedEmployee(null);
     setEmployeeInfo(null);
     setSelectedAssets([]); // Clear assets for guest tickets
+    setSelectedSoftware([]); // Clear software for guest tickets
     form.setFieldsValue({ created_by_user_id: undefined });
     // Pre-fill guest name with search text if available
     if (searchText) {
@@ -152,10 +166,14 @@ const CreateTicketModal = ({ visible, onClose, onSuccess, currentUser, preSelect
         description: values.description,
         priority: values.priority,
         category: values.category,
-        ticket_type: values.ticket_type || 'incident',
-        service_type: values.service_type || 'general',
+        // For employees, enforce service_request and general (backend also enforces this)
+        ticket_type: isEmployeeSelfService ? 'service_request' : (values.ticket_type || 'incident'),
+        service_type: isEmployeeSelfService ? 'general' : (values.service_type || 'general'),
         assigned_to_engineer_id: values.assigned_to_engineer_id || null,
-        asset_ids: selectedAssets.length > 0 ? selectedAssets : undefined // Include asset_ids if any selected
+        // Include asset_ids for Hardware category
+        asset_ids: selectedCategory === 'Hardware' && selectedAssets.length > 0 ? selectedAssets : undefined,
+        // Include software_installation_ids for Software category
+        software_installation_ids: selectedCategory === 'Software' && selectedSoftware.length > 0 ? selectedSoftware : undefined
       };
 
       if (isGuestMode) {
@@ -181,6 +199,8 @@ const CreateTicketModal = ({ visible, onClose, onSuccess, currentUser, preSelect
       setIsGuestMode(false);
       setSearchText('');
       setSelectedAssets([]);
+      setSelectedSoftware([]);
+      setSelectedCategory(null);
       onSuccess();
     } catch (error) {
       console.error('Failed to create ticket:', error);
@@ -209,7 +229,7 @@ const CreateTicketModal = ({ visible, onClose, onSuccess, currentUser, preSelect
         onFinish={handleSubmit}
         initialValues={{
           priority: 'medium',
-          ticket_type: 'incident',
+          ticket_type: isEmployeeSelfService ? 'service_request' : 'incident',
           service_type: 'general'
         }}
       >
@@ -362,11 +382,29 @@ const CreateTicketModal = ({ visible, onClose, onSuccess, currentUser, preSelect
           />
         </Form.Item>
 
-        {/* Asset Selection - Only for employee tickets (not guests) */}
-        {selectedEmployee && !isGuestMode && (
+        {/* Issue Category - Moved before asset/software selection */}
+        <Form.Item
+          name="category"
+          label="Issue Category"
+          rules={[{ required: true, message: 'Please select an issue category' }]}
+        >
+          <Select
+            placeholder="Select category to show related items"
+            onChange={handleCategoryChange}
+          >
+            <Option value="Hardware">Hardware Issue</Option>
+            <Option value="Software">Software Issue</Option>
+            <Option value="Network">Network/Connectivity</Option>
+            <Option value="Access">Access/Permission</Option>
+            <Option value="Other">Other</Option>
+          </Select>
+        </Form.Item>
+
+        {/* Asset/Software Selection - Only for employee tickets (not guests) and based on category */}
+        {selectedEmployee && !isGuestMode && selectedCategory === 'Hardware' && (
           <>
             <Divider style={{ margin: '16px 0' }}>
-              <LaptopOutlined /> Related Assets {isEmployeeSelfService ? '' : '(Optional)'}
+              <LaptopOutlined /> Related Hardware Assets {isEmployeeSelfService ? '' : '(Optional)'}
             </Divider>
             {/* Show pre-selected asset info */}
             {preSelectedAsset && isEmployeeSelfService && (
@@ -391,13 +429,37 @@ const CreateTicketModal = ({ visible, onClose, onSuccess, currentUser, preSelect
             <div style={{ marginTop: 8, marginBottom: 16 }}>
               <span style={{ color: '#8c8c8c', fontSize: '12px' }}>
                 {isEmployeeSelfService
-                  ? 'Your asset is pre-selected. You can add more assets if needed.'
-                  : 'Select assets that are related to this issue. This helps engineers identify and track affected equipment.'}
+                  ? 'Select the hardware assets related to your issue.'
+                  : 'Select hardware assets that are related to this issue. This helps engineers identify and track affected equipment.'}
               </span>
             </div>
           </>
         )}
 
+        {/* Software Selection - Only for Software category */}
+        {selectedEmployee && !isGuestMode && selectedCategory === 'Software' && (
+          <>
+            <Divider style={{ margin: '16px 0' }}>
+              <AppstoreOutlined /> Related Software {isEmployeeSelfService ? '' : '(Optional)'}
+            </Divider>
+            <SoftwareSelector
+              userId={selectedEmployee}
+              selectedSoftware={selectedSoftware}
+              onSelectionChange={setSelectedSoftware}
+              disabled={loading}
+              isSelfService={isEmployeeSelfService}
+            />
+            <div style={{ marginTop: 8, marginBottom: 16 }}>
+              <span style={{ color: '#8c8c8c', fontSize: '12px' }}>
+                {isEmployeeSelfService
+                  ? 'Select the software installed on your assets that you are having issues with.'
+                  : 'Select software installations that are related to this issue. This helps engineers identify affected applications.'}
+              </span>
+            </div>
+          </>
+        )}
+
+        {/* Ticket Type and Service Type */}
         <Row gutter={16}>
           <Col span={12}>
             {/* Ticket Type */}
@@ -406,7 +468,10 @@ const CreateTicketModal = ({ visible, onClose, onSuccess, currentUser, preSelect
               label="Ticket Type"
               rules={[{ required: true, message: 'Please select ticket type' }]}
             >
-              <Select placeholder="Select ticket type">
+              <Select
+                placeholder="Select ticket type"
+                disabled={isEmployeeSelfService}
+              >
                 <Option value="incident">Incident</Option>
                 <Option value="service_request">Service Request</Option>
                 <Option value="change_request">Change Request</Option>
@@ -421,9 +486,12 @@ const CreateTicketModal = ({ visible, onClose, onSuccess, currentUser, preSelect
               name="service_type"
               label="Service Type"
               rules={[{ required: true, message: 'Please select service type' }]}
-              tooltip="Repair/Replace tickets will require a service report upon closure"
+              tooltip={isEmployeeSelfService ? undefined : "Repair/Replace tickets will require a service report upon closure"}
             >
-              <Select placeholder="Select service type">
+              <Select
+                placeholder="Select service type"
+                disabled={isEmployeeSelfService}
+              >
                 <Option value="general">General Support</Option>
                 <Option value="repair">Repair Service</Option>
                 <Option value="replace">Replacement Service</Option>
@@ -432,8 +500,8 @@ const CreateTicketModal = ({ visible, onClose, onSuccess, currentUser, preSelect
           </Col>
         </Row>
 
-        {/* Service Type Alert */}
-        {(serviceType === 'repair' || serviceType === 'replace') && (
+        {/* Service Type Alert - Only shown for coordinators/admins/engineers */}
+        {!isEmployeeSelfService && (serviceType === 'repair' || serviceType === 'replace') && (
           <Alert
             message={
               <span>
@@ -455,40 +523,20 @@ const CreateTicketModal = ({ visible, onClose, onSuccess, currentUser, preSelect
           />
         )}
 
-        <Row gutter={16}>
-          <Col span={12}>
-            {/* Priority */}
-            <Form.Item
-              name="priority"
-              label="Priority"
-              rules={[{ required: true, message: 'Please select priority' }]}
-            >
-              <Select placeholder="Select priority">
-                <Option value="low">Low</Option>
-                <Option value="medium">Medium</Option>
-                <Option value="high">High</Option>
-                <Option value="critical">Critical</Option>
-                <Option value="emergency">Emergency</Option>
-              </Select>
-            </Form.Item>
-          </Col>
-
-          <Col span={12}>
-            {/* Category */}
-            <Form.Item
-              name="category"
-              label="Issue Category"
-            >
-              <Select placeholder="Select category">
-                <Option value="Hardware">Hardware Issue</Option>
-                <Option value="Software">Software Issue</Option>
-                <Option value="Network">Network/Connectivity</Option>
-                <Option value="Access">Access/Permission</Option>
-                <Option value="Other">Other</Option>
-              </Select>
-            </Form.Item>
-          </Col>
-        </Row>
+        {/* Priority */}
+        <Form.Item
+          name="priority"
+          label="Priority"
+          rules={[{ required: true, message: 'Please select priority' }]}
+        >
+          <Select placeholder="Select priority">
+            <Option value="low">Low</Option>
+            <Option value="medium">Medium</Option>
+            <Option value="high">High</Option>
+            <Option value="critical">Critical</Option>
+            <Option value="emergency">Emergency</Option>
+          </Select>
+        </Form.Item>
 
         {/* Auto-Assign Engineer (Optional) - Only visible to coordinators/admins, hidden from employees */}
         {!isEngineerRole && !isEmployeeSelfService && (

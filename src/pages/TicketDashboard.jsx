@@ -29,7 +29,8 @@ import {
   AlertOutlined,
   IssuesCloseOutlined,
   DownloadOutlined,
-  CloseOutlined
+  CloseOutlined,
+  EditOutlined
 } from '@ant-design/icons';
 import { useSelector } from 'react-redux';
 import ticketService from '../services/ticket';
@@ -37,6 +38,7 @@ import CreateTicketModal from '../components/modules/tickets/CreateTicketModal';
 import AssignEngineerModal from '../components/modules/tickets/AssignEngineerModal';
 import CloseTicketModal from '../components/modules/tickets/CloseTicketModal';
 import TicketDetailsDrawer from '../components/modules/tickets/TicketDetailsDrawer';
+import EditTicketModal from '../components/modules/tickets/EditTicketModal';
 import TicketFilterDrawer from '../components/modules/tickets/TicketFilterDrawer';
 import ReviewCloseRequestModal from '../components/modules/tickets/ReviewCloseRequestModal';
 import PendingCloseRequestsDrawer from '../components/modules/tickets/PendingCloseRequestsDrawer';
@@ -87,6 +89,7 @@ const TicketDashboard = () => {
   const [reviewCloseRequestModalVisible, setReviewCloseRequestModalVisible] = useState(false);
   const [pendingCloseRequestsDrawerVisible, setPendingCloseRequestsDrawerVisible] = useState(false);
   const [reopenModalVisible, setReopenModalVisible] = useState(false);
+  const [editModalVisible, setEditModalVisible] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [selectedCloseRequest, setSelectedCloseRequest] = useState(null);
   const [linkedAssets, setLinkedAssets] = useState([]);
@@ -361,6 +364,24 @@ const TicketDashboard = () => {
     }
   };
 
+  // Check if user can edit tickets (coordinators and admins only)
+  const canEditTickets = currentUser && (
+    ['coordinator', 'admin', 'superadmin', 'it_head', 'department_coordinator'].includes(currentUser.role)
+  );
+
+  const handleEditTicket = (ticket) => {
+    setSelectedTicket(ticket);
+    setEditModalVisible(true);
+  };
+
+  const handleEditSuccess = () => {
+    setEditModalVisible(false);
+    setSelectedTicket(null);
+    fetchTickets();
+    fetchStats();
+    message.success('Ticket updated successfully');
+  };
+
   const getActionMenu = (ticket) => {
     const items = [
       {
@@ -368,15 +389,26 @@ const TicketDashboard = () => {
         label: 'View Details',
         icon: <EyeOutlined />,
         onClick: () => handleViewTicket(ticket)
-      },
-      {
-        key: 'assign',
-        label: 'Assign Engineer',
-        icon: <UserAddOutlined />,
-        onClick: () => handleAssignEngineer(ticket),
-        disabled: ticket.status === 'closed' || ticket.status === 'pending_closure'
       }
     ];
+
+    // Add Edit action for coordinators (only for non-closed/cancelled tickets)
+    if (canEditTickets && ticket.status !== 'closed' && ticket.status !== 'cancelled') {
+      items.push({
+        key: 'edit',
+        label: 'Edit Ticket',
+        icon: <EditOutlined />,
+        onClick: () => handleEditTicket(ticket)
+      });
+    }
+
+    items.push({
+      key: 'assign',
+      label: 'Assign Engineer',
+      icon: <UserAddOutlined />,
+      onClick: () => handleAssignEngineer(ticket),
+      disabled: ticket.status === 'closed' || ticket.status === 'pending_closure'
+    });
 
     // Only show "Close Ticket" if status is NOT pending_closure or closed
     if (ticket.status !== 'pending_closure' && ticket.status !== 'closed') {
@@ -738,6 +770,17 @@ const TicketDashboard = () => {
           setSelectedTicket(null);
         }}
         onSuccess={handleReopenSuccess}
+      />
+
+      <EditTicketModal
+        visible={editModalVisible}
+        ticket={selectedTicket}
+        onClose={() => {
+          setEditModalVisible(false);
+          setSelectedTicket(null);
+        }}
+        onSuccess={handleEditSuccess}
+        currentUser={currentUser}
       />
 
       <TicketDetailsDrawer

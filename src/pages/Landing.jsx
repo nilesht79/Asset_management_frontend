@@ -387,7 +387,7 @@ const Landing = () => {
             <Paragraph className={`text-2xl text-gray-600 max-w-5xl mx-auto mb-16 leading-relaxed transition-all duration-1000 delay-500 ${
               isVisible('hero') ? 'transform translate-y-0 opacity-100' : 'transform translate-y-8 opacity-0'
             }`}>
-              A unified platform for IT helpdesk management, asset tracking, and SLA monitoring—designed to improve service efficiency
+              A unified platform for IT Helpdesk Management, asset tracking, and SLA monitoring—designed to improve service efficiency
               <br />
               <span className="text-red-600">Based on ITIL Principles</span>
             </Paragraph>

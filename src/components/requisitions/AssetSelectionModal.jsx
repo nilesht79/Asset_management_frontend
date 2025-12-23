@@ -36,12 +36,20 @@ const AssetSelectionModal = ({
   const [products, setProducts] = useState([]);
   const [loadingOptions, setLoadingOptions] = useState(false);
 
+  // Initialize filters from requisition when modal opens
   useEffect(() => {
     if (visible) {
-      loadAvailableAssets();
+      // Auto-populate filters from requisition requirements
+      setFilters({
+        search: '',
+        status: 'available',
+        category_id: requisition?.asset_category_id || undefined,
+        product_type_id: requisition?.product_type_id || undefined,
+        product_id: requisition?.requested_product_id || undefined
+      });
       loadFilterOptions();
     }
-  }, [visible]);
+  }, [visible, requisition]);
 
   useEffect(() => {
     if (visible) {
@@ -78,7 +86,7 @@ const AssetSelectionModal = ({
         limit: 100
       };
 
-      // Apply manual filters only (no automatic filtering by requisition)
+      // Apply filters (auto-populated from requisition requirements)
       if (filters.search) params.search = filters.search;
       if (filters.category_id) params.category_id = filters.category_id;
       if (filters.product_type_id) params.product_type_id = filters.product_type_id;
@@ -100,11 +108,10 @@ const AssetSelectionModal = ({
   };
 
   const handleClearFilters = () => {
+    // Only reset search and product (category and product type are locked from requisition)
     setFilters({
+      ...filters,
       search: '',
-      status: 'available',
-      category_id: undefined,
-      product_type_id: undefined,
       product_id: undefined
     });
   };
@@ -202,17 +209,17 @@ const AssetSelectionModal = ({
       }}
       className="asset-selection-modal"
     >
-      {/* Collapsible Requisition Info */}
+      {/* Requisition Requirements - Always visible */}
       <Collapse
         ghost
-        defaultActiveKey={[]}
+        defaultActiveKey={['1']}
         style={{ marginBottom: 16, background: '#f0f7ff', borderRadius: 8 }}
       >
         <Panel
           header={
             <span>
               <InfoCircleOutlined style={{ marginRight: 8 }} />
-              Requisition Requirements (Optional Reference)
+              Requisition Requirements
             </span>
           }
           key="1"
@@ -232,6 +239,14 @@ const AssetSelectionModal = ({
         </Panel>
       </Collapse>
 
+      {/* Info about filtering */}
+      <Alert
+        message="Assets are filtered based on the requisition's category and product type requirements."
+        type="info"
+        showIcon
+        style={{ marginBottom: 16 }}
+      />
+
       {/* Filters */}
       <div style={{ marginBottom: 16 }}>
         <Row gutter={[12, 12]}>
@@ -250,7 +265,7 @@ const AssetSelectionModal = ({
               value={filters.category_id}
               onChange={(value) => handleFilterChange('category_id', value)}
               style={{ width: '100%' }}
-              allowClear
+              disabled={!!requisition?.asset_category_id}
               showSearch
               optionFilterProp="children"
               loading={loadingOptions}
@@ -266,7 +281,7 @@ const AssetSelectionModal = ({
               value={filters.product_type_id}
               onChange={(value) => handleFilterChange('product_type_id', value)}
               style={{ width: '100%' }}
-              allowClear
+              disabled={!!requisition?.product_type_id}
               showSearch
               optionFilterProp="children"
               loading={loadingOptions}

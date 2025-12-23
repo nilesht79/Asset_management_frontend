@@ -67,6 +67,7 @@ const EngineerTicketDashboard = () => {
 
   useEffect(() => {
     fetchTickets();
+    fetchStats();
   }, [pagination.current, pagination.pageSize, filters]);
 
   const fetchTickets = async () => {
@@ -86,9 +87,6 @@ const EngineerTicketDashboard = () => {
         ...prev,
         total: data.pagination?.total || 0
       }));
-
-      // Calculate stats from tickets
-      calculateStats(data.tickets || []);
     } catch (error) {
       console.error('Failed to fetch tickets:', error);
       message.error('Failed to load tickets');
@@ -97,14 +95,27 @@ const EngineerTicketDashboard = () => {
     }
   };
 
-  const calculateStats = (ticketList) => {
-    const stats = {
-      total: ticketList.length,
-      in_progress: ticketList.filter(t => t.status === 'in_progress').length,
-      pending_closure: ticketList.filter(t => t.status === 'pending_closure').length,
-      closed: ticketList.filter(t => t.status === 'closed').length
-    };
-    setStats(stats);
+  const fetchStats = async () => {
+    try {
+      // Fetch all tickets for accurate stats (without current filters)
+      const response = await ticketService.getMyTickets({ page: 1, limit: 1000 });
+      const data = response.data.data || response.data;
+      const allTickets = data.tickets || [];
+
+      setStats({
+        total: data.pagination?.total || allTickets.length,
+        in_progress: allTickets.filter(t => t.status === 'in_progress').length,
+        pending_closure: allTickets.filter(t => t.status === 'pending_closure').length,
+        closed: allTickets.filter(t => t.status === 'closed').length
+      });
+    } catch (error) {
+      console.error('Failed to fetch stats:', error);
+    }
+  };
+
+  const handleRefresh = () => {
+    fetchTickets();
+    fetchStats();
   };
 
   const handleTableChange = (paginationInfo) => {
@@ -139,7 +150,7 @@ const EngineerTicketDashboard = () => {
   const handleRequestCloseSuccess = () => {
     setRequestCloseModalVisible(false);
     setSelectedTicket(null);
-    fetchTickets();
+    handleRefresh();
     message.success('Close request submitted successfully! Waiting for coordinator approval.');
   };
 
@@ -363,7 +374,7 @@ const EngineerTicketDashboard = () => {
 
           <Button
             icon={<ReloadOutlined />}
-            onClick={fetchTickets}
+            onClick={handleRefresh}
             disabled={loading}
           >
             {!isMobile && 'Refresh'}
@@ -397,7 +408,7 @@ const EngineerTicketDashboard = () => {
         onClose={() => setCreateTicketModalVisible(false)}
         onSuccess={() => {
           setCreateTicketModalVisible(false);
-          fetchTickets();
+          handleRefresh();
           message.success('Ticket created successfully');
         }}
       />
@@ -419,7 +430,7 @@ const EngineerTicketDashboard = () => {
           setDetailsDrawerVisible(false);
           setSelectedTicket(null);
         }}
-        onUpdate={fetchTickets}
+        onUpdate={handleRefresh}
       />
 
       {/* Mobile Floating Action Button */}
@@ -427,7 +438,7 @@ const EngineerTicketDashboard = () => {
         <FloatButton.Group>
           <FloatButton
             icon={<ReloadOutlined />}
-            onClick={fetchTickets}
+            onClick={handleRefresh}
             tooltip="Refresh"
           />
         </FloatButton.Group>

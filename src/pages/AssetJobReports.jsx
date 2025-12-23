@@ -19,7 +19,9 @@ import {
   Statistic,
   Tabs,
   Tooltip,
-  Spin
+  Spin,
+  Collapse,
+  Alert
 } from 'antd';
 import {
   FileTextOutlined,
@@ -35,7 +37,9 @@ import {
   UserOutlined,
   DesktopOutlined,
   ClearOutlined,
-  ExportOutlined
+  ExportOutlined,
+  QuestionCircleOutlined,
+  CheckCircleOutlined
 } from '@ant-design/icons';
 import assetJobReportService from '../services/assetJobReport';
 import masterService from '../services/master';
@@ -329,7 +333,7 @@ const AssetJobReports = () => {
       key: 'location',
       width: 150,
       render: (_, record) => record.location_name ? (
-        <Tooltip title={`${record.location_building || ''} ${record.location_floor || ''}`}>
+        <Tooltip title={`${record.location_building || ''} ${record.location_floor || ''} ${record.location_room_no ? `Room: ${record.location_room_no}` : ''}`.trim()}>
           <Text><EnvironmentOutlined /> {record.location_name}</Text>
         </Tooltip>
       ) : '-'
@@ -395,6 +399,81 @@ const AssetJobReports = () => {
           Track IT asset installations, movements, and transfers
         </Text>
       </div>
+
+      {/* Help Section */}
+      <Collapse
+        ghost
+        style={{ marginBottom: 16, background: '#f6ffed', borderRadius: 8, border: '1px solid #b7eb8f' }}
+        items={[
+          {
+            key: '1',
+            label: (
+              <span style={{ color: '#52c41a' }}>
+                <QuestionCircleOutlined style={{ marginRight: 8 }} />
+                When are Job Reports generated?
+              </span>
+            ),
+            children: (
+              <div style={{ padding: '0 8px' }}>
+                <Row gutter={[16, 16]}>
+                  <Col xs={24} md={8}>
+                    <Alert
+                      type="success"
+                      showIcon
+                      icon={<DownloadOutlined />}
+                      message={<strong>Install Report</strong>}
+                      description={
+                        <ul style={{ margin: '8px 0 0 0', paddingLeft: 16 }}>
+                          <li>First-time asset assignment to a user</li>
+                          <li>Asset has no previous user assigned</li>
+                          <li>Generated when asset moves from "Available" to "Assigned"</li>
+                        </ul>
+                      }
+                    />
+                  </Col>
+                  <Col xs={24} md={8}>
+                    <Alert
+                      type="info"
+                      showIcon
+                      icon={<SwapOutlined />}
+                      message={<strong>Move Report</strong>}
+                      description={
+                        <ul style={{ margin: '8px 0 0 0', paddingLeft: 16 }}>
+                          <li>Asset relocation to a different location</li>
+                          <li>User&apos;s location gets updated</li>
+                          <li>Same location but different building, floor, or room</li>
+                          <li>Physical movement of asset within organization</li>
+                        </ul>
+                      }
+                    />
+                  </Col>
+                  <Col xs={24} md={8}>
+                    <Alert
+                      type="warning"
+                      showIcon
+                      icon={<UserSwitchOutlined />}
+                      message={<strong>Transfer Report</strong>}
+                      description={
+                        <ul style={{ margin: '8px 0 0 0', paddingLeft: 16 }}>
+                          <li>Asset reassignment between users</li>
+                          <li>Asset had a previous user, now assigned to a new user</li>
+                          <li>Includes handover documentation</li>
+                        </ul>
+                      }
+                    />
+                  </Col>
+                </Row>
+                <div style={{ marginTop: 12, padding: 8, background: '#fafafa', borderRadius: 4 }}>
+                  <Text type="secondary">
+                    <CheckCircleOutlined style={{ marginRight: 4 }} />
+                    Job reports are automatically generated when assets are assigned, moved, or transferred through the Asset Management system.
+                  </Text>
+                </div>
+              </div>
+            )
+          }
+        ]}
+      />
 
       {/* Statistics Cards */}
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
@@ -723,11 +802,21 @@ const AssetJobReports = () => {
               <Descriptions.Item label="Floor">
                 {selectedReport.location_floor || '-'}
               </Descriptions.Item>
+              <Descriptions.Item label="Room No">
+                {selectedReport.location_room_no || '-'}
+              </Descriptions.Item>
               {selectedReport.previous_location_name && (
-                <Descriptions.Item label="Previous Location">
-                  {selectedReport.previous_location_name}
-                  {selectedReport.previous_location_building && ` - ${selectedReport.previous_location_building}`}
-                </Descriptions.Item>
+                <>
+                  <Descriptions.Item label="Previous Location">
+                    {selectedReport.previous_location_name}
+                    {selectedReport.previous_location_building && ` - ${selectedReport.previous_location_building}`}
+                  </Descriptions.Item>
+                  {selectedReport.previous_location_room_no && (
+                    <Descriptions.Item label="Previous Room No">
+                      {selectedReport.previous_location_room_no}
+                    </Descriptions.Item>
+                  )}
+                </>
               )}
             </Descriptions>
 

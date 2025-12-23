@@ -448,6 +448,32 @@ const ticketService = {
   },
 
   /**
+   * Get current user's software installations for ticket creation
+   */
+  getMySoftware: async () => {
+    try {
+      const response = await apiClient.get('/tickets/my-software');
+      return response;
+    } catch (error) {
+      console.error('Error fetching my software:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get specific employee's software installations for ticket creation (coordinators)
+   */
+  getEmployeeSoftware: async (userId) => {
+    try {
+      const response = await apiClient.get(`/tickets/employee-software/${userId}`);
+      return response;
+    } catch (error) {
+      console.error('Error fetching employee software:', error);
+      throw error;
+    }
+  },
+
+  /**
    * Get all assets linked to a ticket
    */
   getTicketAssets: async (ticketId) => {
@@ -513,6 +539,32 @@ const ticketService = {
       return response;
     } catch (error) {
       console.error('Error fetching asset count:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get all software linked to a ticket
+   */
+  getTicketSoftware: async (ticketId) => {
+    try {
+      const response = await apiClient.get(`/tickets/${ticketId}/software`);
+      return response;
+    } catch (error) {
+      console.error('Error fetching ticket software:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Unlink software from a ticket
+   */
+  unlinkSoftware: async (ticketId, installationId) => {
+    try {
+      const response = await apiClient.delete(`/tickets/${ticketId}/software/${installationId}`);
+      return response;
+    } catch (error) {
+      console.error('Error unlinking software:', error);
       throw error;
     }
   },

@@ -1,15 +1,20 @@
-import React, { useEffect } from 'react'
-import { Modal, Form, Input, Select, Row, Col, message, Checkbox } from 'antd'
+import React, { useEffect, useState } from 'react'
+import { Modal, Form, Input, Select, Row, Col, message, Checkbox, Alert, Typography } from 'antd'
+import { CopyOutlined } from '@ant-design/icons'
 import { useSelector } from 'react-redux'
 import PropTypes from 'prop-types'
 import userService from '../../../../services/user'
+
+const { Text } = Typography
 
 const { Option } = Select
 
 const UserForm = ({ open, mode, user, departments, onClose, onSuccess }) => {
   const [form] = Form.useForm()
   const { user: currentUser } = useSelector(state => state.auth)
-  const [loading, setLoading] = React.useState(false)
+  const [loading, setLoading] = useState(false)
+  const [generatedPassword, setGeneratedPassword] = useState(null)
+  const [createdUserEmail, setCreatedUserEmail] = useState(null)
 
   useEffect(() => {
     if (open && user && mode === 'edit') {
@@ -36,15 +41,25 @@ const UserForm = ({ open, mode, user, departments, onClose, onSuccess }) => {
     setLoading(true)
     try {
       if (mode === 'create') {
-        await userService.createUser(values)
-        message.success('User created successfully')
+        const response = await userService.createUser(values)
+        const userData = response.data?.data || response.data
+
+        // Check if password was auto-generated
+        if (userData?.generatedPassword) {
+          setGeneratedPassword(userData.generatedPassword)
+          setCreatedUserEmail(userData.email)
+          message.success('User created successfully with auto-generated password')
+        } else {
+          message.success('User created successfully')
+          form.resetFields()
+          onSuccess()
+        }
       } else if (mode === 'edit') {
         await userService.updateUser(user.id, values)
         message.success('User updated successfully')
+        form.resetFields()
+        onSuccess()
       }
-      
-      form.resetFields()
-      onSuccess()
     } catch (error) {
       console.error('Failed to save user:', error)
       message.error(error.message || `Failed to ${mode} user`)
@@ -55,7 +70,21 @@ const UserForm = ({ open, mode, user, departments, onClose, onSuccess }) => {
 
   const handleCancel = () => {
     form.resetFields()
+    setGeneratedPassword(null)
+    setCreatedUserEmail(null)
     onClose()
+  }
+
+  const handlePasswordAcknowledge = () => {
+    setGeneratedPassword(null)
+    setCreatedUserEmail(null)
+    form.resetFields()
+    onSuccess()
+  }
+
+  const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text)
+    message.success('Password copied to clipboard')
   }
 
   const getTitle = () => {
@@ -73,6 +102,53 @@ const UserForm = ({ open, mode, user, departments, onClose, onSuccess }) => {
   }
 
   const availableRoles = userService.getAvailableRoles(currentUser?.role)
+
+  // If password was generated, show the password display modal
+  if (generatedPassword) {
+    return (
+      <Modal
+        title="User Created Successfully"
+        open={open}
+        onOk={handlePasswordAcknowledge}
+        onCancel={handlePasswordAcknowledge}
+        width={500}
+        okText="Done"
+        cancelButtonProps={{ style: { display: 'none' } }}
+        maskClosable={false}
+      >
+        <Alert
+          type="success"
+          message="User created with auto-generated password"
+          description="Please copy and securely share the password below with the user. This password will not be shown again."
+          showIcon
+          style={{ marginBottom: 16 }}
+        />
+        <div style={{ background: '#f5f5f5', padding: 16, borderRadius: 8, marginBottom: 16 }}>
+          <div style={{ marginBottom: 8 }}>
+            <Text type="secondary">Email:</Text>
+            <div><Text strong>{createdUserEmail}</Text></div>
+          </div>
+          <div>
+            <Text type="secondary">Password:</Text>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Text strong copyable={{ text: generatedPassword }} style={{ fontSize: 16 }}>
+                {generatedPassword}
+              </Text>
+              <CopyOutlined
+                onClick={() => copyToClipboard(generatedPassword)}
+                style={{ cursor: 'pointer', color: '#1890ff' }}
+              />
+            </div>
+          </div>
+        </div>
+        <Alert
+          type="warning"
+          message="The user will be required to change this password on first login."
+          showIcon
+        />
+      </Modal>
+    )
+  }
 
   return (
     <Modal
@@ -246,17 +322,17 @@ const UserForm = ({ open, mode, user, departments, onClose, onSuccess }) => {
               <Form.Item
                 label="Password"
                 name="password"
+                extra="Leave empty to auto-generate a secure password"
                 rules={[
-                  { required: true, message: 'Password is required' },
                   { min: 8, message: 'Password must be at least 8 characters' },
-                  { 
+                  {
                     pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/,
                     message: 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'
                   }
                 ]}
               >
-                <Input.Password 
-                  placeholder="Enter password"
+                <Input.Password
+                  placeholder="Enter password (optional - auto-generated if empty)"
                   maxLength={50}
                 />
               </Form.Item>
@@ -272,10 +348,11 @@ const UserForm = ({ open, mode, user, departments, onClose, onSuccess }) => {
                 name="confirm_password"
                 dependencies={['password']}
                 rules={[
-                  { required: true, message: 'Please confirm the password' },
                   ({ getFieldValue }) => ({
                     validator(_, value) {
-                      if (!value || getFieldValue('password') === value) {
+                      const password = getFieldValue('password')
+                      // Only validate if password was provided
+                      if (!password || !value || password === value) {
                         return Promise.resolve()
                       }
                       return Promise.reject(new Error('Passwords do not match'))
@@ -283,8 +360,8 @@ const UserForm = ({ open, mode, user, departments, onClose, onSuccess }) => {
                   }),
                 ]}
               >
-                <Input.Password 
-                  placeholder="Confirm password"
+                <Input.Password
+                  placeholder="Confirm password (optional)"
                   maxLength={50}
                 />
               </Form.Item>
