@@ -578,12 +578,6 @@ const Sidebar = () => {
           key: '/gate-passes',
           icon: <ExportOutlined />,
           label: 'Gate Passes',
-        },
-        // Audit Logs
-        {
-          key: '/audit-logs',
-          icon: <HistoryOutlined />,
-          label: 'Audit Logs',
         }
       )
     }

@@ -13,7 +13,10 @@ import {
   Col,
   Statistic,
   message,
-  Tabs
+  Tabs,
+  Tag,
+  Alert,
+  Divider
 } from 'antd';
 import {
   SearchOutlined,
@@ -21,7 +24,9 @@ import {
   CheckCircleOutlined,
   ClockCircleOutlined,
   CloseCircleOutlined,
-  WarningOutlined
+  WarningOutlined,
+  CheckSquareOutlined,
+  InboxOutlined
 } from '@ant-design/icons';
 import {
   fetchPendingITApprovals,
@@ -147,58 +152,148 @@ const ITHeadApprovals = () => {
     }
   };
 
-  const renderApprovalCard = (requisition) => (
-    <Card
-      key={requisition.requisition_id}
-      className="approval-card"
-      style={{ marginBottom: 16 }}
-    >
-      <RequisitionCard
-        requisition={requisition}
-        showActions={false}
-      />
+  const renderApprovalCard = (requisition) => {
+    const availableCount = requisition.available_assets_count || 0;
+    const totalCount = requisition.total_assets_count || 0;
+    const inUseCount = requisition.in_use_assets_count || 0;
+    const hasAvailableAssets = availableCount > 0;
 
-      {/* Show Department Head Approval Info */}
-      {requisition.dept_head_name && (
-        <div style={{ marginTop: 12, padding: 12, background: '#f0f7ff', borderRadius: 4 }}>
-          <Space direction="vertical" size="small">
-            <div>
-              <strong>Department Head Approval:</strong>
+    return (
+      <Card
+        key={requisition.requisition_id}
+        className="approval-card"
+        style={{ marginBottom: 16 }}
+      >
+        <RequisitionCard
+          requisition={requisition}
+          showActions={false}
+        />
+
+        {/* Asset Availability Section */}
+        <div style={{ marginTop: 12 }}>
+          <Divider orientation="left" style={{ margin: '12px 0' }}>
+            <Space>
+              <InboxOutlined />
+              Asset Availability
+            </Space>
+          </Divider>
+
+          {(requisition.asset_category_id && requisition.product_type_id) ? (
+            <div style={{
+              padding: 16,
+              background: hasAvailableAssets ? '#f6ffed' : '#fff2f0',
+              borderRadius: 8,
+              border: `1px solid ${hasAvailableAssets ? '#b7eb8f' : '#ffccc7'}`
+            }}>
+              <Row gutter={16} align="middle">
+                <Col span={8}>
+                  <div style={{ marginBottom: 8 }}>
+                    <strong>Requested:</strong>
+                  </div>
+                  <div>
+                    <Tag color="blue">{requisition.category_name || 'N/A'}</Tag>
+                    <Tag color="purple">{requisition.product_type_name || 'N/A'}</Tag>
+                  </div>
+                </Col>
+                <Col span={16}>
+                  <Row gutter={16}>
+                    <Col span={8}>
+                      <Statistic
+                        title="Available"
+                        value={availableCount}
+                        valueStyle={{ color: hasAvailableAssets ? '#52c41a' : '#ff4d4f', fontSize: 24 }}
+                        prefix={hasAvailableAssets ? <CheckCircleOutlined /> : <CloseCircleOutlined />}
+                      />
+                    </Col>
+                    <Col span={8}>
+                      <Statistic
+                        title="In Use"
+                        value={inUseCount}
+                        valueStyle={{ color: '#1890ff', fontSize: 24 }}
+                      />
+                    </Col>
+                    <Col span={8}>
+                      <Statistic
+                        title="Total"
+                        value={totalCount}
+                        valueStyle={{ color: '#666', fontSize: 24 }}
+                      />
+                    </Col>
+                  </Row>
+                </Col>
+              </Row>
+
+              {!hasAvailableAssets && (
+                <Alert
+                  type="warning"
+                  showIcon
+                  icon={<WarningOutlined />}
+                  message="No assets currently available"
+                  description="There are no available assets for this category and type. Consider rejecting or waiting until stock is replenished."
+                  style={{ marginTop: 12 }}
+                />
+              )}
+
+              {hasAvailableAssets && (
+                <div style={{ marginTop: 12 }}>
+                  <Tag color="success" icon={<CheckSquareOutlined />}>
+                    {availableCount} asset{availableCount !== 1 ? 's' : ''} ready for assignment
+                  </Tag>
+                </div>
+              )}
             </div>
-            <div>
-              Approved by: {requisition.dept_head_name}
-            </div>
-            {requisition.dept_head_comments && (
+          ) : (
+            <Alert
+              type="info"
+              showIcon
+              message="Category/Type not specified"
+              description="This requisition does not specify a category or product type. Asset availability will be determined during assignment."
+            />
+          )}
+        </div>
+
+        {/* Show Department Head Approval Info */}
+        {requisition.dept_head_name && (
+          <div style={{ marginTop: 12, padding: 12, background: '#f0f7ff', borderRadius: 4 }}>
+            <Space direction="vertical" size="small">
               <div>
-                Comments: <em>{requisition.dept_head_comments}</em>
+                <strong>Department Head Approval:</strong>
               </div>
-            )}
+              <div>
+                Approved by: {requisition.dept_head_name}
+              </div>
+              {requisition.dept_head_comments && (
+                <div>
+                  Comments: <em>{requisition.dept_head_comments}</em>
+                </div>
+              )}
+            </Space>
+          </div>
+        )}
+
+        <div className="approval-actions" style={{ marginTop: 16, textAlign: 'right' }}>
+          <Space>
+            <Button
+              danger
+              icon={<CloseCircleOutlined />}
+              onClick={() => handleRejectClick(requisition)}
+              loading={processingId === requisition.requisition_id}
+            >
+              Reject
+            </Button>
+            <Button
+              type="primary"
+              icon={<CheckCircleOutlined />}
+              onClick={() => handleApproveClick(requisition)}
+              loading={processingId === requisition.requisition_id}
+            >
+              Approve
+            </Button>
           </Space>
         </div>
-      )}
-
-      <div className="approval-actions" style={{ marginTop: 16, textAlign: 'right' }}>
-        <Space>
-          <Button
-            danger
-            icon={<CloseCircleOutlined />}
-            onClick={() => handleRejectClick(requisition)}
-            loading={processingId === requisition.requisition_id}
-          >
-            Reject
-          </Button>
-          <Button
-            type="primary"
-            icon={<CheckCircleOutlined />}
-            onClick={() => handleApproveClick(requisition)}
-            loading={processingId === requisition.requisition_id}
-          >
-            Approve
-          </Button>
-        </Space>
-      </div>
-    </Card>
-  );
+      </Card>
+    );
+  };
 
   const tabItems = [
     {

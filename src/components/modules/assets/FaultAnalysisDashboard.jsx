@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
 import {
   Card,
   Table,
@@ -52,6 +53,8 @@ const { Option } = Select;
  */
 const FaultAnalysisDashboard = () => {
   const navigate = useNavigate();
+  const { user: currentUser } = useSelector((state) => state.auth);
+  const isAdmin = currentUser?.role === 'admin';
   const [loading, setLoading] = useState(false);
   const [activeFlags, setActiveFlags] = useState([]);
   const [resolvedFlags, setResolvedFlags] = useState([]);
@@ -750,35 +753,39 @@ const FaultAnalysisDashboard = () => {
         }
         extra={
           <Space>
-            <Tooltip title="Manage Fault Types">
-              <Button
-                icon={<ToolOutlined />}
-                onClick={() => navigate('/admin/fault-types')}
-              >
-                Fault Types
-              </Button>
-            </Tooltip>
-            <Tooltip title="Configure Thresholds">
-              <Button
-                icon={<SettingOutlined />}
-                onClick={() => navigate('/settings/fault-thresholds')}
-              >
-                Thresholds
-              </Button>
-            </Tooltip>
-            <Button
-              icon={<PlusOutlined />}
-              onClick={() => setFlagModalVisible(true)}
-            >
-              Manual Flag
-            </Button>
-            <Button
-              type="primary"
-              loading={runningAnalysis}
-              onClick={handleRunAutoAnalysis}
-            >
-              Run Auto Analysis
-            </Button>
+            {isAdmin && (
+              <>
+                <Tooltip title="Manage Fault Types">
+                  <Button
+                    icon={<ToolOutlined />}
+                    onClick={() => navigate('/admin/fault-types')}
+                  >
+                    Fault Types
+                  </Button>
+                </Tooltip>
+                <Tooltip title="Configure Thresholds">
+                  <Button
+                    icon={<SettingOutlined />}
+                    onClick={() => navigate('/settings/fault-thresholds')}
+                  >
+                    Thresholds
+                  </Button>
+                </Tooltip>
+                <Button
+                  icon={<PlusOutlined />}
+                  onClick={() => setFlagModalVisible(true)}
+                >
+                  Manual Flag
+                </Button>
+                <Button
+                  type="primary"
+                  loading={runningAnalysis}
+                  onClick={handleRunAutoAnalysis}
+                >
+                  Run Auto Analysis
+                </Button>
+              </>
+            )}
             <Button
               icon={<ReloadOutlined />}
               onClick={fetchDashboardData}

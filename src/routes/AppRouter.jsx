@@ -219,8 +219,8 @@ const AppRouter = () => {
           <Route path="reports/spare-parts" element={<SparePartsReport />} />
         )}
 
-        {/* Service Reports - Coordinator, Admin, Superadmin, Engineer */}
-        {['coordinator', 'admin', 'superadmin', 'engineer'].includes(user?.role) && (
+        {/* Service Reports - Coordinator, Admin, Superadmin, Engineer, IT Head */}
+        {['coordinator', 'admin', 'superadmin', 'engineer', 'it_head'].includes(user?.role) && (
           <Route path="reports/service-reports" element={<ServiceReports />} />
         )}
 
