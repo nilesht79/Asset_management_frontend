@@ -398,7 +398,13 @@ const ticketService = {
   formatRelativeTime: (dateString) => {
     if (!dateString) return 'N/A';
 
-    const date = new Date(dateString);
+    // Append 'Z' to indicate UTC if not already present (SQL Server returns dates without timezone)
+    let utcDateString = dateString;
+    if (typeof dateString === 'string' && !dateString.endsWith('Z') && !dateString.includes('+')) {
+      utcDateString = dateString.replace(' ', 'T') + 'Z';
+    }
+
+    const date = new Date(utcDateString);
     const now = new Date();
     const diffMs = now - date;
     const diffMins = Math.floor(diffMs / 60000);
