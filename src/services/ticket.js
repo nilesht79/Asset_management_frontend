@@ -380,10 +380,18 @@ const ticketService = {
 
   /**
    * Helper: Format date for display
+   * Database stores UTC, so we parse as UTC and display in local time
    */
   formatDate: (dateString) => {
     if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('en-US', {
+
+    // Ensure the date is parsed as UTC by appending 'Z' if no timezone indicator exists
+    let utcDateString = dateString;
+    if (typeof dateString === 'string' && !dateString.endsWith('Z') && !dateString.includes('+')) {
+      utcDateString = dateString + 'Z';
+    }
+
+    return new Date(utcDateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -393,28 +401,22 @@ const ticketService = {
   },
 
   /**
-   * Helper: Format relative time (e.g., "2 hours ago")
+   * Helper: Format date/time in local timezone
+   * Database stores UTC, so we parse as UTC and display in local time
    */
   formatRelativeTime: (dateString) => {
     if (!dateString) return 'N/A';
 
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now - date;
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
+    // Ensure the date is parsed as UTC by appending 'Z' if no timezone indicator exists
+    let utcDateString = dateString;
+    if (typeof dateString === 'string' && !dateString.endsWith('Z') && !dateString.includes('+')) {
+      utcDateString = dateString + 'Z';
+    }
 
-    if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
-    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
-    if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+    const date = new Date(utcDateString);
 
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
+    // Return formatted local date/time
+    return date.toLocaleString();
   },
 
   // ============================================
