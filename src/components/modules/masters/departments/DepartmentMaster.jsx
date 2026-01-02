@@ -4,6 +4,7 @@ import { PlusOutlined, EditOutlined, DeleteOutlined, ExclamationCircleOutlined, 
 import DepartmentForm from './DepartmentForm'
 import departmentService from '../../../../services/department'
 import api from '../../../../services/api'
+import { formatDateOnly } from '../../../../utils/dateUtils'
 
 const { Search } = Input
 const { confirm } = Modal
@@ -350,11 +351,7 @@ const DepartmentMaster = () => {
       dataIndex: 'createdAt',
       key: 'createdAt',
       width: 140,
-      render: (date) => new Date(date).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-      })
+      render: (date) => formatDateOnly(date)
     },
     {
       title: 'Actions',

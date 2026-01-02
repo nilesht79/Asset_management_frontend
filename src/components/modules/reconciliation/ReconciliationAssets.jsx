@@ -52,6 +52,7 @@ import {
 import ReconcileAssetModal from './ReconcileAssetModal';
 import DiscrepancyList from './DiscrepancyList';
 import departmentService from '../../../services/department';
+import { formatLocalDateTime } from '../../../utils/dateUtils';
 
 const { Title, Text } = Typography;
 const { Search } = Input;
@@ -457,7 +458,7 @@ const ReconciliationAssets = () => {
             <div className="text-sm">
               <div className="font-medium text-gray-800">{record.reconciled_by_name}</div>
               <div className="text-xs text-gray-500">
-                {record.reconciled_at ? new Date(record.reconciled_at).toLocaleString() : ''}
+                {record.reconciled_at ? formatLocalDateTime(record.reconciled_at) : ''}
               </div>
             </div>
           );

@@ -30,6 +30,7 @@ import {
 } from '@ant-design/icons'
 import consumableService from '../../../services/consumable'
 import masterService from '../../../services/master'
+import { formatLocalDateTime } from '../../../utils/dateUtils'
 
 const { Search } = Input
 const { Option } = Select
@@ -345,7 +346,7 @@ const ConsumableInventory = () => {
       dataIndex: 'created_at',
       key: 'created_at',
       width: 150,
-      render: (date) => new Date(date).toLocaleString()
+      render: (date) => formatLocalDateTime(date)
     },
     {
       title: 'Consumable',

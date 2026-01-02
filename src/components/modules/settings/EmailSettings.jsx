@@ -32,6 +32,7 @@ import {
   ReloadOutlined
 } from '@ant-design/icons';
 import emailSettingsService from '../../../services/emailSettings';
+import { formatLocalDateTime } from '../../../utils/dateUtils';
 
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
@@ -428,7 +429,7 @@ const EmailSettings = () => {
             {stats?.last_sent_at && (
               <div style={{ marginTop: 16 }}>
                 <Text type="secondary">Last email sent:</Text>
-                <div>{new Date(stats.last_sent_at).toLocaleString()}</div>
+                <div>{formatLocalDateTime(stats.last_sent_at)}</div>
               </div>
             )}
 
@@ -445,7 +446,7 @@ const EmailSettings = () => {
                   />
                   <div style={{ marginTop: 4 }}>
                     <Text type="secondary">
-                      {new Date(config.test_email_sent_at).toLocaleString()}
+                      {formatLocalDateTime(config.test_email_sent_at)}
                     </Text>
                   </div>
                 </div>

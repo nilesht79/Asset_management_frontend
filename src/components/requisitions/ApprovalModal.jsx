@@ -7,6 +7,7 @@ import {
   WarningOutlined
 } from '@ant-design/icons';
 import './ApprovalModal.css';
+import { formatDateOnly } from '../../utils/dateUtils';
 
 const { TextArea } = Input;
 
@@ -57,15 +58,6 @@ const ApprovalModal = ({
   const alertMessage = isApproval
     ? `You are about to approve this requisition. It will be forwarded to the IT Head for final approval.`
     : `You are about to reject this requisition. The employee will be notified of your decision.`;
-
-  const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  };
 
   return (
     <Modal
@@ -149,7 +141,7 @@ const ApprovalModal = ({
 
               {requisition.required_by_date && (
                 <Descriptions.Item label="Required By">
-                  {formatDate(requisition.required_by_date)}
+                  {formatDateOnly(requisition.required_by_date)}
                 </Descriptions.Item>
               )}
 

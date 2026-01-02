@@ -24,6 +24,7 @@ import {
   HistoryOutlined
 } from '@ant-design/icons';
 import ticketService from '../../../services/ticket';
+import { formatDateTime } from '../../../utils/dateUtils';
 
 const { TextArea } = Input;
 const { Text, Title } = Typography;
@@ -94,17 +95,6 @@ const ReopenTicketModal = ({ visible, ticket, onClose, onSuccess }) => {
     }
   };
 
-  const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
   return (
     <Modal
       title={
@@ -144,7 +134,7 @@ const ReopenTicketModal = ({ visible, ticket, onClose, onSuccess }) => {
               {ticket?.title}
             </Descriptions.Item>
             <Descriptions.Item label="Closed At">
-              {formatDate(ticket?.closed_at)}
+              {formatDateTime(ticket?.closed_at)}
             </Descriptions.Item>
             <Descriptions.Item label="Times Reopened">
               <Tag color={ticket?.reopen_count > 0 ? 'orange' : 'green'}>
@@ -187,7 +177,7 @@ const ReopenTicketModal = ({ visible, ticket, onClose, onSuccess }) => {
                       <Text strong>Reopen #{item.reopen_number}</Text>
                       <br />
                       <Text type="secondary" className="text-xs">
-                        {formatDate(item.reopened_at)} by {item.reopened_by_name}
+                        {formatDateTime(item.reopened_at)} by {item.reopened_by_name}
                       </Text>
                       <br />
                       <Text className="text-sm">{item.reopen_reason}</Text>

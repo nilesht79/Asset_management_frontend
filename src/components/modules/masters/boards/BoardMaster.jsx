@@ -11,6 +11,7 @@ import {
 import BoardForm from './BoardForm'
 import { fetchBoards, deleteBoard } from '../../../../store/slices/masterSlice'
 import { usePermissions } from '../../../../hooks/usePermissions'
+import { formatDateOnly } from '../../../../utils/dateUtils'
 
 const { Search } = Input
 const { confirm } = Modal
@@ -171,7 +172,7 @@ const BoardMaster = () => {
       dataIndex: 'createdAt',
       key: 'createdAt',
       width: 150,
-      render: (date) => new Date(date).toLocaleDateString()
+      render: (date) => formatDateOnly(date)
     },
     {
       title: 'Actions',

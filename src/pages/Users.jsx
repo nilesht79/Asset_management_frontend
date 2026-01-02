@@ -43,6 +43,7 @@ import userService from '../services/user'
 import dashboardService from '../services/dashboard'
 import { fetchBoards as fetchBoardsAction } from '../store/slices/masterSlice'
 import PasswordInput from '../components/common/PasswordInput'
+import { formatDateOnly, formatLocalDateTime } from '../utils/dateUtils'
 
 const { Search } = Input
 const { Option } = Select
@@ -817,7 +818,7 @@ const Users = () => {
       dataIndex: 'lastLogin',
       key: 'lastLogin',
       width: 150,
-      render: (date) => date ? new Date(date).toLocaleDateString() : 'Never',
+      render: (date) => date ? formatDateOnly(date) : 'Never',
       responsive: ['md']
     },
     {
@@ -1332,8 +1333,8 @@ const Users = () => {
                   {selectedUserDetails.allowMultiAssets ? 'YES' : 'NO'}
                 </Tag>
               </div>
-              <div><strong>Last Login:</strong> {selectedUserDetails.lastLogin ? new Date(selectedUserDetails.lastLogin).toLocaleString() : 'Never'}</div>
-              <div><strong>Created:</strong> {selectedUserDetails.createdAt ? new Date(selectedUserDetails.createdAt).toLocaleString() : 'N/A'}</div>
+              <div><strong>Last Login:</strong> {selectedUserDetails.lastLogin ? formatLocalDateTime(selectedUserDetails.lastLogin) : 'Never'}</div>
+              <div><strong>Created:</strong> {selectedUserDetails.createdAt ? formatLocalDateTime(selectedUserDetails.createdAt) : 'N/A'}</div>
             </div>
           </div>
         )}

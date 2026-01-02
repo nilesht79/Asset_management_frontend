@@ -51,6 +51,7 @@ import {
 import AddToStandbyPoolModal from '../components/modules/standby/AddToStandbyPoolModal';
 import AssignStandbyModal from '../components/modules/standby/AssignStandbyModal';
 import ViewAssetDetailsModal from '../components/modules/standby/ViewAssetDetailsModal';
+import { formatDateOnly } from '../utils/dateUtils';
 
 const { Search } = Input;
 
@@ -223,7 +224,7 @@ const StandbyPool = () => {
           <div>
             <div style={{ fontWeight: 500 }}>{assignment.name}</div>
             <div style={{ fontSize: '12px', color: '#888' }}>
-              Since: {new Date(assignment.assigned_date).toLocaleDateString()}
+              Since: {formatDateOnly(assignment.assigned_date)}
             </div>
           </div>
         );

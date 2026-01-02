@@ -42,6 +42,7 @@ import {
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import faultAnalysisService from '../../../services/faultAnalysis';
+import { formatDateOnly } from '../../../utils/dateUtils';
 
 const { Text, Title } = Typography;
 const { TextArea } = Input;
@@ -257,7 +258,7 @@ const FaultAnalysisDashboard = () => {
         if (!count || count === 0) return <Text type="secondary">-</Text>;
         return (
           <Tooltip title={record.previous_resolved_at ?
-            `Previous flag resolved on ${new Date(record.previous_resolved_at).toLocaleDateString()} (${record.previous_resolution_action || 'N/A'})` :
+            `Previous flag resolved on ${formatDateOnly(record.previous_resolved_at)} (${record.previous_resolution_action || 'N/A'})` :
             'Recurring issue'
           }>
             <Tag color="volcano" icon={<RedoOutlined />}>
@@ -347,7 +348,7 @@ const FaultAnalysisDashboard = () => {
       dataIndex: 'created_at',
       key: 'created_at',
       width: 100,
-      render: (date) => new Date(date).toLocaleDateString()
+      render: (date) => formatDateOnly(date)
     },
     {
       title: 'Actions',
@@ -562,7 +563,7 @@ const FaultAnalysisDashboard = () => {
       dataIndex: 'resolved_at',
       key: 'resolved_at',
       width: 120,
-      render: (date) => date ? new Date(date).toLocaleDateString() : '-',
+      render: (date) => date ? formatDateOnly(date) : '-',
       sorter: (a, b) => new Date(a.resolved_at) - new Date(b.resolved_at),
       defaultSortOrder: 'descend'
     },
@@ -1105,7 +1106,7 @@ const FaultAnalysisDashboard = () => {
                 dataIndex: 'repair_date',
                 key: 'repair_date',
                 width: 100,
-                render: (date) => date ? new Date(date).toLocaleDateString() : '-',
+                render: (date) => date ? formatDateOnly(date) : '-',
                 sorter: (a, b) => new Date(a.repair_date) - new Date(b.repair_date),
                 defaultSortOrder: 'descend'
               },

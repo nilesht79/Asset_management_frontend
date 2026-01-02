@@ -10,6 +10,7 @@ import {
   SignatureOutlined
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
+import { formatDateOnly, formatLocalDateTime } from '../../utils/dateUtils';
 
 const { Text, Title } = Typography;
 
@@ -52,15 +53,6 @@ const RequisitionCard = ({ requisition, onCancel, onSignForDelivery, showActions
                               requisition.delivery_ticket_id &&
                               !requisition.employee_signed;
 
-  const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  };
-
   return (
     <Card
       hoverable
@@ -76,7 +68,7 @@ const RequisitionCard = ({ requisition, onCancel, onSignForDelivery, showActions
                 {requisition.requisition_number}
               </Title>
               <Text type="secondary" style={{ fontSize: '12px' }}>
-                Created: {formatDate(requisition.created_at)}
+                Created: {formatDateOnly(requisition.created_at)}
               </Text>
             </div>
 
@@ -105,7 +97,7 @@ const RequisitionCard = ({ requisition, onCancel, onSignForDelivery, showActions
             {requisition.required_by_date && (
               <div>
                 <Text type="secondary">Required By: </Text>
-                <Text strong>{formatDate(requisition.required_by_date)}</Text>
+                <Text strong>{formatDateOnly(requisition.required_by_date)}</Text>
               </div>
             )}
 
@@ -203,7 +195,7 @@ const RequisitionCard = ({ requisition, onCancel, onSignForDelivery, showActions
                 <Tag color="green">{requisition.assigned_engineer_name}</Tag>
                 {requisition.installation_scheduled_date && (
                   <Text type="secondary">
-                    (Scheduled: {new Date(requisition.installation_scheduled_date).toLocaleString()})
+                    (Scheduled: {formatLocalDateTime(requisition.installation_scheduled_date)})
                   </Text>
                 )}
               </Space>

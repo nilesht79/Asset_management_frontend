@@ -50,6 +50,7 @@ import consumableService from '../../../services/consumable'
 import assetService from '../../../services/asset'
 import userService from '../../../services/user'
 import useResponsive from '../../../hooks/useResponsive'
+import { formatDateOnly, formatLocalDateTime } from '../../../utils/dateUtils'
 
 const { Search } = Input
 const { Option } = Select
@@ -537,7 +538,7 @@ const ConsumableRequests = () => {
       dataIndex: 'created_at',
       key: 'created_at',
       width: 120,
-      render: (date) => date ? new Date(date).toLocaleDateString() : '-',
+      render: (date) => date ? formatDateOnly(date) : '-',
       sorter: (a, b) => new Date(a.created_at) - new Date(b.created_at),
       defaultSortOrder: 'descend'
     }] : []),
@@ -1241,7 +1242,7 @@ const ConsumableRequests = () => {
               <Text strong>Timeline</Text>
               <Timeline style={{ marginTop: 8 }}>
                 <Timeline.Item color="blue">
-                  Created on {new Date(selectedRequest.created_at).toLocaleString()}
+                  Created on {formatLocalDateTime(selectedRequest.created_at)}
                   {selectedRequest.created_by_name && selectedRequest.created_by_name !== selectedRequest.requested_by_name && (
                     <div style={{ fontSize: 12, color: '#722ed1' }}>
                       Created by {selectedRequest.created_by_name} on behalf of {selectedRequest.requested_by_name}
@@ -1250,7 +1251,7 @@ const ConsumableRequests = () => {
                 </Timeline.Item>
                 {selectedRequest.approved_at && (
                   <Timeline.Item color="green">
-                    Approved on {new Date(selectedRequest.approved_at).toLocaleString()}
+                    Approved on {formatLocalDateTime(selectedRequest.approved_at)}
                     {selectedRequest.assigned_engineer_name && (
                       <div style={{ fontSize: 12, color: '#722ed1' }}>
                         Assigned to {selectedRequest.assigned_engineer_name}
@@ -1260,12 +1261,12 @@ const ConsumableRequests = () => {
                 )}
                 {selectedRequest.status === 'rejected' && (
                   <Timeline.Item color="red">
-                    Rejected on {new Date(selectedRequest.approved_at).toLocaleString()}
+                    Rejected on {formatLocalDateTime(selectedRequest.approved_at)}
                   </Timeline.Item>
                 )}
                 {selectedRequest.delivered_at && (
                   <Timeline.Item color="green">
-                    Delivered on {new Date(selectedRequest.delivered_at).toLocaleString()}
+                    Delivered on {formatLocalDateTime(selectedRequest.delivered_at)}
                   </Timeline.Item>
                 )}
               </Timeline>

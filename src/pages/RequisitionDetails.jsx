@@ -36,6 +36,7 @@ import {
   clearCurrentRequisition
 } from '../store/slices/requisitionSlice';
 import RequisitionTimeline from '../components/requisitions/RequisitionTimeline';
+import { formatDateOnly, formatDateTime } from '../utils/dateUtils';
 import './RequisitionDetails.css';
 
 const { TextArea } = Input;
@@ -83,26 +84,6 @@ const RequisitionDetails = () => {
     medium: { label: 'Medium', color: 'blue' },
     high: { label: 'High', color: 'orange' },
     critical: { label: 'Critical', color: 'red' }
-  };
-
-  const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  };
-
-  const formatDateTime = (dateString) => {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
   };
 
   // Employees can cancel only while pending dept head review
@@ -300,7 +281,7 @@ const RequisitionDetails = () => {
               </Descriptions.Item>
               {requisition.required_by_date && (
                 <Descriptions.Item label="Required By">
-                  <Text strong>{formatDate(requisition.required_by_date)}</Text>
+                  <Text strong>{formatDateOnly(requisition.required_by_date)}</Text>
                 </Descriptions.Item>
               )}
             </Descriptions>

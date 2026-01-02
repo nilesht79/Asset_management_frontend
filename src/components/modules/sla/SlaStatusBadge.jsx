@@ -18,6 +18,7 @@ import {
   FireOutlined
 } from '@ant-design/icons';
 import slaService from '../../../services/sla';
+import { formatLocalDateTime } from '../../../utils/dateUtils';
 
 const { Text } = Typography;
 
@@ -261,7 +262,7 @@ const SlaStatusBadge = ({
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <Text type="secondary" style={{ fontSize: '12px' }}>Resolved At:</Text>
                 <Text style={{ fontSize: '12px' }}>
-                  {new Date(data.resolved_at).toLocaleString()}
+                  {formatLocalDateTime(data.resolved_at)}
                 </Text>
               </div>
             </>

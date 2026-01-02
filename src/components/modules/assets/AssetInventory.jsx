@@ -102,6 +102,7 @@ import AssetSoftwareView from './AssetSoftwareView'
 import AssetLabelPreview from './AssetLabelPreview'
 import AssetRepairHistory from './AssetRepairHistory'
 import licenseService from '../../../services/license'
+import { formatDateOnly } from '../../../utils/dateUtils'
 
 const { Title, Text } = Typography
 const { Option } = Select
@@ -2634,7 +2635,7 @@ const AssetInventory = () => {
               title: 'Deleted At',
               dataIndex: 'updated_at',
               key: 'deleted_at',
-              render: (date) => new Date(date).toLocaleDateString()
+              render: (date) => formatDateOnly(date)
             },
             {
               title: 'Action',
@@ -2819,7 +2820,7 @@ const AssetInventory = () => {
               {viewingAsset.asset_type === 'component' && viewingAsset.installation_date && (
                 <Col xs={24} sm={12}>
                   <Text type="secondary" className="text-xs sm:text-sm">Installation Date:</Text>
-                  <div className="font-medium text-sm sm:text-base">{new Date(viewingAsset.installation_date).toLocaleDateString()}</div>
+                  <div className="font-medium text-sm sm:text-base">{formatDateOnly(viewingAsset.installation_date)}</div>
                 </Col>
               )}
               {viewingAsset.asset_type === 'component' && viewingAsset.installed_by_name && (
@@ -2875,7 +2876,7 @@ const AssetInventory = () => {
               <Col xs={24} sm={12}>
                 <Text type="secondary" className="text-xs sm:text-sm">Purchase Date:</Text>
                 <div className="font-medium text-sm sm:text-base">
-                  {viewingAsset.purchase_date ? new Date(viewingAsset.purchase_date).toLocaleDateString() : 'N/A'}
+                  {viewingAsset.purchase_date ? formatDateOnly(viewingAsset.purchase_date) : 'N/A'}
                 </div>
               </Col>
               <Col xs={24} sm={12}>
@@ -2895,7 +2896,7 @@ const AssetInventory = () => {
                 <div className="font-medium text-sm sm:text-base">
                   {viewingAsset.warranty_start_date && viewingAsset.warranty_end_date ? (
                     <>
-                      {new Date(viewingAsset.warranty_start_date).toLocaleDateString()} - {new Date(viewingAsset.warranty_end_date).toLocaleDateString()}
+                      {formatDateOnly(viewingAsset.warranty_start_date)} - {formatDateOnly(viewingAsset.warranty_end_date)}
                       {(() => {
                         const endDate = new Date(viewingAsset.warranty_end_date)
                         const today = new Date()
@@ -2911,7 +2912,7 @@ const AssetInventory = () => {
                     </>
                   ) : viewingAsset.warranty_end_date ? (
                     <>
-                      Until {new Date(viewingAsset.warranty_end_date).toLocaleDateString()}
+                      Until {formatDateOnly(viewingAsset.warranty_end_date)}
                       {(() => {
                         const endDate = new Date(viewingAsset.warranty_end_date)
                         const today = new Date()
@@ -2935,7 +2936,7 @@ const AssetInventory = () => {
                 <div className="font-medium text-sm sm:text-base">
                   {viewingAsset.eol_date ? (
                     <>
-                      {new Date(viewingAsset.eol_date).toLocaleDateString()}
+                      {formatDateOnly(viewingAsset.eol_date)}
                       {(() => {
                         const eolDate = new Date(viewingAsset.eol_date)
                         const today = new Date()
@@ -2958,7 +2959,7 @@ const AssetInventory = () => {
                 <div className="font-medium text-sm sm:text-base">
                   {viewingAsset.eos_date ? (
                     <>
-                      {new Date(viewingAsset.eos_date).toLocaleDateString()}
+                      {formatDateOnly(viewingAsset.eos_date)}
                       {(() => {
                         const eosDate = new Date(viewingAsset.eos_date)
                         const today = new Date()

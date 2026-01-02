@@ -52,6 +52,7 @@ import {
 } from '@ant-design/icons';
 import { usePermissions } from '../hooks/usePermissions';
 import permissionService from '../services/permissions';
+import { formatLocalDateTime } from '../utils/dateUtils';
 
 const { Title, Text, Paragraph } = Typography;
 const { TabPane } = Tabs;
@@ -897,7 +898,7 @@ const SuperAdminPermissions = () => {
               color: getActionColor(log.action_type),
               dot: getActionIcon(log.action_type),
               label: (
-                <Tooltip title={new Date(log.performed_at).toLocaleString()}>
+                <Tooltip title={formatLocalDateTime(log.performed_at)}>
                   <Text type="secondary" style={{ fontSize: 12 }}>
                     {formatTimestamp(log.performed_at)}
                   </Text>

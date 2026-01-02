@@ -22,6 +22,7 @@ import {
   SafetyCertificateOutlined
 } from '@ant-design/icons';
 import ticketService from '../../../services/ticket';
+import { formatDateOnly } from '../../../utils/dateUtils';
 
 const { Text } = Typography;
 
@@ -89,15 +90,6 @@ const LinkedSoftware = ({
       if (daysUntilExpiry <= 30) return 'Expiring Soon';
     }
     return 'Active';
-  };
-
-  const formatDate = (dateString) => {
-    if (!dateString) return null;
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
   };
 
   if (loading) {
@@ -204,15 +196,15 @@ const LinkedSoftware = ({
                           {statusText}
                         </Tag>
                         {item.expiration_date && (
-                          <Tooltip title={`License expires: ${formatDate(item.expiration_date)}`}>
+                          <Tooltip title={`License expires: ${formatDateOnly(item.expiration_date)}`}>
                             <Tag icon={<CalendarOutlined />} style={{ fontSize: '10px' }}>
-                              {formatDate(item.expiration_date)}
+                              {formatDateOnly(item.expiration_date)}
                             </Tag>
                           </Tooltip>
                         )}
                         {item.installation_date && (
                           <Text type="secondary" style={{ fontSize: '11px' }}>
-                            Installed: {formatDate(item.installation_date)}
+                            Installed: {formatDateOnly(item.installation_date)}
                           </Text>
                         )}
                       </Space>

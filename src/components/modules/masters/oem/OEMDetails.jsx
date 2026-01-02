@@ -1,13 +1,14 @@
 import React from 'react'
 import { Modal, Descriptions, Tag, Space, Button, Divider } from 'antd'
-import { 
-  GlobalOutlined, 
-  PhoneOutlined, 
-  MailOutlined, 
+import {
+  GlobalOutlined,
+  PhoneOutlined,
+  MailOutlined,
   UserOutlined,
   CalendarOutlined,
   ShoppingOutlined
 } from '@ant-design/icons'
+import { formatDateOnly } from '../../../../utils/dateUtils'
 
 const OEMDetails = ({ visible, onClose, oem }) => {
   if (!oem) return null
@@ -18,14 +19,6 @@ const OEMDetails = ({ visible, onClose, oem }) => {
         {status.toUpperCase()}
       </Tag>
     )
-  }
-
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    })
   }
 
   return (
@@ -189,7 +182,7 @@ const OEMDetails = ({ visible, onClose, oem }) => {
               </Space>
             }
           >
-            <span className="font-medium">{formatDate(oem.createdAt)}</span>
+            <span className="font-medium">{formatDateOnly(oem.createdAt)}</span>
           </Descriptions.Item>
           <Descriptions.Item 
             label={
@@ -199,7 +192,7 @@ const OEMDetails = ({ visible, onClose, oem }) => {
               </Space>
             }
           >
-            <span className="font-medium">{formatDate(oem.updatedAt)}</span>
+            <span className="font-medium">{formatDateOnly(oem.updatedAt)}</span>
           </Descriptions.Item>
         </Descriptions>
 

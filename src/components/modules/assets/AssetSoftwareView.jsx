@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Table, Tag, Button, Space, Spin, Alert, Typography, Tooltip } from 'antd'
 import { EyeOutlined, EyeInvisibleOutlined, CheckCircleOutlined, ExclamationCircleOutlined, CloseCircleOutlined, ClockCircleOutlined } from '@ant-design/icons'
 import assetService from '../../../services/asset'
+import { formatDateOnly } from '../../../utils/dateUtils'
 
 const { Text } = Typography
 
@@ -125,13 +126,13 @@ const AssetSoftwareView = ({ assetId }) => {
       title: 'Installation Date',
       dataIndex: 'installation_date',
       key: 'installation_date',
-      render: (date) => date ? new Date(date).toLocaleDateString() : <Text type="secondary">N/A</Text>
+      render: (date) => date ? formatDateOnly(date) : <Text type="secondary">N/A</Text>
     },
     {
       title: 'License Expiration',
       dataIndex: 'license_expiration_date',
       key: 'license_expiration_date',
-      render: (date) => date ? new Date(date).toLocaleDateString() : <Text type="secondary">Perpetual</Text>
+      render: (date) => date ? formatDateOnly(date) : <Text type="secondary">Perpetual</Text>
     }
   ]
 

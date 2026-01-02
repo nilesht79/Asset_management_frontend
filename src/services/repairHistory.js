@@ -258,10 +258,18 @@ const repairHistoryService = {
 
   /**
    * Format date
+   * Database stores UTC, so we parse as UTC and display in local time
    */
   formatDate: (dateString) => {
     if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('en-US', {
+
+    // Ensure the date is parsed as UTC by appending 'Z' if no timezone indicator exists
+    let utcDateString = dateString;
+    if (typeof dateString === 'string' && !dateString.endsWith('Z') && !dateString.includes('+')) {
+      utcDateString = dateString + 'Z';
+    }
+
+    return new Date(utcDateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric'

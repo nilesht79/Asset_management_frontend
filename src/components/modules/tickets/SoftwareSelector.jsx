@@ -19,6 +19,7 @@ import {
   CalendarOutlined
 } from '@ant-design/icons';
 import ticketService from '../../../services/ticket';
+import { formatDateOnly } from '../../../utils/dateUtils';
 
 const { Text } = Typography;
 const { Search } = Input;
@@ -107,15 +108,6 @@ const SoftwareSelector = ({
     return 'Active';
   };
 
-  const formatDate = (dateString) => {
-    if (!dateString) return null;
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  };
-
   // Build tree data structure - group by software name
   const treeData = useMemo(() => {
     // Group software by name
@@ -160,9 +152,9 @@ const SoftwareSelector = ({
                 {statusText}
               </Tag>
               {install.expiration_date && (
-                <Tooltip title={`Expires: ${formatDate(install.expiration_date)}`}>
+                <Tooltip title={`Expires: ${formatDateOnly(install.expiration_date)}`}>
                   <Tag icon={<CalendarOutlined />} style={{ fontSize: '10px' }}>
-                    {formatDate(install.expiration_date)}
+                    {formatDateOnly(install.expiration_date)}
                   </Tag>
                 </Tooltip>
               )}

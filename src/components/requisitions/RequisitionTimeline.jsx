@@ -10,21 +10,11 @@ import {
   CheckSquareOutlined
 } from '@ant-design/icons';
 import './RequisitionTimeline.css';
+import { formatDateTime } from '../../utils/dateUtils';
 
 const { Text, Paragraph } = Typography;
 
 const RequisitionTimeline = ({ requisition, approvalHistory = [] }) => {
-  // Helper to format dates
-  const formatDateTime = (dateString) => {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
 
   // Helper to get status color
   const getStatusColor = (status, action) => {

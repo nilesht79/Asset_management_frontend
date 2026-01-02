@@ -27,6 +27,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import ReactECharts from 'echarts-for-react';
 import faultAnalysisService from '../../../../services/faultAnalysis';
+import { formatDateOnly } from '../../../../utils/dateUtils';
 
 const { Text, Title } = Typography;
 
@@ -396,7 +397,7 @@ const FaultTrendsWidget = ({ compact = false }) => {
                           {formatFlagType(flag.flag_type)} - {flag.reason?.substring(0, 50)}...
                         </Text>
                         <Text type="secondary" style={{ fontSize: '10px' }}>
-                          <ClockCircleOutlined /> {new Date(flag.created_at).toLocaleDateString()}
+                          <ClockCircleOutlined /> {formatDateOnly(flag.created_at)}
                         </Text>
                       </Space>
                     }

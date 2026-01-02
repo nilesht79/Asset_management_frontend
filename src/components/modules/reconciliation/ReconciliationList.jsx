@@ -50,6 +50,7 @@ import {
 } from '../../../store/slices/reconciliationSlice';
 import CreateReconciliationModal from './CreateReconciliationModal';
 import ForceCompleteModal from './ForceCompleteModal';
+import { formatDateOnly } from '../../../utils/dateUtils';
 
 const { Title, Text } = Typography;
 const { Search } = Input;
@@ -329,7 +330,7 @@ const ReconciliationList = () => {
             {record.created_by_name || 'N/A'}
           </div>
           <div className="text-xs text-gray-500">
-            {new Date(record.created_at).toLocaleDateString()}
+            {formatDateOnly(record.created_at)}
           </div>
         </div>
       )
@@ -348,7 +349,7 @@ const ReconciliationList = () => {
               {record.started_by_name}
             </div>
             <div className="text-xs text-gray-500">
-              {new Date(record.started_at).toLocaleDateString()}
+              {formatDateOnly(record.started_at)}
             </div>
           </div>
         );
