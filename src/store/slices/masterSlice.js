@@ -71,6 +71,14 @@ const initialState = {
     }
   },
 
+  // Subcategories by Parent (for requisition form)
+  subcategoriesByParent: {
+    data: [],
+    parentId: null,
+    loading: false,
+    error: null,
+  },
+
   // Product Types
   productTypes: {
     data: [],
@@ -481,15 +489,33 @@ export const deleteCategory = createAsyncThunk(
   async (id, { dispatch, rejectWithValue }) => {
     try {
       await masterService.deleteCategory(id)
-      
+
       // Refresh categories list and tree
       dispatch(fetchCategories())
       dispatch(fetchCategoryTree())
-      
+
       return id
     } catch (error) {
       return rejectWithValue({
         message: error.response?.data?.message || 'Failed to delete category'
+      })
+    }
+  }
+)
+
+// Fetch subcategories by parent category ID (for requisition form)
+export const fetchSubcategoriesByParent = createAsyncThunk(
+  'master/fetchSubcategoriesByParent',
+  async (parentCategoryId, { rejectWithValue }) => {
+    try {
+      const response = await masterService.getCategorySubcategories(parentCategoryId)
+      return {
+        parentId: parentCategoryId,
+        data: response.data
+      }
+    } catch (error) {
+      return rejectWithValue({
+        message: error.response?.data?.message || 'Failed to fetch subcategories'
       })
     }
   }
@@ -1114,6 +1140,13 @@ const masterSlice = createSlice({
     // Reset master state
     resetMasterState: (state) => {
       return { ...initialState }
+    },
+
+    // Clear subcategories by parent (when category changes in requisition form)
+    clearSubcategoriesByParent: (state) => {
+      state.subcategoriesByParent.data = []
+      state.subcategoriesByParent.parentId = null
+      state.subcategoriesByParent.error = null
     }
   },
   extraReducers: (builder) => {
@@ -1258,6 +1291,23 @@ const masterSlice = createSlice({
       
       .addCase(fetchCategoryTree.fulfilled, (state, action) => {
         state.categories.tree = action.payload || []
+      })
+
+      // Subcategories by Parent (for requisition form)
+      .addCase(fetchSubcategoriesByParent.pending, (state) => {
+        state.subcategoriesByParent.loading = true
+        state.subcategoriesByParent.error = null
+      })
+      .addCase(fetchSubcategoriesByParent.fulfilled, (state, action) => {
+        state.subcategoriesByParent.loading = false
+        state.subcategoriesByParent.parentId = action.payload.parentId
+        // Extract subcategories from response
+        const responseData = action.payload.data?.data || action.payload.data || {}
+        state.subcategoriesByParent.data = responseData.subcategories || []
+      })
+      .addCase(fetchSubcategoriesByParent.rejected, (state, action) => {
+        state.subcategoriesByParent.loading = false
+        state.subcategoriesByParent.error = action.payload?.message || 'Failed to fetch subcategories'
       })
       
       // Products
@@ -1429,6 +1479,7 @@ export const {
   clearMasterFilters,
   clearAllMasterFilters,
   resetMasterState,
+  clearSubcategoriesByParent,
 } = masterSlice.actions
 
 // Selectors
@@ -1445,5 +1496,6 @@ export const selectMasterSelections = (state) => ({
   location: state.master.selectedLocation,
 })
 export const selectMasterFilters = (state) => state.master.filters
+export const selectSubcategoriesByParent = (state) => state.master.subcategoriesByParent
 
 export default masterSlice.reducer

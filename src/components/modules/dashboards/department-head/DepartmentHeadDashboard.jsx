@@ -170,9 +170,9 @@ const DepartmentHeadDashboard = () => {
       width: 150
     },
     {
-      title: 'Product Type',
-      dataIndex: 'product_type_name',
-      key: 'product_type_name',
+      title: 'Subcategory',
+      dataIndex: 'subcategory_name',
+      key: 'subcategory_name',
       width: 150
     },
     {

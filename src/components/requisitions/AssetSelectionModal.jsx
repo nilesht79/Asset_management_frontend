@@ -26,13 +26,13 @@ const AssetSelectionModal = ({
     search: '',
     status: 'available',
     category_id: undefined,
-    product_type_id: undefined,
+    subcategory_id: undefined,
     product_id: undefined
   });
 
   // Dropdown options
   const [categories, setCategories] = useState([]);
-  const [productTypes, setProductTypes] = useState([]);
+  const [subcategories, setSubcategories] = useState([]);
   const [products, setProducts] = useState([]);
   const [loadingOptions, setLoadingOptions] = useState(false);
 
@@ -44,7 +44,7 @@ const AssetSelectionModal = ({
         search: '',
         status: 'available',
         category_id: requisition?.asset_category_id || undefined,
-        product_type_id: requisition?.product_type_id || undefined,
+        subcategory_id: requisition?.product_type_id || undefined,
         product_id: requisition?.requested_product_id || undefined
       });
       loadFilterOptions();
@@ -61,14 +61,19 @@ const AssetSelectionModal = ({
   const loadFilterOptions = async () => {
     try {
       setLoadingOptions(true);
-      const [catRes, ptRes, prodRes] = await Promise.all([
-        api.get('/masters/categories', { params: { limit: 1000 } }),
-        api.get('/masters/product-types', { params: { limit: 1000 } }),
+      const [catRes, prodRes] = await Promise.all([
+        api.get('/masters/categories', { params: { limit: 1000, include_subcategories: 'true' } }),
         api.get('/masters/products', { params: { limit: 1000 } })
       ]);
 
-      setCategories(catRes.data.data?.categories || catRes.data.categories || catRes.data.data || []);
-      setProductTypes(ptRes.data.data?.productTypes || ptRes.data.productTypes || ptRes.data.data || []);
+      const allCategories = catRes.data.data?.categories || catRes.data.categories || catRes.data.data || [];
+      // Parent categories (Hardware/Software) have no parent_category_id
+      const parentCategories = allCategories.filter(cat => !cat.parent_category_id);
+      // Subcategories (DESKTOP, LAPTOP, etc.) have parent_category_id
+      const childCategories = allCategories.filter(cat => cat.parent_category_id);
+
+      setCategories(parentCategories);
+      setSubcategories(childCategories);
       setProducts(prodRes.data.data?.products || prodRes.data.products || prodRes.data.data || []);
     } catch (error) {
       console.error('Failed to load filter options:', error);
@@ -89,7 +94,7 @@ const AssetSelectionModal = ({
       // Apply filters (auto-populated from requisition requirements)
       if (filters.search) params.search = filters.search;
       if (filters.category_id) params.category_id = filters.category_id;
-      if (filters.product_type_id) params.product_type_id = filters.product_type_id;
+      if (filters.subcategory_id) params.subcategory_id = filters.subcategory_id;
       if (filters.product_id) params.product_id = filters.product_id;
 
       const response = await api.get('/assets', { params });
@@ -108,7 +113,7 @@ const AssetSelectionModal = ({
   };
 
   const handleClearFilters = () => {
-    // Only reset search and product (category and product type are locked from requisition)
+    // Only reset search and product (category and subcategory are locked from requisition)
     setFilters({
       ...filters,
       search: '',
@@ -149,9 +154,9 @@ const AssetSelectionModal = ({
       width: 150
     },
     {
-      title: 'Product Type',
-      dataIndex: 'product_type_name',
-      key: 'product_type_name',
+      title: 'Subcategory',
+      dataIndex: 'subcategory_name',
+      key: 'subcategory_name',
       width: 150
     },
     {
@@ -232,7 +237,7 @@ const AssetSelectionModal = ({
             </Col>
             <Col span={12}>
               {requisition?.category_name && <div><strong>Requested Category:</strong> {requisition?.category_name}</div>}
-              {requisition?.product_type_name && <div><strong>Requested Type:</strong> {requisition?.product_type_name}</div>}
+              {requisition?.subcategory_name && <div><strong>Requested Subcategory:</strong> {requisition?.subcategory_name}</div>}
               {requisition?.product_name && <div><strong>Preferred Product:</strong> {requisition?.product_name}</div>}
             </Col>
           </Row>
@@ -241,7 +246,7 @@ const AssetSelectionModal = ({
 
       {/* Info about filtering */}
       <Alert
-        message="Assets are filtered based on the requisition's category and product type requirements."
+        message="Assets are filtered based on the requisition's category and subcategory requirements."
         type="info"
         showIcon
         style={{ marginBottom: 16 }}
@@ -277,18 +282,21 @@ const AssetSelectionModal = ({
           </Col>
           <Col xs={24} sm={12} md={5}>
             <Select
-              placeholder="Product Type"
-              value={filters.product_type_id}
-              onChange={(value) => handleFilterChange('product_type_id', value)}
+              placeholder="Subcategory"
+              value={filters.subcategory_id}
+              onChange={(value) => handleFilterChange('subcategory_id', value)}
               style={{ width: '100%' }}
               disabled={!!requisition?.product_type_id}
               showSearch
               optionFilterProp="children"
               loading={loadingOptions}
+              allowClear
             >
-              {productTypes.map(pt => (
-                <Option key={pt.id} value={pt.id}>{pt.name}</Option>
-              ))}
+              {subcategories
+                .filter(sub => !filters.category_id || sub.parent_category_id === filters.category_id)
+                .map(sub => (
+                  <Option key={sub.id} value={sub.id}>{sub.name}</Option>
+                ))}
             </Select>
           </Col>
           <Col xs={24} sm={12} md={5}>

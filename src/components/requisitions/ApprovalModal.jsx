@@ -122,9 +122,9 @@ const ApprovalModal = ({
                 </Descriptions.Item>
               )}
 
-              {requisition.product_type_name && (
-                <Descriptions.Item label="Product Type">
-                  {requisition.product_type_name}
+              {requisition.subcategory_name && (
+                <Descriptions.Item label="Subcategory">
+                  {requisition.subcategory_name}
                 </Descriptions.Item>
               )}
 

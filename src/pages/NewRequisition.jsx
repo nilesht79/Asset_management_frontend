@@ -26,7 +26,7 @@ import {
   CheckCircleOutlined
 } from '@ant-design/icons';
 import { createRequisition } from '../store/slices/requisitionSlice';
-import { fetchCategories, fetchProductTypes } from '../store/slices/masterSlice';
+import { fetchCategories, fetchSubcategoriesByParent, clearSubcategoriesByParent } from '../store/slices/masterSlice';
 import './NewRequisition.css';
 import moment from 'moment';
 
@@ -41,16 +41,20 @@ const NewRequisition = () => {
 
   const master = useSelector((state) => state.master || {});
   const categories = master.categories?.data || [];
-  const productTypes = master.productTypes?.data || [];
+  const subcategories = master.subcategoriesByParent?.data || [];
+  const subcategoriesLoading = master.subcategoriesByParent?.loading || false;
 
   const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({});
 
-  // Load master data on mount
+  // Load parent categories on mount (Hardware/Software)
   useEffect(() => {
     dispatch(fetchCategories({ limit: 1000 }));
-    dispatch(fetchProductTypes({ limit: 1000 }));
+    // Clear subcategories when component unmounts
+    return () => {
+      dispatch(clearSubcategoriesByParent());
+    };
   }, [dispatch]);
 
   const steps = [
@@ -124,14 +128,16 @@ const NewRequisition = () => {
             rules={[{ required: true, message: 'Please select asset category' }]}
           >
             <Select
-              placeholder="Select category"
+              placeholder="Select category (Hardware/Software)"
               allowClear
               onChange={(value) => {
                 setFormData({ ...formData, asset_category_id: value });
-                if (!value) {
-                  form.setFieldsValue({ product_type_id: undefined });
-                } else {
-                  form.setFieldsValue({ product_type_id: undefined });
+                // Clear subcategory when category changes
+                form.setFieldsValue({ product_type_id: undefined });
+                dispatch(clearSubcategoriesByParent());
+                // Fetch subcategories for selected category
+                if (value) {
+                  dispatch(fetchSubcategoriesByParent(value));
                 }
               }}
               showSearch
@@ -149,21 +155,23 @@ const NewRequisition = () => {
         <Col xs={24} md={12}>
           <Form.Item
             name="product_type_id"
-            label="Product Type"
-            rules={[{ required: true, message: 'Please select product type' }]}
+            label="Asset Subcategory"
+            rules={[{ required: true, message: 'Please select subcategory' }]}
           >
             <Select
-              placeholder="Select product type"
+              placeholder={formData.asset_category_id ? "Select subcategory" : "Select category first"}
               allowClear
+              disabled={!formData.asset_category_id}
+              loading={subcategoriesLoading}
               onChange={(value) => {
                 setFormData({ ...formData, product_type_id: value });
               }}
               showSearch
               optionFilterProp="children"
             >
-              {productTypes.map((pt) => (
-                <Option key={pt.id} value={pt.id}>
-                  {pt.name}
+              {subcategories.map((subcat) => (
+                <Option key={subcat.id} value={subcat.id}>
+                  {subcat.name}
                 </Option>
               ))}
             </Select>
@@ -287,7 +295,7 @@ const NewRequisition = () => {
     const allData = { ...formData, ...form.getFieldsValue() };
 
     const selectedCategory = categories.find(c => c.id === allData.asset_category_id);
-    const selectedProductType = productTypes.find(pt => pt.id === allData.product_type_id);
+    const selectedSubcategory = subcategories.find(sc => sc.id === allData.product_type_id);
 
     const urgencyColors = {
       low: 'green',
@@ -309,8 +317,8 @@ const NewRequisition = () => {
               <div><Text strong>{selectedCategory?.name || 'N/A'}</Text></div>
             </Col>
             <Col span={12}>
-              <Text type="secondary">Product Type:</Text>
-              <div><Text strong>{selectedProductType?.name || 'N/A'}</Text></div>
+              <Text type="secondary">Subcategory:</Text>
+              <div><Text strong>{selectedSubcategory?.name || 'N/A'}</Text></div>
             </Col>
             <Col span={12}>
               <Text type="secondary">Quantity:</Text>

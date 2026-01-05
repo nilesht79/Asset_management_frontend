@@ -79,17 +79,17 @@ const RequisitionCard = ({ requisition, onCancel, onSignForDelivery, showActions
             </div>
 
             {/* Asset Info */}
-            {requisition.product_type_name && (
-              <div>
-                <Text type="secondary">Product Type: </Text>
-                <Text>{requisition.product_type_name}</Text>
-              </div>
-            )}
-
             {requisition.category_name && (
               <div>
                 <Text type="secondary">Category: </Text>
                 <Text>{requisition.category_name}</Text>
+              </div>
+            )}
+
+            {requisition.subcategory_name && (
+              <div>
+                <Text type="secondary">Subcategory: </Text>
+                <Text>{requisition.subcategory_name}</Text>
               </div>
             )}
 

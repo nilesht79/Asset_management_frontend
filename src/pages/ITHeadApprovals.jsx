@@ -192,7 +192,7 @@ const ITHeadApprovals = () => {
                   </div>
                   <div>
                     <Tag color="blue">{requisition.category_name || 'N/A'}</Tag>
-                    <Tag color="purple">{requisition.product_type_name || 'N/A'}</Tag>
+                    <Tag color="purple">{requisition.subcategory_name || 'N/A'}</Tag>
                   </div>
                 </Col>
                 <Col span={16}>
