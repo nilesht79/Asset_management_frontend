@@ -145,11 +145,15 @@ const userService = {
   },
 
   validateBulkUpload: (file, onProgress) => {
-    return apiUtils.uploadFile('/users/bulk-upload/validate', file, onProgress)
+    return apiUtils.uploadFile('/users/bulk-upload/validate', file, onProgress, {
+      timeout: 300000 // 5 minutes for validation
+    })
   },
 
   bulkUploadUsers: (file, onProgress) => {
-    return apiUtils.uploadFile('/users/bulk-upload', file, onProgress)
+    return apiUtils.uploadFile('/users/bulk-upload', file, onProgress, {
+      timeout: 600000 // 10 minutes for bulk upload with password hashing
+    })
   },
 
   exportCredentials: (users) => {

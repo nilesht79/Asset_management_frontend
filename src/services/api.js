@@ -230,24 +230,28 @@ export const apiUtils = {
   uploadFile: (url, file, onProgress, options = {}) => {
     const formData = new FormData()
     formData.append('file', file)
-    
+
     // Add additional fields if provided
     if (options.fields) {
       Object.entries(options.fields).forEach(([key, value]) => {
         formData.append(key, value)
       })
     }
-    
+
     return api.post(url, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
+      timeout: options.timeout || 300000, // 5 minutes default for file uploads
       onUploadProgress: (progressEvent) => {
-        if (onProgress) {
+        if (onProgress && progressEvent.total) {
           const percentCompleted = Math.round(
             (progressEvent.loaded * 100) / progressEvent.total
           )
           onProgress(percentCompleted)
+        } else if (onProgress) {
+          // If total is unknown, show indeterminate progress
+          onProgress(-1)
         }
       },
       ...options.config,

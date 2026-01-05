@@ -576,9 +576,9 @@ const Users = () => {
     try {
       const response = await userService.bulkUploadUsers(
         uploadFile,
-        (progressEvent) => {
-          const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total)
-          setUploadProgress(progress)
+        (progress) => {
+          // progress is -1 for indeterminate, or 0-100 for percentage
+          setUploadProgress(progress >= 0 ? progress : 50) // Show 50% for indeterminate
         }
       )
 
@@ -1314,6 +1314,12 @@ const Users = () => {
               <div><strong>Designation:</strong> {selectedUserDetails.designation || 'N/A'}</div>
               <div><strong>Department:</strong> {selectedUserDetails.department?.name || 'No Department'}</div>
               <div><strong>Location:</strong> {selectedUserDetails.location?.name || 'No Location'}</div>
+              {selectedUserDetails.location?.building && (
+                <div><strong>Building:</strong> {selectedUserDetails.location.building}</div>
+              )}
+              {selectedUserDetails.location?.floor && (
+                <div><strong>Floor:</strong> {selectedUserDetails.location.floor}</div>
+              )}
               <div><strong>Room No:</strong> {selectedUserDetails.roomNo || 'N/A'}</div>
               <div>
                 <strong>Status:</strong>
@@ -1459,13 +1465,17 @@ const Users = () => {
           {isUploading && (
             <div>
               <div className="flex justify-between mb-2">
-                <span className="text-sm text-gray-600">Uploading...</span>
-                <span className="text-sm text-gray-600">{uploadProgress}%</span>
+                <span className="text-sm text-gray-600">
+                  {uploadProgress < 100 ? 'Uploading file...' : 'Processing users...'}
+                </span>
+                <span className="text-sm text-gray-600">
+                  {uploadProgress < 100 ? `${uploadProgress}%` : ''}
+                </span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
                 <div
-                  className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${uploadProgress}%` }}
+                  className={`h-2 rounded-full transition-all duration-300 ${uploadProgress >= 100 ? 'animate-pulse bg-blue-400' : 'bg-blue-600'}`}
+                  style={{ width: uploadProgress >= 100 ? '100%' : `${uploadProgress}%` }}
                 />
               </div>
             </div>

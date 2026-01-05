@@ -26,7 +26,9 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:3001',
         changeOrigin: true,
-        secure: false
+        secure: false,
+        timeout: 600000, // 10 minutes for long-running requests like bulk upload
+        proxyTimeout: 600000
       }
     }
   },
