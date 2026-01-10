@@ -139,6 +139,7 @@ const AssetInventory = () => {
     condition_status: '',
     location_id: '',
     assigned_to: '',
+    employee_code: '',
     product_id: '',
     category_id: '',
     oem_id: '',
@@ -672,6 +673,7 @@ const AssetInventory = () => {
       condition_status: filters?.condition_status || '',
       location_id: filters?.location_id || '',
       assigned_to: filters?.assigned_to || '',
+      employee_code: filters?.employee_code || '',
       product_id: filters?.product_id || '',
       category_id: filters?.category_id || '',
       oem_id: filters?.oem_id || '',
@@ -694,6 +696,7 @@ const AssetInventory = () => {
       condition_status: '',
       location_id: '',
       assigned_to: '',
+      employee_code: '',
       product_id: '',
       category_id: '',
       oem_id: '',
@@ -719,6 +722,7 @@ const AssetInventory = () => {
       condition_status: filters?.condition_status || '',
       location_id: filters?.location_id || '',
       assigned_to: filters?.assigned_to || '',
+      employee_code: filters?.employee_code || '',
       product_id: filters?.product_id || '',
       category_id: filters?.category_id || '',
       oem_id: filters?.oem_id || '',
@@ -1127,6 +1131,17 @@ const AssetInventory = () => {
           </span>
         )
       }
+    },
+    {
+      title: <span className="font-semibold text-gray-700">Employee Code</span>,
+      dataIndex: 'assigned_employee_code',
+      key: 'assigned_employee_code',
+      width: 120,
+      render: (code) => code ? (
+        <span className="font-mono text-xs bg-green-50 px-2 py-1 rounded text-green-700">
+          {code}
+        </span>
+      ) : <span className="text-gray-400">—</span>
     },
     {
       title: <span className="font-semibold text-gray-700">Serial No</span>,
@@ -3376,6 +3391,17 @@ const AssetInventory = () => {
                 value: user.id,
                 label: `${user.firstName} ${user.lastName} (${user.email})`
               }))}
+            />
+          </div>
+
+          {/* Employee Code */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Employee Code</label>
+            <Input
+              placeholder="Search by employee code (e.g., T-12345)"
+              value={tempFilters.employee_code || ''}
+              onChange={(e) => handleTempFilterChange('employee_code', e.target.value)}
+              allowClear
             />
           </div>
         </div>

@@ -101,23 +101,19 @@ const Login = () => {
             requiredMark={false}
           >
             <Form.Item
-              name="email"
-              label="User Name"
+              name="employeeId"
+              label="Employee ID"
               rules={[
                 {
                   required: true,
-                  message: 'Please enter your User Name',
-                },
-                {
-                  type: 'email',
-                  message: 'Please enter a valid User Name',
+                  message: 'Please enter your Employee ID',
                 },
               ]}
             >
               <Input
                 prefix={<UserOutlined className="text-gray-400" />}
-                placeholder="Enter your User Name"
-                autoComplete="email"
+                placeholder="Enter your Employee ID (e.g., T-12345)"
+                autoComplete="username"
               />
             </Form.Item>
 

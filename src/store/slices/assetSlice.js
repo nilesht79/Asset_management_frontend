@@ -34,6 +34,7 @@ const initialState = {
     condition_status: '',
     location_id: '',
     assigned_to: '',
+    employee_code: '',
     product_id: '',
     category_id: '',
     oem_id: '',
