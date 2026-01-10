@@ -182,10 +182,10 @@ const LegacyImportModal = ({ visible, onClose, onSuccess }) => {
       render: (text) => text ? <Tag color={text === 'component' ? 'green' : 'blue'}>{text}</Tag> : <Text type="secondary">standalone</Text>
     },
     {
-      title: 'Parent Asset',
-      dataIndex: 'parent_asset_tag',
-      key: 'parent_asset_tag',
-      width: 120,
+      title: 'Parent Serial',
+      dataIndex: 'parent_serial_number',
+      key: 'parent_serial_number',
+      width: 130,
       render: (text) => text || <Text type="secondary">-</Text>
     },
     {
@@ -206,8 +206,22 @@ const LegacyImportModal = ({ visible, onClose, onSuccess }) => {
       title: 'Assigned To',
       dataIndex: 'assigned_user_name',
       key: 'assigned_to',
-      width: 200,
+      width: 180,
       render: (text) => text || <Text type="secondary">Unassigned</Text>
+    },
+    {
+      title: 'Vendor',
+      dataIndex: 'vendor_name',
+      key: 'vendor',
+      width: 120,
+      render: (text) => text || <Text type="secondary">-</Text>
+    },
+    {
+      title: 'Invoice',
+      dataIndex: 'invoice_number',
+      key: 'invoice',
+      width: 120,
+      render: (text) => text || <Text type="secondary">-</Text>
     },
     {
       title: 'Warranty End',
@@ -231,21 +245,7 @@ const LegacyImportModal = ({ visible, onClose, onSuccess }) => {
       render: (text) => text || <Text type="secondary">-</Text>
     },
     {
-      title: 'OS Software',
-      dataIndex: 'os_name',
-      key: 'os_name',
-      width: 150,
-      render: (text) => text || <Text type="secondary">-</Text>
-    },
-    {
-      title: 'Office Software',
-      dataIndex: 'office_name',
-      key: 'office_name',
-      width: 150,
-      render: (text) => text || <Text type="secondary">-</Text>
-    },
-    {
-      title: 'Additional Software',
+      title: 'Software',
       dataIndex: 'additional_software',
       key: 'additional_software',
       width: 150,
@@ -254,14 +254,19 @@ const LegacyImportModal = ({ visible, onClose, onSuccess }) => {
     {
       title: 'Issues',
       key: 'issues',
+      width: 250,
+      fixed: 'right',
       render: (_, record) => {
         const issues = [...(record.errors || []), ...(record.warnings || [])]
-        if (issues.length === 0) return <Text type="success">No issues</Text>
+        if (issues.length === 0) return <Tag color="success">No issues</Tag>
         return (
-          <div>
+          <div style={{ maxHeight: 100, overflowY: 'auto', fontSize: 12 }}>
             {issues.map((issue, idx) => (
-              <div key={idx}>
-                <Text type={record.errors && record.errors.includes(issue) ? 'danger' : 'warning'}>
+              <div key={idx} style={{ marginBottom: 4, lineHeight: 1.3 }}>
+                <Text
+                  type={record.errors && record.errors.includes(issue) ? 'danger' : 'warning'}
+                  style={{ fontSize: 12 }}
+                >
                   • {issue}
                 </Text>
               </div>
@@ -280,7 +285,7 @@ const LegacyImportModal = ({ visible, onClose, onSuccess }) => {
             <div style={{ marginBottom: 24 }}>
               <Title level={5}>Step 1: Download Template</Title>
               <Text type="secondary">
-                Download the Excel template with 5 sheets: Assets (with warranty, EOL/EOS, OS & Office software), Additional Software, Products (reference), Users (reference), and Parent Assets (reference).
+                Download the Excel template with 6 sheets: Assets, Additional Software, Instructions, Products (reference), Users (reference), and Vendors (reference).
               </Text>
               <div style={{ marginTop: 16 }}>
                 <Button
@@ -289,7 +294,7 @@ const LegacyImportModal = ({ visible, onClose, onSuccess }) => {
                   onClick={handleDownloadTemplate}
                   size="large"
                 >
-                  Download Template (5 Sheets)
+                  Download Template (6 Sheets)
                 </Button>
               </div>
             </div>
@@ -297,7 +302,7 @@ const LegacyImportModal = ({ visible, onClose, onSuccess }) => {
             <div style={{ marginTop: 32 }}>
               <Title level={5}>Step 2: Upload Completed File</Title>
               <Text type="secondary">
-                Fill in the template with your legacy asset data including warranty dates, lifecycle dates, and software installations, then upload for validation.
+                Fill in the Assets sheet with your legacy asset data. Use the Additional Software sheet for all software (OS, Office, etc.), then upload for validation.
               </Text>
               <Dragger
                 accept=".xlsx,.xls"
@@ -362,9 +367,10 @@ const LegacyImportModal = ({ visible, onClose, onSuccess }) => {
                 ...(validationResult?.errors || [])
               ]}
               rowKey="row_number"
-              scroll={{ x: 900, y: typeof window !== 'undefined' && window.innerWidth < 640 ? 300 : 400 }}
+              scroll={{ x: 1800, y: typeof window !== 'undefined' && window.innerWidth < 640 ? 300 : 400 }}
               pagination={{ pageSize: 50, simple: typeof window !== 'undefined' && window.innerWidth < 576 }}
               size="small"
+              bordered
               rowClassName={(record) => {
                 if (record.errors && record.errors.length > 0) return 'error-row'
                 if (record.warnings && record.warnings.length > 0) return 'warning-row'
