@@ -360,6 +360,40 @@ const EmailSettings = () => {
                 </>
               )}
 
+              <Divider>
+                <Space><MailOutlined /> Sender Information</Space>
+              </Divider>
+
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Form.Item
+                    name="from_email"
+                    label="From Email Address"
+                    rules={[
+                      { required: true, message: 'From email is required' },
+                      { type: 'email', message: 'Please enter a valid email' }
+                    ]}
+                  >
+                    <Input
+                      placeholder="noreply@yourcompany.com"
+                      prefix={<MailOutlined />}
+                      size="large"
+                    />
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item
+                    name="from_name"
+                    label="From Name"
+                  >
+                    <Input
+                      placeholder="Unified ITSM Platform"
+                      size="large"
+                    />
+                  </Form.Item>
+                </Col>
+              </Row>
+
               <Divider />
 
               {/* Test Configuration */}
