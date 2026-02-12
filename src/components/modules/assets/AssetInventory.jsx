@@ -635,10 +635,12 @@ const AssetInventory = () => {
     }))
   }
 
-  const handleExport = async () => {
+  const handleExport = async (exportAll = false) => {
     try {
       // Call service directly to avoid storing blob in Redux state
-      const response = await assetService.exportAssets(filters)
+      // If exportAll is true, pass empty filters to get all assets
+      const exportFilters = exportAll ? {} : filters
+      const response = await assetService.exportAssets(exportFilters)
 
       // Create blob and trigger download
       const blob = new Blob([response.data], {
@@ -647,13 +649,14 @@ const AssetInventory = () => {
       const url = window.URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url
-      link.download = `assets_export_${new Date().toISOString().split('T')[0]}.xlsx`
+      const exportType = exportAll ? 'all' : 'filtered'
+      link.download = `assets_export_${exportType}_${new Date().toISOString().split('T')[0]}.xlsx`
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
       window.URL.revokeObjectURL(url)
 
-      message.success('Export completed successfully')
+      message.success(`Export completed successfully${exportAll ? ' (All Assets)' : ''}`)
     } catch (error) {
       message.error(error.message || 'Failed to export assets')
     }
@@ -1921,7 +1924,8 @@ const AssetInventory = () => {
             <Dropdown
               menu={{
                 items: [
-                  { key: 'excel', label: 'Export to Excel', icon: <DownloadOutlined />, onClick: handleExport }
+                  { key: 'all', label: 'Export All Assets', icon: <DownloadOutlined />, onClick: () => handleExport(true) },
+                  { key: 'filtered', label: 'Export Filtered View', icon: <FilterOutlined />, onClick: () => handleExport(false) }
                 ]
               }}
             >
