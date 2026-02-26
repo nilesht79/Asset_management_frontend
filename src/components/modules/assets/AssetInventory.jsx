@@ -80,11 +80,13 @@ import {
   fetchOEMs,
   fetchProducts,
   fetchCategories,
+  fetchProductSubCategories,
   fetchBoards,
   fetchVendors,
   selectOEMs,
   selectProducts,
   selectCategories,
+  selectProductSubCategories,
   selectBoards
 } from '../../../store/slices/masterSlice'
 import {
@@ -142,6 +144,7 @@ const AssetInventory = () => {
     employee_code: '',
     product_id: '',
     category_id: '',
+    subcategory_id: '',
     oem_id: '',
     board_id: '',
     serial_number: ''
@@ -163,6 +166,7 @@ const AssetInventory = () => {
   const oems = useSelector(selectOEMs)
   const products = useSelector(selectProducts)
   const categories = useSelector(selectCategories)
+  const subcategories = useSelector(selectProductSubCategories)
   const locations = useSelector(selectLocations)
   const users = useSelector(selectUsers)
   const boards = useSelector(selectBoards)
@@ -190,6 +194,7 @@ const AssetInventory = () => {
     dispatch(fetchVendors({ limit: 1000 }))
     dispatch(fetchProducts({ limit: 1000 }))
     dispatch(fetchCategories({ limit: 1000, include_subcategories: 'true' }))
+    dispatch(fetchProductSubCategories({ limit: 1000 }))
     dispatch(fetchLocations({ limit: 1000 }))
     dispatch(fetchUsers({ limit: 1000 }))
   }, [dispatch, location.search])
@@ -702,6 +707,7 @@ const AssetInventory = () => {
       employee_code: '',
       product_id: '',
       category_id: '',
+      subcategory_id: '',
       oem_id: '',
       board_id: '',
       serial_number: ''
@@ -1159,6 +1165,13 @@ const AssetInventory = () => {
       key: 'category',
       width: 120,
       render: (text) => text ? <Tag color="purple" className="text-xs">{text}</Tag> : <span className="text-gray-400">—</span>
+    },
+    {
+      title: <span className="font-semibold text-gray-700">Sub-Category</span>,
+      dataIndex: 'subcategory_name',
+      key: 'subcategory',
+      width: 130,
+      render: (text) => text ? <Tag color="geekblue" className="text-xs">{text}</Tag> : <span className="text-gray-400">—</span>
     },
     {
       title: <span className="font-semibold text-gray-700">Department</span>,
@@ -3306,6 +3319,28 @@ const AssetInventory = () => {
               options={categories.data?.map(category => ({
                 value: category.id,
                 label: category.name
+              }))}
+            />
+          </div>
+
+          {/* Sub-Category */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Sub-Category</label>
+            <Select
+              placeholder="Select sub-category"
+              value={tempFilters.subcategory_id || undefined}
+              onChange={(value) => handleTempFilterChange('subcategory_id', value)}
+              allowClear
+              showSearch
+              optionFilterProp="children"
+              filterOption={(input, option) => {
+                const searchText = `${option.label || ''}`.toLowerCase()
+                return searchText.includes(input.toLowerCase())
+              }}
+              style={{ width: '100%' }}
+              options={subcategories.data?.map(subcat => ({
+                value: subcat.id,
+                label: subcat.name
               }))}
             />
           </div>

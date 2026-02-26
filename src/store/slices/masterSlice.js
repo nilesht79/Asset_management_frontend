@@ -1497,5 +1497,6 @@ export const selectMasterSelections = (state) => ({
 })
 export const selectMasterFilters = (state) => state.master.filters
 export const selectSubcategoriesByParent = (state) => state.master.subcategoriesByParent
+export const selectProductSubCategories = (state) => state.master.productSubCategories
 
 export default masterSlice.reducer

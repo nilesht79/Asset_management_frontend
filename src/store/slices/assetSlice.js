@@ -37,6 +37,7 @@ const initialState = {
     employee_code: '',
     product_id: '',
     category_id: '',
+    subcategory_id: '',
     oem_id: '',
     board_id: '',
     serial_number: '',
