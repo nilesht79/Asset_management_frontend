@@ -294,61 +294,15 @@ const AssetMovement = () => {
       defaultSortOrder: 'descend'
     },
     {
-      title: 'Asset Tag',
-      dataIndex: 'asset_tag',
-      key: 'asset_tag',
-      width: 200,
-      ellipsis: {
-        showTitle: false,
-      },
-      render: (text, record) => (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%' }}>
-          <Tooltip title={`${text} - Click to view history`}>
-            <Tag
-              color="blue"
-              onClick={() => handleViewHistory(record)}
-              style={{
-                flex: 1,
-                minWidth: 0,
-                maxWidth: '140px',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                marginRight: 0,
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-                userSelect: 'none'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.opacity = '0.8';
-                e.currentTarget.style.transform = 'scale(1.02)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.opacity = '1';
-                e.currentTarget.style.transform = 'scale(1)';
-              }}
-            >
-              {text}
-            </Tag>
-          </Tooltip>
-          <Tooltip title="View full history">
-            <Button
-              type="text"
-              size="small"
-              icon={<HistoryOutlined />}
-              onClick={() => handleViewHistory(record)}
-              style={{
-                padding: '4px',
-                minWidth: '28px',
-                height: '28px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#ff4d4f',
-                flexShrink: 0
-              }}
-            />
-          </Tooltip>
-        </div>
+      title: 'Sr.No',
+      dataIndex: 'serial_number',
+      key: 'serial_number',
+      width: 150,
+      ellipsis: { showTitle: false },
+      render: (text) => (
+        <Tooltip title={text || 'N/A'}>
+          <Text strong>{text || '-'}</Text>
+        </Tooltip>
       )
     },
     {
@@ -551,7 +505,7 @@ const AssetMovement = () => {
           </Col>
           <Col xs={12} sm={12} md={6}>
             <Input
-              placeholder={screens.xs ? 'Asset tag' : 'Search by asset tag'}
+              placeholder={screens.xs ? 'Sr.No' : 'Search by serial number'}
               prefix={<SearchOutlined />}
               value={filters.assetTag}
               onChange={(e) => setFilters({ ...filters, assetTag: e.target.value })}

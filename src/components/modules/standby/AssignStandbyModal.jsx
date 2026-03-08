@@ -49,7 +49,7 @@ const AssignStandbyModal = ({ visible, onClose, standbyAsset, onSuccess }) => {
   // Fetch users on modal open (fetch all users, no pagination limit)
   useEffect(() => {
     if (visible) {
-      dispatch(fetchUsers({ limit: 1000 }));
+      dispatch(fetchUsers({ limit: 5000, status: 'active' }));
     }
   }, [visible, dispatch]);
 

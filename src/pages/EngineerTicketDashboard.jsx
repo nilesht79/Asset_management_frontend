@@ -24,13 +24,15 @@ import {
   CheckCircleOutlined,
   AlertOutlined,
   IssuesCloseOutlined,
-  PlusOutlined
+  PlusOutlined,
+  ToolOutlined
 } from '@ant-design/icons';
 import { useSelector } from 'react-redux';
 import ticketService from '../services/ticket';
 import RequestCloseTicketModal from '../components/modules/tickets/RequestCloseTicketModal';
 import TicketDetailsDrawer from '../components/modules/tickets/TicketDetailsDrawer';
 import CreateTicketModal from '../components/modules/tickets/CreateTicketModal';
+import FlagServiceTypeModal from '../components/modules/tickets/FlagServiceTypeModal';
 import useResponsive from '../hooks/useResponsive';
 
 const { Search } = Input;
@@ -60,6 +62,7 @@ const EngineerTicketDashboard = () => {
   const [requestCloseModalVisible, setRequestCloseModalVisible] = useState(false);
   const [detailsDrawerVisible, setDetailsDrawerVisible] = useState(false);
   const [createTicketModalVisible, setCreateTicketModalVisible] = useState(false);
+  const [flagServiceTypeVisible, setFlagServiceTypeVisible] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState(null);
 
   const { user: currentUser } = useSelector((state) => state.auth);
@@ -171,6 +174,21 @@ const EngineerTicketDashboard = () => {
         label: 'Request Close',
         icon: <SendOutlined />,
         onClick: () => handleRequestClose(ticket)
+      });
+    }
+
+    // Show flag service type for service_request tickets with general service type
+    if (ticket.service_type === 'general' &&
+        ticket.ticket_type === 'service_request' &&
+        ['open', 'assigned', 'in_progress'].includes(ticket.status)) {
+      items.push({
+        key: 'flag-service-type',
+        label: 'Flag Service Type',
+        icon: <ToolOutlined />,
+        onClick: () => {
+          setSelectedTicket(ticket);
+          setFlagServiceTypeVisible(true);
+        }
       });
     }
 
@@ -431,6 +449,20 @@ const EngineerTicketDashboard = () => {
           setSelectedTicket(null);
         }}
         onUpdate={handleRefresh}
+      />
+
+      <FlagServiceTypeModal
+        visible={flagServiceTypeVisible}
+        ticket={selectedTicket}
+        onClose={() => {
+          setFlagServiceTypeVisible(false);
+          setSelectedTicket(null);
+        }}
+        onSuccess={() => {
+          setFlagServiceTypeVisible(false);
+          setSelectedTicket(null);
+          handleRefresh();
+        }}
       />
 
       {/* Mobile Floating Action Button */}

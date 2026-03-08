@@ -31,7 +31,8 @@ import {
   ExportOutlined,
   ReloadOutlined,
   HistoryOutlined,
-  CloudServerOutlined
+  CloudServerOutlined,
+  MessageOutlined
 } from '@ant-design/icons'
 import { selectSidebarCollapsed } from '../../../store/slices/uiSlice'
 import { getThemeByRole } from '../../../utils/roleThemes'
@@ -268,6 +269,11 @@ const Sidebar = () => {
                 key: '/settings/email',
                 icon: <MailOutlined />,
                 label: 'Email Configuration',
+              },
+              {
+                key: '/settings/sms',
+                icon: <MessageOutlined />,
+                label: 'SMS Configuration',
               },
               {
                 key: '/settings/permission-control',
@@ -717,6 +723,7 @@ const Sidebar = () => {
 
     // Settings routes
     if (pathname.startsWith('/settings/email')) return ['/settings/email']
+    if (pathname.startsWith('/settings/sms')) return ['/settings/sms']
     if (pathname.startsWith('/settings/sla')) return ['/settings/sla']
     if (pathname.startsWith('/settings/permission-control')) return ['/settings/permission-control']
     if (pathname.startsWith('/settings/field-templates')) return ['/settings/field-templates']

@@ -22,13 +22,17 @@ import {
   SendOutlined,
   CommentOutlined,
   LinkOutlined,
-  EditOutlined
+  EditOutlined,
+  ToolOutlined,
+  SwapOutlined
 } from '@ant-design/icons';
 import ticketService from '../../../services/ticket';
 import { useSelector } from 'react-redux';
 import LinkedAssets from './LinkedAssets';
 import LinkedSoftware from './LinkedSoftware';
 import EditTicketModal from './EditTicketModal';
+import FlagServiceTypeModal from './FlagServiceTypeModal';
+import ReviewServiceTypeModal from './ReviewServiceTypeModal';
 import AssetRepairHistory from '../assets/AssetRepairHistory';
 import { SlaStatusBadge } from '../sla';
 
@@ -43,6 +47,10 @@ const TicketDetailsDrawer = ({ visible, ticket, onClose, onUpdate }) => {
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [repairHistoryModal, setRepairHistoryModal] = useState({ visible: false, assetId: null, assetTag: null });
   const [editModalVisible, setEditModalVisible] = useState(false);
+  const [serviceTypeRequests, setServiceTypeRequests] = useState([]);
+  const [flagServiceTypeVisible, setFlagServiceTypeVisible] = useState(false);
+  const [reviewServiceTypeVisible, setReviewServiceTypeVisible] = useState(false);
+  const [pendingServiceTypeRequest, setPendingServiceTypeRequest] = useState(null);
 
   const { user: currentUser } = useSelector((state) => state.auth);
 
@@ -58,6 +66,19 @@ const TicketDetailsDrawer = ({ visible, ticket, onClose, onUpdate }) => {
     ['coordinator', 'admin', 'superadmin', 'it_head', 'department_coordinator'].includes(currentUser.role)
   ) && ticket?.status !== 'closed' && ticket?.status !== 'cancelled';
 
+  // Check if engineer can flag service type
+  const isAssignedEngineer = currentUser?.role === 'engineer' &&
+    ticket?.assigned_to_engineer_id === currentUser.user_id;
+  const canFlagServiceType = isAssignedEngineer &&
+    ['open', 'assigned', 'in_progress'].includes(ticket?.status) &&
+    ticket?.service_type === 'general' &&
+    ticket?.ticket_type === 'service_request' &&
+    !pendingServiceTypeRequest;
+
+  // Check if coordinator can review service type requests
+  const isCoordinator = currentUser &&
+    ['coordinator', 'admin', 'superadmin', 'it_head', 'department_coordinator'].includes(currentUser.role);
+
   const handleEditSuccess = () => {
     setEditModalVisible(false);
     if (onUpdate) {
@@ -70,6 +91,7 @@ const TicketDetailsDrawer = ({ visible, ticket, onClose, onUpdate }) => {
     if (visible && ticket) {
       fetchComments();
       fetchCloseRequestHistory();
+      fetchServiceTypeRequests();
     }
   }, [visible, ticket]);
 
@@ -101,6 +123,25 @@ const TicketDetailsDrawer = ({ visible, ticket, onClose, onUpdate }) => {
     } finally {
       setLoadingHistory(false);
     }
+  };
+
+  const fetchServiceTypeRequests = async () => {
+    if (!ticket) return;
+    try {
+      const response = await ticketService.getServiceTypeRequests(ticket.ticket_id);
+      const data = response.data.data || response.data;
+      const requests = Array.isArray(data) ? data : [];
+      setServiceTypeRequests(requests);
+      const pending = requests.find(r => r.request_status === 'pending');
+      setPendingServiceTypeRequest(pending || null);
+    } catch (error) {
+      console.error('Failed to fetch service type requests:', error);
+    }
+  };
+
+  const handleServiceTypeSuccess = () => {
+    fetchServiceTypeRequests();
+    if (onUpdate) onUpdate();
   };
 
   const handleAddComment = async () => {
@@ -359,6 +400,135 @@ const TicketDetailsDrawer = ({ visible, ticket, onClose, onUpdate }) => {
           />
         )}
 
+        {/* Flag Service Type Button - for engineers */}
+        {canFlagServiceType && (
+          <Card size="small" className="bg-blue-50 border-blue-200">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <ToolOutlined className="text-blue-600 text-lg" />
+                <div>
+                  <div className="font-semibold text-blue-900">Flag Service Type</div>
+                  <div className="text-sm text-blue-700">
+                    Mark this ticket as Repair or Replacement
+                  </div>
+                </div>
+              </div>
+              <Button
+                type="primary"
+                icon={<ToolOutlined />}
+                onClick={() => setFlagServiceTypeVisible(true)}
+              >
+                Flag
+              </Button>
+            </div>
+          </Card>
+        )}
+
+        {/* Pending Service Type Request Alert */}
+        {pendingServiceTypeRequest && (
+          <Card size="small" className="bg-orange-50 border-orange-200">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <ClockCircleOutlined className="text-orange-600 text-lg" />
+                <div>
+                  <div className="font-semibold text-orange-900">
+                    Service Type Change Pending
+                  </div>
+                  <div className="text-sm text-orange-700">
+                    Requested: {pendingServiceTypeRequest.proposed_service_type === 'repair' ? 'Repair Service' : 'Replacement Service'}
+                    {' '}by {pendingServiceTypeRequest.engineer_name || 'Engineer'}
+                  </div>
+                </div>
+              </div>
+              {isCoordinator && (
+                <Button
+                  type="primary"
+                  onClick={() => setReviewServiceTypeVisible(true)}
+                >
+                  Review
+                </Button>
+              )}
+            </div>
+          </Card>
+        )}
+
+        {/* Service Type Request History */}
+        {serviceTypeRequests.length > 0 && (
+          <Card
+            title={
+              <div className="flex items-center space-x-2">
+                <ToolOutlined />
+                <span>Service Type Request History</span>
+                <Tag>{serviceTypeRequests.length}</Tag>
+              </div>
+            }
+            size="small"
+          >
+            <Timeline
+              items={serviceTypeRequests.map((req) => ({
+                children: (
+                  <div key={req.request_id}>
+                    <div className="space-y-2">
+                      <div className="flex items-center space-x-2">
+                        <Avatar size="small" icon={<UserOutlined />} />
+                        <span className="font-medium">{req.engineer_name}</span>
+                        <Tag size="small" color="blue">Engineer</Tag>
+                      </div>
+                      <div className="bg-blue-50 p-3 rounded border border-blue-200">
+                        <div className="text-xs text-gray-500 mb-1">Proposed Service Type:</div>
+                        <Tag color={req.proposed_service_type === 'repair' ? 'orange' : 'red'}
+                          icon={req.proposed_service_type === 'repair' ? <ToolOutlined /> : <SwapOutlined />}
+                        >
+                          {req.proposed_service_type === 'repair' ? 'Repair Service' : 'Replacement Service'}
+                        </Tag>
+                        {req.request_notes && (
+                          <div className="mt-2 text-gray-700">{req.request_notes}</div>
+                        )}
+                      </div>
+                      <div className="flex items-center space-x-2 text-sm">
+                        <span className="text-gray-500">Status:</span>
+                        <Tag color={
+                          req.request_status === 'approved' ? 'green'
+                            : req.request_status === 'rejected' ? 'red' : 'gold'
+                        }>
+                          {req.request_status.toUpperCase()}
+                        </Tag>
+                        <span className="text-xs text-gray-400">
+                          {ticketService.formatRelativeTime(req.created_at)}
+                        </span>
+                      </div>
+                      {req.request_status !== 'pending' && req.coordinator_name && (
+                        <div className="mt-2 pl-4 border-l-2 border-gray-300">
+                          <div className="flex items-center space-x-2 mb-2">
+                            <Avatar size="small" icon={<UserOutlined />} />
+                            <span className="font-medium">{req.coordinator_name}</span>
+                            <Tag size="small" color="purple">Coordinator</Tag>
+                          </div>
+                          {req.review_notes && (
+                            <div className={`p-3 rounded border ${
+                              req.request_status === 'approved'
+                                ? 'bg-green-50 border-green-200'
+                                : 'bg-red-50 border-red-200'
+                            }`}>
+                              <div className="text-xs text-gray-500 mb-1">Coordinator Feedback:</div>
+                              <div className="text-gray-700">{req.review_notes}</div>
+                            </div>
+                          )}
+                          <div className="text-xs text-gray-400 mt-2">
+                            Reviewed {ticketService.formatRelativeTime(req.reviewed_at)}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ),
+                color: req.request_status === 'approved' ? 'green'
+                  : req.request_status === 'rejected' ? 'red' : 'blue'
+              }))}
+            />
+          </Card>
+        )}
+
         {/* Close Request History Section */}
         {closeRequestHistory.length > 0 && (
           <Card
@@ -589,6 +759,23 @@ const TicketDetailsDrawer = ({ visible, ticket, onClose, onUpdate }) => {
         onClose={() => setEditModalVisible(false)}
         onSuccess={handleEditSuccess}
         currentUser={currentUser}
+      />
+
+      {/* Flag Service Type Modal - Engineer */}
+      <FlagServiceTypeModal
+        visible={flagServiceTypeVisible}
+        ticket={ticket}
+        onClose={() => setFlagServiceTypeVisible(false)}
+        onSuccess={handleServiceTypeSuccess}
+      />
+
+      {/* Review Service Type Modal - Coordinator */}
+      <ReviewServiceTypeModal
+        visible={reviewServiceTypeVisible}
+        ticket={ticket}
+        request={pendingServiceTypeRequest}
+        onClose={() => setReviewServiceTypeVisible(false)}
+        onSuccess={handleServiceTypeSuccess}
       />
     </Drawer>
   );

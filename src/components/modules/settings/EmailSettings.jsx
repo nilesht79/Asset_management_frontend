@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Card,
   Form,
@@ -29,7 +29,12 @@ import {
   SettingOutlined,
   GoogleOutlined,
   CloudServerOutlined,
-  ReloadOutlined
+  WindowsOutlined,
+  ReloadOutlined,
+  LinkOutlined,
+  DisconnectOutlined,
+  SafetyCertificateOutlined,
+  LoadingOutlined
 } from '@ant-design/icons';
 import emailSettingsService from '../../../services/emailSettings';
 import { formatLocalDateTime } from '../../../utils/dateUtils';
@@ -41,6 +46,7 @@ const { Password } = Input;
 /**
  * Email Settings Component
  * Superadmin interface for configuring email notifications
+ * Supports Gmail, SMTP, and Microsoft 365 (OAuth 2.0)
  */
 const EmailSettings = () => {
   const [loading, setLoading] = useState(true);
@@ -51,11 +57,17 @@ const EmailSettings = () => {
   const [form] = Form.useForm();
   const [testEmailModalVisible, setTestEmailModalVisible] = useState(false);
   const [testEmail, setTestEmail] = useState('');
+  const [microsoftAuthLoading, setMicrosoftAuthLoading] = useState(false);
+  const [revokeLoading, setRevokeLoading] = useState(false);
   const provider = Form.useWatch('provider', form);
+  const popupCheckInterval = useRef(null);
 
   useEffect(() => {
     fetchConfiguration();
     fetchStats();
+    return () => {
+      if (popupCheckInterval.current) clearInterval(popupCheckInterval.current);
+    };
   }, []);
 
   const fetchConfiguration = async () => {
@@ -75,7 +87,9 @@ const EmailSettings = () => {
           gmail_user: configData.gmail_user,
           from_email: configData.from_email,
           from_name: configData.from_name,
-          is_enabled: configData.is_enabled
+          is_enabled: configData.is_enabled,
+          microsoft_client_id: configData.microsoft_client_id,
+          microsoft_tenant_id: configData.microsoft_tenant_id
         });
       }
     } catch (error) {
@@ -140,6 +154,83 @@ const EmailSettings = () => {
     } catch (error) {
       message.error('Failed to toggle email service');
     }
+  };
+
+  /**
+   * Microsoft OAuth — open popup for authentication
+   */
+  const handleMicrosoftAuth = async () => {
+    setMicrosoftAuthLoading(true);
+    try {
+      // First save config if not saved yet
+      const values = await form.validateFields();
+      await emailSettingsService.saveConfiguration(values);
+
+      // Get auth URL
+      const response = await emailSettingsService.getMicrosoftAuthUrl();
+      const authUrl = response.data?.data?.authUrl;
+
+      if (!authUrl) {
+        message.error('Failed to get Microsoft authentication URL');
+        return;
+      }
+
+      // Open popup
+      const popup = window.open(
+        authUrl,
+        'microsoft-auth',
+        'width=500,height=700,scrollbars=yes,resizable=yes'
+      );
+
+      if (!popup) {
+        message.error('Popup blocked. Please allow popups for this site.');
+        return;
+      }
+
+      // Poll for popup close
+      popupCheckInterval.current = setInterval(() => {
+        if (popup.closed) {
+          clearInterval(popupCheckInterval.current);
+          popupCheckInterval.current = null;
+          // Refresh config to check auth status
+          setTimeout(() => {
+            fetchConfiguration();
+            setMicrosoftAuthLoading(false);
+          }, 1000);
+        }
+      }, 1000);
+    } catch (error) {
+      if (error.errorFields) {
+        message.warning('Please fill in required fields and save before authenticating');
+      } else {
+        message.error(error.response?.data?.message || 'Failed to start Microsoft authentication');
+      }
+      setMicrosoftAuthLoading(false);
+    }
+  };
+
+  /**
+   * Revoke Microsoft authentication
+   */
+  const handleRevokeMicrosoft = async () => {
+    Modal.confirm({
+      title: 'Disconnect Microsoft Account',
+      content: 'Are you sure you want to disconnect your Microsoft account? Emails will stop sending until you re-authenticate.',
+      okText: 'Disconnect',
+      okType: 'danger',
+      onOk: async () => {
+        setRevokeLoading(true);
+        try {
+          await emailSettingsService.revokeMicrosoftAuth();
+          message.success('Microsoft account disconnected');
+          fetchConfiguration();
+        } catch (error) {
+          message.error('Failed to disconnect Microsoft account');
+        } finally {
+          setRevokeLoading(false);
+        }
+      }
+    });
   };
 
   if (loading) {
@@ -235,20 +326,22 @@ const EmailSettings = () => {
                       Custom SMTP Server
                     </Space>
                   </Option>
+                  <Option value="microsoft">
+                    <Space>
+                      <WindowsOutlined style={{ color: '#0078D4' }} />
+                      Microsoft 365 / Outlook
+                    </Space>
+                  </Option>
                 </Select>
               </Form.Item>
 
-              <Divider>
-                {provider === 'gmail' ? (
-                  <Space><GoogleOutlined /> Gmail Settings</Space>
-                ) : (
-                  <Space><CloudServerOutlined /> SMTP Settings</Space>
-                )}
-              </Divider>
-
-              {provider === 'gmail' ? (
-                /* Gmail Configuration */
+              {/* Provider-specific settings */}
+              {provider === 'gmail' && (
                 <>
+                  <Divider>
+                    <Space><GoogleOutlined /> Gmail Settings</Space>
+                  </Divider>
+
                   <Alert
                     message="Gmail App Password Required"
                     description={
@@ -300,9 +393,14 @@ const EmailSettings = () => {
                     </Col>
                   </Row>
                 </>
-              ) : (
-                /* SMTP Configuration */
+              )}
+
+              {provider === 'smtp' && (
                 <>
+                  <Divider>
+                    <Space><CloudServerOutlined /> SMTP Settings</Space>
+                  </Divider>
+
                   <Row gutter={16}>
                     <Col span={12}>
                       <Form.Item
@@ -360,39 +458,176 @@ const EmailSettings = () => {
                 </>
               )}
 
-              <Divider>
-                <Space><MailOutlined /> Sender Information</Space>
-              </Divider>
+              {provider === 'microsoft' && (
+                <>
+                  <Divider>
+                    <Space><WindowsOutlined /> Microsoft 365 Settings</Space>
+                  </Divider>
 
-              <Row gutter={16}>
-                <Col span={12}>
-                  <Form.Item
-                    name="from_email"
-                    label="From Email Address"
-                    rules={[
-                      { required: true, message: 'From email is required' },
-                      { type: 'email', message: 'Please enter a valid email' }
-                    ]}
+                  <Alert
+                    message="Azure App Registration Required"
+                    description={
+                      <div>
+                        <Paragraph style={{ marginBottom: 8 }}>
+                          To use Microsoft 365, register an app in Azure Portal:
+                        </Paragraph>
+                        <ol style={{ marginLeft: 16, marginBottom: 0 }}>
+                          <li>Go to <a href="https://portal.azure.com/#blade/Microsoft_AAD_RegisteredApps/ApplicationsListBlade" target="_blank" rel="noopener noreferrer">Azure App Registrations</a></li>
+                          <li>Create a new registration (Web platform)</li>
+                          <li>Add redirect URI: <Text code copyable>{`${window.location.origin.replace(':5173', ':3001').replace(':3000', ':3001')}/api/v1/settings/email/microsoft/callback`}</Text></li>
+                          <li>Add API permissions: <Text code>Mail.Send</Text>, <Text code>User.Read</Text>, <Text code>offline_access</Text></li>
+                          <li>Create a Client Secret and copy the values below</li>
+                        </ol>
+                      </div>
+                    }
+                    type="info"
+                    showIcon
+                    style={{ marginBottom: 24 }}
+                  />
+
+                  <Row gutter={16}>
+                    <Col span={12}>
+                      <Form.Item
+                        name="microsoft_client_id"
+                        label="Application (Client) ID"
+                        rules={[{ required: provider === 'microsoft', message: 'Client ID is required' }]}
+                      >
+                        <Input
+                          placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                          size="large"
+                        />
+                      </Form.Item>
+                    </Col>
+                    <Col span={12}>
+                      <Form.Item
+                        name="microsoft_tenant_id"
+                        label="Directory (Tenant) ID"
+                        rules={[{ required: provider === 'microsoft', message: 'Tenant ID is required' }]}
+                        extra="Use 'common' for multi-tenant apps"
+                      >
+                        <Input
+                          placeholder="common"
+                          size="large"
+                        />
+                      </Form.Item>
+                    </Col>
+                  </Row>
+
+                  <Row gutter={16}>
+                    <Col span={12}>
+                      <Form.Item
+                        name="microsoft_client_secret"
+                        label="Client Secret"
+                        extra={config?.microsoft_client_secret_set ? '(Secret is set, enter new value to change)' : ''}
+                      >
+                        <Password
+                          placeholder="Enter client secret value"
+                          size="large"
+                        />
+                      </Form.Item>
+                    </Col>
+                  </Row>
+
+                  {/* Microsoft Authentication Status */}
+                  <Card
+                    size="small"
+                    style={{
+                      marginTop: 16,
+                      background: config?.microsoft_is_authenticated ? '#f6ffed' : '#fff7e6',
+                      borderColor: config?.microsoft_is_authenticated ? '#b7eb8f' : '#ffd591'
+                    }}
                   >
-                    <Input
-                      placeholder="noreply@yourcompany.com"
-                      prefix={<MailOutlined />}
-                      size="large"
-                    />
-                  </Form.Item>
-                </Col>
-                <Col span={12}>
-                  <Form.Item
-                    name="from_name"
-                    label="From Name"
-                  >
-                    <Input
-                      placeholder="Unified ITSM Platform"
-                      size="large"
-                    />
-                  </Form.Item>
-                </Col>
-              </Row>
+                    <Row align="middle" justify="space-between">
+                      <Col>
+                        <Space direction="vertical" size={4}>
+                          <Space>
+                            <SafetyCertificateOutlined
+                              style={{
+                                color: config?.microsoft_is_authenticated ? '#52c41a' : '#faad14',
+                                fontSize: 20
+                              }}
+                            />
+                            <Text strong style={{ fontSize: 15 }}>
+                              {config?.microsoft_is_authenticated ? 'Authenticated' : 'Not Authenticated'}
+                            </Text>
+                          </Space>
+                          {config?.microsoft_is_authenticated && (
+                            <Text type="secondary" style={{ marginLeft: 28 }}>
+                              Connected as <Text strong>{config.microsoft_display_name}</Text> ({config.microsoft_user_email})
+                            </Text>
+                          )}
+                          {!config?.microsoft_is_authenticated && (
+                            <Text type="secondary" style={{ marginLeft: 28 }}>
+                              Save configuration first, then authenticate with Microsoft
+                            </Text>
+                          )}
+                        </Space>
+                      </Col>
+                      <Col>
+                        {config?.microsoft_is_authenticated ? (
+                          <Button
+                            danger
+                            icon={<DisconnectOutlined />}
+                            onClick={handleRevokeMicrosoft}
+                            loading={revokeLoading}
+                          >
+                            Disconnect
+                          </Button>
+                        ) : (
+                          <Button
+                            type="primary"
+                            icon={microsoftAuthLoading ? <LoadingOutlined /> : <LinkOutlined />}
+                            onClick={handleMicrosoftAuth}
+                            loading={microsoftAuthLoading}
+                            style={{ background: '#0078D4', borderColor: '#0078D4' }}
+                          >
+                            Authenticate with Microsoft
+                          </Button>
+                        )}
+                      </Col>
+                    </Row>
+                  </Card>
+                </>
+              )}
+
+              {/* Sender Information — only for Gmail and SMTP */}
+              {provider !== 'microsoft' && (
+                <>
+                  <Divider>
+                    <Space><MailOutlined /> Sender Information</Space>
+                  </Divider>
+
+                  <Row gutter={16}>
+                    <Col span={12}>
+                      <Form.Item
+                        name="from_email"
+                        label="From Email Address"
+                        rules={[
+                          { required: provider !== 'microsoft', message: 'From email is required' },
+                          { type: 'email', message: 'Please enter a valid email' }
+                        ]}
+                      >
+                        <Input
+                          placeholder="noreply@yourcompany.com"
+                          prefix={<MailOutlined />}
+                          size="large"
+                        />
+                      </Form.Item>
+                    </Col>
+                    <Col span={12}>
+                      <Form.Item
+                        name="from_name"
+                        label="From Name"
+                      >
+                        <Input
+                          placeholder="Unified ITSM Platform"
+                          size="large"
+                        />
+                      </Form.Item>
+                    </Col>
+                  </Row>
+                </>
+              )}
 
               <Divider />
 
@@ -403,13 +638,18 @@ const EmailSettings = () => {
                   icon={<SendOutlined />}
                   onClick={() => setTestEmailModalVisible(true)}
                   size="large"
-                  disabled={!config?.is_enabled}
+                  disabled={!config?.is_enabled || (provider === 'microsoft' && !config?.microsoft_is_authenticated)}
                 >
                   Send Test Email
                 </Button>
                 {!config?.is_enabled && (
                   <div style={{ marginTop: 8 }}>
                     <Text type="secondary">Enable email service to send test emails</Text>
+                  </div>
+                )}
+                {provider === 'microsoft' && config?.is_enabled && !config?.microsoft_is_authenticated && (
+                  <div style={{ marginTop: 8 }}>
+                    <Text type="secondary">Authenticate with Microsoft before sending test emails</Text>
                   </div>
                 )}
               </div>
@@ -497,6 +737,16 @@ const EmailSettings = () => {
               <li><Text code>Gmail:</Text> smtp.gmail.com:587</li>
               <li><Text code>Outlook:</Text> smtp.office365.com:587</li>
               <li><Text code>Yahoo:</Text> smtp.mail.yahoo.com:587</li>
+            </ul>
+
+            <Paragraph>
+              <Text strong>Microsoft 365:</Text>
+            </Paragraph>
+            <ul style={{ paddingLeft: 16, marginBottom: 16 }}>
+              <li>Uses OAuth 2.0 + Microsoft Graph API</li>
+              <li>Tokens auto-refresh (no manual intervention)</li>
+              <li>Requires Azure App Registration</li>
+              <li>Supports custom domains (e.g., @company.com)</li>
             </ul>
 
             <Alert

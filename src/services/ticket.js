@@ -689,6 +689,65 @@ const ticketService = {
       console.error('Error fetching reopen history:', error);
       throw error;
     }
+  },
+
+  /**
+   * Engineer requests a service type change (repair/replace)
+   */
+  requestServiceTypeChange: async (ticketId, proposedServiceType, requestNotes = null) => {
+    try {
+      const response = await apiClient.post(`/tickets/${ticketId}/request-service-type-change`, {
+        proposed_service_type: proposedServiceType,
+        request_notes: requestNotes
+      });
+      return response;
+    } catch (error) {
+      console.error('Error requesting service type change:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Coordinator reviews (approves/rejects) service type change request
+   */
+  reviewServiceTypeChange: async (ticketId, requestId, action, reviewNotes = null) => {
+    try {
+      const response = await apiClient.put(`/tickets/${ticketId}/review-service-type-change`, {
+        request_id: requestId,
+        action,
+        review_notes: reviewNotes
+      });
+      return response;
+    } catch (error) {
+      console.error('Error reviewing service type change:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get service type change request history for a ticket
+   */
+  getServiceTypeRequests: async (ticketId) => {
+    try {
+      const response = await apiClient.get(`/tickets/${ticketId}/service-type-requests`);
+      return response;
+    } catch (error) {
+      console.error('Error fetching service type requests:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get pending service type change requests (for coordinators)
+   */
+  getPendingServiceTypeRequests: async () => {
+    try {
+      const response = await apiClient.get('/tickets/pending-service-type-requests');
+      return response;
+    } catch (error) {
+      console.error('Error fetching pending service type requests:', error);
+      throw error;
+    }
   }
 };
 

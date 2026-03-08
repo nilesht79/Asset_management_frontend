@@ -22,6 +22,7 @@ const EditTicketModal = ({ visible, ticket, onClose, onSuccess, currentUser }) =
   const [selectedSoftware, setSelectedSoftware] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [originalCategory, setOriginalCategory] = useState(null);
+  const [selectedServiceType, setSelectedServiceType] = useState(null);
 
   useEffect(() => {
     if (visible && ticket) {
@@ -48,6 +49,7 @@ const EditTicketModal = ({ visible, ticket, onClose, onSuccess, currentUser }) =
 
       setSelectedCategory(ticket.category);
       setOriginalCategory(ticket.category);
+      setSelectedServiceType(ticket.service_type);
 
       // Fetch current linked assets/software based on category
       if (ticket.category === 'Hardware') {
@@ -168,6 +170,7 @@ const EditTicketModal = ({ visible, ticket, onClose, onSuccess, currentUser }) =
     setSelectedSoftware([]);
     setSelectedCategory(null);
     setOriginalCategory(null);
+    setSelectedServiceType(null);
     onClose();
   };
 
@@ -387,7 +390,7 @@ const EditTicketModal = ({ visible, ticket, onClose, onSuccess, currentUser }) =
                 rules={[{ required: true, message: 'Please select service type' }]}
                 tooltip="Repair/Replace tickets require a service report upon closure"
               >
-                <Select placeholder="Select service type">
+                <Select placeholder="Select service type" onChange={(value) => setSelectedServiceType(value)}>
                   <Option value="general">General Support</Option>
                   <Option value="repair">Repair Service</Option>
                   <Option value="replace">Replacement Service</Option>
@@ -395,6 +398,16 @@ const EditTicketModal = ({ visible, ticket, onClose, onSuccess, currentUser }) =
               </Form.Item>
             </Col>
           </Row>
+
+          {(selectedServiceType === 'repair' || selectedServiceType === 'replace') && (
+            <Alert
+              message="Service Report Required"
+              description={`Selecting ${selectedServiceType === 'repair' ? 'Repair' : 'Replacement'} service type will auto-generate a draft service report. The engineer must complete the service report details when requesting ticket closure.`}
+              type="warning"
+              showIcon
+              style={{ marginBottom: 16 }}
+            />
+          )}
 
           {/* Priority */}
           <Form.Item

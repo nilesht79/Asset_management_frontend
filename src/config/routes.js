@@ -146,6 +146,9 @@ export const ROUTES = {
   // Email Settings (Superadmin only)
   EMAIL_SETTINGS: '/settings/email',
 
+  // SMS Settings (Superadmin only)
+  SMS_SETTINGS: '/settings/sms',
+
   // SLA Configuration
   SLA_CONFIG: '/settings/sla'
 }
@@ -433,6 +436,14 @@ export const ROUTE_META = {
     icon: 'mail'
   },
 
+  // SMS Settings
+  [ROUTES.SMS_SETTINGS]: {
+    title: 'SMS Settings',
+    breadcrumb: ['Settings', 'SMS Configuration'],
+    roles: ['superadmin'],
+    icon: 'message'
+  },
+
   // SLA Configuration
   [ROUTES.SLA_CONFIG]: {
     title: 'SLA Configuration',
@@ -716,6 +727,12 @@ export const NAVIGATION_MENU = [
         key: 'email-settings',
         path: ROUTES.EMAIL_SETTINGS,
         title: 'Email Configuration',
+        roles: ['superadmin']
+      },
+      {
+        key: 'sms-settings',
+        path: ROUTES.SMS_SETTINGS,
+        title: 'SMS Configuration',
         roles: ['superadmin']
       },
       {

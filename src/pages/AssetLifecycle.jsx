@@ -457,7 +457,7 @@ const AssetLifecycle = () => {
       label: (
         <span>
           All Alerts
-          <Badge count={statistics?.total_alerts || 0} style={{ marginLeft: 8 }} />
+          <Badge count={statistics?.total_alerts || 0} overflowCount={99999} style={{ marginLeft: 8 }} />
         </span>
       )
     },
@@ -466,7 +466,7 @@ const AssetLifecycle = () => {
       label: (
         <span>
           Warranty
-          <Badge count={statistics?.warranty?.total || 0} style={{ marginLeft: 8, backgroundColor: '#faad14' }} />
+          <Badge count={statistics?.warranty?.total || 0} overflowCount={99999} style={{ marginLeft: 8, backgroundColor: '#faad14' }} />
         </span>
       )
     },
@@ -475,7 +475,7 @@ const AssetLifecycle = () => {
       label: (
         <span>
           End of Life
-          <Badge count={statistics?.eol?.total || 0} style={{ marginLeft: 8, backgroundColor: '#ff7a45' }} />
+          <Badge count={statistics?.eol?.total || 0} overflowCount={99999} style={{ marginLeft: 8, backgroundColor: '#ff7a45' }} />
         </span>
       )
     },
@@ -484,7 +484,7 @@ const AssetLifecycle = () => {
       label: (
         <span>
           End of Support
-          <Badge count={statistics?.eos?.total || 0} style={{ marginLeft: 8, backgroundColor: '#f5222d' }} />
+          <Badge count={statistics?.eos?.total || 0} overflowCount={99999} style={{ marginLeft: 8, backgroundColor: '#f5222d' }} />
         </span>
       )
     }

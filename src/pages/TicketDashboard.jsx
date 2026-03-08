@@ -30,7 +30,8 @@ import {
   IssuesCloseOutlined,
   DownloadOutlined,
   CloseOutlined,
-  EditOutlined
+  EditOutlined,
+  ToolOutlined
 } from '@ant-design/icons';
 import { useSelector } from 'react-redux';
 import ticketService from '../services/ticket';
@@ -41,7 +42,9 @@ import TicketDetailsDrawer from '../components/modules/tickets/TicketDetailsDraw
 import EditTicketModal from '../components/modules/tickets/EditTicketModal';
 import TicketFilterDrawer from '../components/modules/tickets/TicketFilterDrawer';
 import ReviewCloseRequestModal from '../components/modules/tickets/ReviewCloseRequestModal';
+import ReviewServiceTypeModal from '../components/modules/tickets/ReviewServiceTypeModal';
 import PendingCloseRequestsDrawer from '../components/modules/tickets/PendingCloseRequestsDrawer';
+import PendingServiceTypeRequestsDrawer from '../components/modules/tickets/PendingServiceTypeRequestsDrawer';
 import ReopenTicketModal from '../components/modules/tickets/ReopenTicketModal';
 import useResponsive from '../hooks/useResponsive';
 
@@ -64,6 +67,11 @@ const TicketDashboard = () => {
   });
   const [closeRequestCount, setCloseRequestCount] = useState(0);
   const [pendingCloseRequests, setPendingCloseRequests] = useState([]);
+  const [pendingServiceTypeRequests, setPendingServiceTypeRequests] = useState([]);
+  const [serviceTypeRequestsDrawerVisible, setServiceTypeRequestsDrawerVisible] = useState(false);
+  const [reviewServiceTypeVisible, setReviewServiceTypeVisible] = useState(false);
+  const [selectedServiceTypeRequest, setSelectedServiceTypeRequest] = useState(null);
+  const [selectedServiceTypeTicket, setSelectedServiceTypeTicket] = useState(null);
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
@@ -101,6 +109,7 @@ const TicketDashboard = () => {
     fetchTickets();
     fetchStats();
     fetchCloseRequestCount();
+    fetchPendingServiceTypeRequests();
   }, [pagination.current, pagination.pageSize, filters]);
 
   const fetchTickets = async () => {
@@ -161,6 +170,48 @@ const TicketDashboard = () => {
   const handleShowCloseRequests = async () => {
     await fetchPendingCloseRequests();
     setPendingCloseRequestsDrawerVisible(true);
+  };
+
+  const fetchPendingServiceTypeRequests = async () => {
+    try {
+      const response = await ticketService.getPendingServiceTypeRequests();
+      const data = response.data.data || response.data;
+      setPendingServiceTypeRequests(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Failed to fetch pending service type requests:', error);
+    }
+  };
+
+  const handleShowServiceTypeRequests = async () => {
+    await fetchPendingServiceTypeRequests();
+    setServiceTypeRequestsDrawerVisible(true);
+  };
+
+  const handleReviewServiceTypeRequest = (request) => {
+    setSelectedServiceTypeRequest(request);
+    setSelectedServiceTypeTicket({
+      ticket_id: request.ticket_id,
+      ticket_number: request.ticket_number,
+      title: request.title
+    });
+    setReviewServiceTypeVisible(true);
+  };
+
+  const handleServiceTypeReviewSuccess = async () => {
+    setReviewServiceTypeVisible(false);
+    setSelectedServiceTypeRequest(null);
+    setSelectedServiceTypeTicket(null);
+    await Promise.all([
+      fetchTickets(),
+      fetchStats(),
+      fetchPendingServiceTypeRequests()
+    ]);
+
+    setTimeout(() => {
+      if (pendingServiceTypeRequests.length === 0) {
+        setServiceTypeRequestsDrawerVisible(false);
+      }
+    }, 500);
   };
 
   const handleReviewCloseRequest = (closeRequest) => {
@@ -644,6 +695,16 @@ const TicketDashboard = () => {
             </Button>
           </Badge>
 
+          <Badge count={pendingServiceTypeRequests.length} offset={[0, 0]}>
+            <Button
+              icon={<ToolOutlined />}
+              onClick={handleShowServiceTypeRequests}
+              type={pendingServiceTypeRequests.length > 0 ? 'primary' : 'default'}
+            >
+              {!isMobile && 'Service Type Requests'}
+            </Button>
+          </Badge>
+
           <Button
             icon={<DownloadOutlined />}
             onClick={handleExport}
@@ -658,6 +719,7 @@ const TicketDashboard = () => {
               fetchTickets();
               fetchStats();
               fetchCloseRequestCount();
+              fetchPendingServiceTypeRequests();
             }}
             disabled={loading}
           >
@@ -794,7 +856,27 @@ const TicketDashboard = () => {
           fetchTickets();
           fetchStats();
           fetchCloseRequestCount();
+          fetchPendingServiceTypeRequests();
         }}
+      />
+
+      <PendingServiceTypeRequestsDrawer
+        visible={serviceTypeRequestsDrawerVisible}
+        requests={pendingServiceTypeRequests}
+        onClose={() => setServiceTypeRequestsDrawerVisible(false)}
+        onReviewRequest={handleReviewServiceTypeRequest}
+      />
+
+      <ReviewServiceTypeModal
+        visible={reviewServiceTypeVisible}
+        ticket={selectedServiceTypeTicket}
+        request={selectedServiceTypeRequest}
+        onClose={() => {
+          setReviewServiceTypeVisible(false);
+          setSelectedServiceTypeRequest(null);
+          setSelectedServiceTypeTicket(null);
+        }}
+        onSuccess={handleServiceTypeReviewSuccess}
       />
 
       {/* Filter Drawer */}

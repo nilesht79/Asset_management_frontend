@@ -19,6 +19,7 @@ import VendorList from '../components/modules/masters/vendors/VendorList'
 // Settings Components
 import OrgConfig from '../components/modules/settings/OrgConfig'
 import EmailSettings from '../components/modules/settings/EmailSettings'
+import SmsSettings from '../components/modules/settings/SmsSettings'
 
 import AssetInventory from "../components/modules/assets/AssetInventory"
 import AssetMovement from "../pages/AssetMovement"
@@ -274,6 +275,7 @@ const AppRouter = () => {
             <Route path="settings/field-templates" element={<TemplateManager />} />
             <Route path="settings/org-config" element={<OrgConfig />} />
             <Route path="settings/email" element={<EmailSettings />} />
+            <Route path="settings/sms" element={<SmsSettings />} />
             <Route path="settings/company-branding" element={<CompanySettings />} />
             <Route path="settings/ticket-reopen" element={<TicketReopenConfig />} />
           </>

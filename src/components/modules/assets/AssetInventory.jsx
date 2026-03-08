@@ -1885,7 +1885,7 @@ const AssetInventory = () => {
                         <div className="font-medium text-xs sm:text-sm truncate">{config.label}</div>
                         <div className="text-xs text-gray-500 hidden sm:block">{config.desc}</div>
                       </div>
-                      <Badge count={alert.count} className={config.color} />
+                      <Badge count={alert.count} overflowCount={99999} className={config.color} />
                     </div>
                   )
                 })

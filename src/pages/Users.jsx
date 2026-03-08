@@ -300,6 +300,7 @@ const Users = () => {
       employee_id: user.employeeId,
       designation: user.designation,
       room_no: user.roomNo,
+      contact_number: user.contactNumber,
       status: user.status,
       is_vip: user.isVip || false,
       allow_multi_assets: user.allowMultiAssets || false
@@ -1204,6 +1205,17 @@ const Users = () => {
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item
+                label="Contact Number"
+                name="contact_number"
+                rules={[
+                  { pattern: /^[0-9]{10,15}$/, message: 'Enter a valid phone number (10-15 digits)' }
+                ]}
+              >
+                <Input placeholder="10-digit mobile number" />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
                 label="Status"
                 name="status"
                 initialValue="active"
@@ -1321,6 +1333,7 @@ const Users = () => {
                 <div><strong>Floor:</strong> {selectedUserDetails.location.floor}</div>
               )}
               <div><strong>Room No:</strong> {selectedUserDetails.roomNo || 'N/A'}</div>
+              <div><strong>Contact Number:</strong> {selectedUserDetails.contactNumber || 'N/A'}</div>
               <div>
                 <strong>Status:</strong>
                 <Tag color={selectedUserDetails.isActive ? 'green' : 'red'} className="ml-2">

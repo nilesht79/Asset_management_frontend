@@ -201,7 +201,9 @@ const NotificationDropdown = ({ onNotificationRead, onAllRead, onClose, onViewAl
       recurring_breach: <ExclamationCircleOutlined style={{ color: '#cf1322' }} />,
       ticket_assigned: <CheckCircleOutlined style={{ color: '#1890ff' }} />,
       status_change: <InfoCircleOutlined style={{ color: '#52c41a' }} />,
-      comment_added: <BellOutlined style={{ color: '#722ed1' }} />
+      comment_added: <BellOutlined style={{ color: '#722ed1' }} />,
+      warranty_expiring: <WarningOutlined style={{ color: '#fa8c16' }} />,
+      eosl_expiring: <ExclamationCircleOutlined style={{ color: '#eb2f96' }} />
     }
     return typeIcons[type] || <BellOutlined />
   }
