@@ -115,7 +115,7 @@ const AssignEngineerModal = ({ visible, ticket, onClose, onSuccess }) => {
             placeholder="Search and select engineer"
             onChange={handleEngineerChange}
             filterOption={(input, option) =>
-              option.children.props.children[1].toLowerCase().includes(input.toLowerCase())
+              (option.label || '').toLowerCase().includes(input.toLowerCase())
             }
             optionLabelProp="label"
           >
