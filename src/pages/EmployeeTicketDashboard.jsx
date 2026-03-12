@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Card,
   Table,
@@ -28,7 +28,7 @@ import {
   SyncOutlined
 } from '@ant-design/icons';
 import { useSelector } from 'react-redux';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import ticketService from '../services/ticket';
 import CreateTicketModal from '../components/modules/tickets/CreateTicketModal';
 import TicketDetailsDrawer from '../components/modules/tickets/TicketDetailsDrawer';
@@ -74,10 +74,37 @@ const EmployeeTicketDashboard = () => {
   // Pre-selected asset from MyAssets page
   const [preSelectedAsset, setPreSelectedAsset] = useState(null);
 
+  const [searchParams, setSearchParams] = useSearchParams();
+
   useEffect(() => {
     loadTickets();
     loadStats();
   }, [pagination.current, pagination.pageSize, filters]);
+
+  // Auto-open ticket drawer when navigated via notification with ?viewTicket=<id>
+  const openTicketFromUrl = useCallback(async () => {
+    const ticketId = searchParams.get('viewTicket');
+    if (ticketId) {
+      try {
+        const response = await ticketService.getTicketById(ticketId);
+        const data = response.data?.data || response.data;
+        const ticket = data?.ticket || data;
+        if (ticket?.ticket_id) {
+          setSelectedTicket(ticket);
+          setDetailsDrawerVisible(true);
+        }
+      } catch (error) {
+        console.error('Failed to load ticket from URL:', error);
+        message.error('Failed to load ticket details');
+      }
+      searchParams.delete('viewTicket');
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    openTicketFromUrl();
+  }, [openTicketFromUrl]);
 
   // Auto-open create modal when navigating to /create-ticket
   useEffect(() => {

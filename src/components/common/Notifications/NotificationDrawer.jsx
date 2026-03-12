@@ -13,6 +13,7 @@ import {
   CloseOutlined
 } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
+import { useSelector } from 'react-redux'
 import notificationApiService from '../../../services/notificationApi'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
@@ -35,6 +36,13 @@ const NotificationDrawer = ({ open, onClose, onNotificationRead }) => {
   const [activeTab, setActiveTab] = useState('all')
   const [priorityFilter, setPriorityFilter] = useState(null)
   const navigate = useNavigate()
+  const { user: currentUser } = useSelector((state) => state.auth)
+
+  const getTicketRoute = (ticketId) => {
+    if (currentUser?.role === 'engineer') return `/engineer/tickets?viewTicket=${ticketId}`
+    if (['coordinator', 'admin', 'superadmin', 'it_head', 'department_coordinator'].includes(currentUser?.role)) return `/tickets?viewTicket=${ticketId}`
+    return `/my-tickets?viewTicket=${ticketId}`
+  }
 
   const PAGE_SIZE = 20
 
@@ -115,7 +123,7 @@ const NotificationDrawer = ({ open, onClose, onNotificationRead }) => {
         navigate('/assets/lifecycle')
         onClose()
       } else if (notification.ticket_id) {
-        navigate(`/tickets/${notification.ticket_id}`)
+        navigate(getTicketRoute(notification.ticket_id))
         onClose()
       }
     } catch (error) {

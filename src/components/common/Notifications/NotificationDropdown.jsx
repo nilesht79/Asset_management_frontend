@@ -11,6 +11,7 @@ import {
   DeleteOutlined
 } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
+import { useSelector } from 'react-redux'
 import notificationApiService from '../../../services/notificationApi'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
@@ -30,6 +31,13 @@ const NotificationDropdown = ({ onNotificationRead, onAllRead, onClose, onViewAl
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)
   const navigate = useNavigate()
+  const { user: currentUser } = useSelector((state) => state.auth)
+
+  const getTicketRoute = (ticketId) => {
+    if (currentUser?.role === 'engineer') return `/engineer/tickets?viewTicket=${ticketId}`
+    if (['coordinator', 'admin', 'superadmin', 'it_head', 'department_coordinator'].includes(currentUser?.role)) return `/tickets?viewTicket=${ticketId}`
+    return `/my-tickets?viewTicket=${ticketId}`
+  }
 
   /**
    * Fetch notifications from API
@@ -103,7 +111,7 @@ const NotificationDropdown = ({ onNotificationRead, onAllRead, onClose, onViewAl
           onClose()
         }
       } else if (notification.ticket_id) {
-        navigate(`/tickets/${notification.ticket_id}`)
+        navigate(getTicketRoute(notification.ticket_id))
         if (onClose) {
           onClose()
         }

@@ -50,12 +50,14 @@ import {
   InboxOutlined,
   FileExcelOutlined,
   CheckCircleOutlined,
-  CloseCircleOutlined
+  CloseCircleOutlined,
+  DeploymentUnitOutlined
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import * as XLSX from 'xlsx'
 import licenseService from '../../../services/license'
 import masterService from '../../../services/master'
+import BulkDeployModal from './BulkDeployModal'
 
 const { Search } = Input
 const { Option } = Select
@@ -94,6 +96,10 @@ const SoftwareLicenses = () => {
   const [licenseKeys, setLicenseKeys] = useState([])
   const [keysLoading, setKeysLoading] = useState(false)
   const [addingKeys, setAddingKeys] = useState(false)
+
+  // Bulk Deploy state
+  const [deployModalOpen, setDeployModalOpen] = useState(false)
+  const [deployLicense, setDeployLicense] = useState(null)
 
   // Bulk Upload state
   const [bulkUploadModalOpen, setBulkUploadModalOpen] = useState(false)
@@ -1108,11 +1114,14 @@ const SoftwareLicenses = () => {
     {
       title: 'Actions',
       key: 'actions',
-      width: 150,
+      width: 190,
       render: (_, record) => (
         <Space>
           <Tooltip title="View Details">
             <Button type="text" size="small" icon={<EyeOutlined />} onClick={() => handleViewDetails(record)} />
+          </Tooltip>
+          <Tooltip title="Deploy to Assets">
+            <Button type="text" size="small" icon={<DeploymentUnitOutlined />} onClick={() => { setDeployLicense(record); setDeployModalOpen(true) }} />
           </Tooltip>
           <Tooltip title="Manage Keys">
             <Button type="text" size="small" icon={<KeyOutlined />} onClick={() => handleManageKeys(record)} />
@@ -2092,6 +2101,14 @@ const SoftwareLicenses = () => {
           </>
         )}
       </Modal>
+
+      {/* Bulk Deploy Modal */}
+      <BulkDeployModal
+        open={deployModalOpen}
+        onClose={() => { setDeployModalOpen(false); setDeployLicense(null) }}
+        license={deployLicense}
+        onSuccess={() => { loadLicenses(); if (activeTab === 'report') loadReport() }}
+      />
     </div>
   )
 }

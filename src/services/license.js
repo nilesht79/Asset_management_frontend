@@ -100,6 +100,21 @@ const licenseService = {
   },
 
   // =====================
+  // BULK DEPLOY
+  // =====================
+
+  // Get assets that can receive a license (not already installed)
+  getDeployableAssets: (licenseId, params = {}) => {
+    const queryString = apiUtils.buildQueryString(params)
+    return api.get(`/licenses/${licenseId}/deployable-assets${queryString ? `?${queryString}` : ''}`)
+  },
+
+  // Bulk assign a license to multiple assets
+  bulkAssignLicense: (licenseId, assetIds) => {
+    return api.post(`/licenses/${licenseId}/bulk-assign`, { asset_ids: assetIds })
+  },
+
+  // =====================
   // UTILITY FUNCTIONS
   // =====================
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Card,
   Table,
@@ -28,6 +28,7 @@ import {
   ToolOutlined
 } from '@ant-design/icons';
 import { useSelector } from 'react-redux';
+import { useSearchParams } from 'react-router-dom';
 import ticketService from '../services/ticket';
 import RequestCloseTicketModal from '../components/modules/tickets/RequestCloseTicketModal';
 import TicketDetailsDrawer from '../components/modules/tickets/TicketDetailsDrawer';
@@ -67,11 +68,37 @@ const EngineerTicketDashboard = () => {
 
   const { user: currentUser } = useSelector((state) => state.auth);
   const { isMobile, isTablet } = useResponsive();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   useEffect(() => {
     fetchTickets();
     fetchStats();
   }, [pagination.current, pagination.pageSize, filters]);
+
+  // Auto-open ticket drawer when navigated via notification with ?viewTicket=<id>
+  const openTicketFromUrl = useCallback(async () => {
+    const ticketId = searchParams.get('viewTicket');
+    if (ticketId) {
+      try {
+        const response = await ticketService.getTicketById(ticketId);
+        const data = response.data?.data || response.data;
+        const ticket = data?.ticket || data;
+        if (ticket?.ticket_id) {
+          setSelectedTicket(ticket);
+          setDetailsDrawerVisible(true);
+        }
+      } catch (error) {
+        console.error('Failed to load ticket from URL:', error);
+        message.error('Failed to load ticket details');
+      }
+      searchParams.delete('viewTicket');
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    openTicketFromUrl();
+  }, [openTicketFromUrl]);
 
   const fetchTickets = async () => {
     setLoading(true);

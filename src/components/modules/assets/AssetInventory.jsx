@@ -2185,7 +2185,7 @@ const AssetInventory = () => {
                         }
                         options={users.data?.map(user => ({
                           value: user.id,
-                          label: `${user.firstName} ${user.lastName} (${user.email})`
+                          label: `${user.firstName} ${user.lastName}${user.employeeId ? ` (${user.employeeId})` : ''} (${user.email})`
                         }))}
                         loading={users.loading}
                       />
@@ -3129,7 +3129,7 @@ const AssetInventory = () => {
               }
               options={users.data?.map(user => ({
                 value: user.id,
-                label: `${user.firstName} ${user.lastName} (${user.email})`
+                label: `${user.firstName} ${user.lastName}${user.employeeId ? ` (${user.employeeId})` : ''} (${user.email})`
               }))}
               loading={users.loading}
             />
