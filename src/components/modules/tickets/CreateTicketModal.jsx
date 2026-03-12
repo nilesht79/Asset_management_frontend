@@ -247,21 +247,22 @@ const CreateTicketModal = ({ visible, onClose, onSuccess, currentUser, preSelect
           >
             <Select
               showSearch
-              placeholder="Search employee name or type for guest"
+              placeholder="Search by name, email, or employee ID"
               onChange={handleEmployeeChange}
               onSearch={handleSearch}
               filterOption={(input, option) => {
-                if (!option?.children) return false;
-                const searchText = typeof option.children === 'string'
-                  ? option.children
-                  : option.children.join(' ');
-                return searchText.toLowerCase().includes(input.toLowerCase());
+                if (!option?.label) return false;
+                return option.label.toLowerCase().includes(input.toLowerCase());
               }}
               notFoundContent={notFoundContent}
             >
               {employees.map((emp) => (
-                <Option key={emp.user_id} value={emp.user_id}>
-                  {emp.full_name || `${emp.first_name} ${emp.last_name}`} ({emp.email})
+                <Option
+                  key={emp.user_id}
+                  value={emp.user_id}
+                  label={`${emp.full_name || `${emp.first_name} ${emp.last_name}`} ${emp.email} ${emp.employee_id || ''}`}
+                >
+                  {emp.full_name || `${emp.first_name} ${emp.last_name}`} ({emp.employee_id || emp.email})
                 </Option>
               ))}
             </Select>
@@ -547,19 +548,20 @@ const CreateTicketModal = ({ visible, onClose, onSuccess, currentUser, preSelect
           >
             <Select
               allowClear
-              placeholder="Select engineer to assign"
+              placeholder="Search by name, email, or employee ID"
               showSearch
               filterOption={(input, option) => {
-                if (!option?.children) return false;
-                const searchText = typeof option.children === 'string'
-                  ? option.children
-                  : option.children.join(' ');
-                return searchText.toLowerCase().includes(input.toLowerCase());
+                if (!option?.label) return false;
+                return option.label.toLowerCase().includes(input.toLowerCase());
               }}
             >
               {engineers.map((eng) => (
-                <Option key={eng.user_id} value={eng.user_id}>
-                  {eng.full_name || `${eng.first_name || ''} ${eng.last_name || ''}`.trim() || 'Unknown'} - {eng.department_name || 'No Dept'}
+                <Option
+                  key={eng.user_id}
+                  value={eng.user_id}
+                  label={`${eng.full_name || `${eng.first_name || ''} ${eng.last_name || ''}`.trim()} ${eng.email || ''} ${eng.employee_id || ''}`}
+                >
+                  {eng.full_name || `${eng.first_name || ''} ${eng.last_name || ''}`.trim() || 'Unknown'} ({eng.employee_id || eng.department_name || 'No Dept'})
                 </Option>
               ))}
             </Select>

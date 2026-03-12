@@ -237,13 +237,18 @@ const TicketFilterDrawer = ({ visible, onClose, filters, onApplyFilters }) => {
               placeholder="Select engineer"
               allowClear
               showSearch
-              filterOption={(input, option) =>
-                option?.children?.toLowerCase().includes(input.toLowerCase())
-              }
+              filterOption={(input, option) => {
+                if (!option?.label) return false;
+                return option.label.toLowerCase().includes(input.toLowerCase());
+              }}
             >
               {filterOptions.engineers.map((engineer) => (
-                <Option key={engineer.id} value={engineer.id}>
-                  {engineer.name} {engineer.department && `- ${engineer.department}`}
+                <Option
+                  key={engineer.id}
+                  value={engineer.id}
+                  label={`${engineer.name} ${engineer.employee_id || ''} ${engineer.department || ''}`}
+                >
+                  {engineer.name} {engineer.employee_id && `(${engineer.employee_id})`} {engineer.department && `- ${engineer.department}`}
                 </Option>
               ))}
             </Select>

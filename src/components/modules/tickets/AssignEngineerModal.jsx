@@ -123,12 +123,12 @@ const AssignEngineerModal = ({ visible, ticket, onClose, onSuccess }) => {
               <Option
                 key={eng.user_id}
                 value={eng.user_id}
-                label={eng.full_name}
+                label={`${eng.full_name} ${eng.email} ${eng.employee_id || ''}`}
               >
                 <div className="flex items-center space-x-2">
                   <Avatar size="small" icon={<UserOutlined />} />
                   <div className="flex-1">
-                    <div className="font-medium">{eng.full_name}</div>
+                    <div className="font-medium">{eng.full_name} {eng.employee_id && <span className="text-xs text-gray-400">({eng.employee_id})</span>}</div>
                     <div className="text-xs text-gray-500">
                       {eng.email}
                       {eng.department_name && (

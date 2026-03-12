@@ -179,12 +179,17 @@ const EngineerAssignmentModal = ({
             loading={loadingEngineers}
             notFoundContent={loadingEngineers ? <Spin size="small" /> : 'No engineers available'}
             showSearch
-            filterOption={(input, option) =>
-              option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
-            }
+            filterOption={(input, option) => {
+              if (!option?.label) return false;
+              return option.label.toLowerCase().includes(input.toLowerCase());
+            }}
           >
             {engineers.map((engineer) => (
-              <Option key={engineer.user_id} value={engineer.user_id}>
+              <Option
+                key={engineer.user_id}
+                value={engineer.user_id}
+                label={`${engineer.firstName} ${engineer.lastName} ${engineer.employee_id || ''} ${engineer.email || ''}`}
+              >
                 {engineer.firstName} {engineer.lastName} ({engineer.employee_id})
               </Option>
             ))}
