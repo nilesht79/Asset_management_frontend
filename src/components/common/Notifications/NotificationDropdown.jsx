@@ -95,11 +95,15 @@ const NotificationDropdown = ({ onNotificationRead, onAllRead, onClose, onViewAl
         }
       }
 
-      // Navigate to ticket details if ticket_id exists
-      if (notification.ticket_id) {
+      // Navigate based on notification type
+      const assetNotifTypes = ['warranty_expiring', 'eosl_expiring']
+      if (assetNotifTypes.includes(notification.notification_type)) {
+        navigate('/assets/lifecycle')
+        if (onClose) {
+          onClose()
+        }
+      } else if (notification.ticket_id) {
         navigate(`/tickets/${notification.ticket_id}`)
-
-        // Close dropdown
         if (onClose) {
           onClose()
         }

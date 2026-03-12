@@ -286,6 +286,12 @@ const AssetLifecycle = () => {
       )
     },
     {
+      title: 'Serial Number',
+      dataIndex: 'serial_number',
+      key: 'serial_number',
+      width: 160,
+    },
+    {
       title: 'Product',
       dataIndex: 'product_name',
       key: 'product_name',
@@ -605,7 +611,7 @@ const AssetLifecycle = () => {
         <Row gutter={[12, 12]} style={{ marginBottom: isMobile ? '12px' : '16px' }}>
           <Col xs={24} sm={24} md={8}>
             <Input
-              placeholder={isMobile ? "Search..." : "Search by asset tag, product name..."}
+              placeholder={isMobile ? "Search..." : "Search by asset tag, serial number, product name..."}
               prefix={<SearchOutlined />}
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}

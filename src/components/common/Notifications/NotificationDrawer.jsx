@@ -109,10 +109,14 @@ const NotificationDrawer = ({ open, onClose, onNotificationRead }) => {
         }
       }
 
-      // Navigate to ticket details if ticket_id exists
-      if (notification.ticket_id) {
+      // Navigate based on notification type
+      const assetNotifTypes = ['warranty_expiring', 'eosl_expiring']
+      if (assetNotifTypes.includes(notification.notification_type)) {
+        navigate('/assets/lifecycle')
+        onClose()
+      } else if (notification.ticket_id) {
         navigate(`/tickets/${notification.ticket_id}`)
-        onClose() // Close drawer after navigation
+        onClose()
       }
     } catch (error) {
       console.error('Error handling notification click:', error)
