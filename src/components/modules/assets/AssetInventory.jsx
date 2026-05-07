@@ -1209,12 +1209,19 @@ const AssetInventory = () => {
       ellipsis: true,
       render: (text) => text ? <Tooltip title={text}><span className="text-gray-600 text-xs">{text}</span></Tooltip> : <span className="text-gray-400">—</span>
     },
+    // {
+    //   title: <span className="font-semibold text-gray-700">Tag No</span>,
+    //   dataIndex: 'tag_no',
+    //   key: 'tag_no',
+    //   width: 100,
+    //   render: (tagNo) => tagNo ? <span className="font-mono text-xs">{tagNo}</span> : <span className="text-gray-400">—</span>
+    // },
     {
-      title: <span className="font-semibold text-gray-700">Tag No</span>,
-      dataIndex: 'tag_no',
-      key: 'tag_no',
+      title: <span className="font-semibold text-gray-700">Notes</span>,
+      dataIndex: 'notes',
+      key: 'notes',
       width: 100,
-      render: (tagNo) => tagNo ? <span className="font-mono text-xs">{tagNo}</span> : <span className="text-gray-400">—</span>
+      render: (notes) => notes ? <span className="font-mono text-xs">{notes}</span> : <span className="text-gray-400">—</span>
     },
     {
       title: <span className="font-semibold text-gray-700">Status</span>,
