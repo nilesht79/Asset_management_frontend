@@ -517,7 +517,7 @@ const RequestCloseTicketModal = ({ visible, ticket, onClose, onSuccess }) => {
               <TextArea
                 rows={2}
                 placeholder="Describe the problem found during inspection..."
-                maxLength={2000}
+                maxLength={5000}
                 showCount
               />
             </Form.Item>
@@ -534,7 +534,7 @@ const RequestCloseTicketModal = ({ visible, ticket, onClose, onSuccess }) => {
               <TextArea
                 rows={2}
                 placeholder="Describe the repair/replacement work performed..."
-                maxLength={2000}
+                maxLength={5000}
                 showCount
               />
             </Form.Item>
