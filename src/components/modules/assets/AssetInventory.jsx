@@ -76,6 +76,7 @@ import {
   selectAssetsDropdown
 } from '../../../store/slices/assetSlice'
 import assetService from '../../../services/asset'
+import userService from '../../../services/user'
 import {
   fetchOEMs,
   fetchProducts,
@@ -114,6 +115,7 @@ const AssetInventory = () => {
   const dispatch = useDispatch()
   const navigate = useNavigate()
   const location = useLocation()
+  const [departments, setDepartments] = useState([])
   const [isAddModalVisible, setIsAddModalVisible] = useState(false)
   const [isDeletedModalVisible, setIsDeletedModalVisible] = useState(false)
   const [deletedAssets, setDeletedAssets] = useState([])
@@ -167,7 +169,9 @@ const AssetInventory = () => {
   const products = useSelector(selectProducts)
   const categories = useSelector(selectCategories)
   const subcategories = useSelector(selectProductSubCategories)
-  const locations = useSelector(selectLocations)
+  // const locations = useSelector(selectLocations)
+  const locationsData = useSelector(selectLocations)
+  const locations = locationsData?.data || []
   const users = useSelector(selectUsers)
   const boards = useSelector(selectBoards)
   const vendors = useSelector(state => state.master.vendors)
@@ -233,6 +237,12 @@ const AssetInventory = () => {
     }
   }, [])
 
+     useEffect(() => {
+      fetchDepartments()
+    }, [filters.board_id])
+
+
+
   // Helper function to get status colors
   const getStatusColor = (status) => {
     const statusLower = status.toLowerCase()
@@ -278,6 +288,40 @@ const AssetInventory = () => {
     // Fetch assets dropdown for parent asset selection
     dispatch(fetchAssetsDropdown())
   }
+
+    const fetchDepartments = async () => {
+      try {
+        let allDepartments = []
+        let currentPage = 1
+        let hasMore = true
+  
+        // If a board is selected, fetch only departments for that board
+        const baseParams = filters.board_id ? { board_id: filters.board_id } : {}
+  
+        // Fetch all departments with pagination (max limit is 100)
+        while (hasMore) {
+          const response = await userService.getDepartments({ ...baseParams, page: currentPage, limit: 100 })
+          const data = response.data.data
+          const departments = data?.departments || []
+  
+          allDepartments = [...allDepartments, ...departments]
+  
+          // Check if there are more pages
+          if (data?.pagination && currentPage < data.pagination.totalPages) {
+            currentPage++
+          } else {
+            hasMore = false
+          }
+        }
+  
+        setDepartments(allDepartments)
+      } catch (error) {
+        console.error('Failed to fetch departments:', error)
+      }
+    }
+
+
+
 
   const showEditModal = async (asset) => {
     setEditingAsset(asset)
@@ -331,6 +375,8 @@ const AssetInventory = () => {
       invoice_number: asset.invoice_number,
       purchase_cost: asset.purchase_cost,
       notes: asset.notes,
+      department_id: asset.department_id,
+      location_id: asset.location_id,
       software_installations: softwareInstallations
     })
   }
@@ -348,6 +394,33 @@ const AssetInventory = () => {
 
       // Format dates to YYYY-MM-DD for API
       const formattedValues = { ...values }
+
+            formattedValues.location_id = values.location_id || null
+      formattedValues.department_id = values.department_id || null
+
+       console.log('UPDATE PAYLOAD:', formattedValues)
+
+       // ✅ FIX INVALID VALUES
+    if (formattedValues.asset_type === 'parent') {
+      formattedValues.asset_type = 'standalone'
+    }
+
+    // ✅ Ensure notes is not null
+    // if (formattedValues.notes === null) {
+    //   formattedValues.notes = ''
+    // }
+
+    // ✅ Ensure vendor_id is string
+    if (formattedValues.vendor_id) {
+      formattedValues.vendor_id = String(formattedValues.vendor_id)
+    }
+
+    // ✅ Ensure purchase_cost is number
+    if (formattedValues.purchase_cost) {
+      formattedValues.purchase_cost = Number(formattedValues.purchase_cost)
+    }
+
+
 
       // Ensure UUID fields are strings (not arrays) - fix for form caching issues
       const uuidFields = ['vendor_id', 'product_id', 'assigned_to', 'parent_asset_id']
@@ -2126,6 +2199,81 @@ const AssetInventory = () => {
             </Col>
           </Row>
 
+                      <Col span={12}>
+          <Form.Item
+            label="Location"
+            name="location_id"
+            className="location-select-form-item"
+          >
+            <Select
+              allowClear
+              placeholder="Select location"
+              showSearch
+              filterOption={(input, option) => {
+                const searchText = input.toLowerCase()
+                const locationName = option?.locationname?.toLowerCase() || ''
+                const building = option?.building?.toLowerCase() || ''
+                const floor = option?.floor?.toLowerCase() || ''
+
+                return (
+                  locationName.includes(searchText) ||
+                  building.includes(searchText) ||
+                  floor.includes(searchText)
+                )
+              }}
+              virtual
+              listHeight={256}
+              style={{ width: '100%' }}
+              optionLabelProp="children"
+            >
+              {Array.isArray(locations) && locations.map(loc => {
+              
+                const buildingFloor = [
+                  loc.building ? `Building: ${loc.building}` : '',
+                  loc.floor ? `Floor: ${loc.floor}` : ''
+                ]
+                  .filter(Boolean)
+                  .join(' • ')
+
+                return (
+                  <Option
+                    key={loc.id}
+                    value={loc.id}
+                    locationname={loc.name}
+                    building={loc.building || ''}
+                    floor={loc.floor || ''}
+                  >
+                    <div
+                      style={{
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap'
+                      }}
+                      title={`${loc.name}${buildingFloor ? ` (${buildingFloor})` : ''}`}
+                    >
+                      <span style={{ fontWeight: 500 }}>{loc.name}</span>
+
+                      {buildingFloor && (
+                        <span
+                          style={{
+                            fontSize: '12px',
+                            color: '#666',
+                            marginLeft: '8px'
+                          }}
+                        >
+                          ({buildingFloor})
+                        </span>
+                      )}
+                    </div>
+                  </Option>
+                )
+              })}
+              
+            </Select>
+          </Form.Item>
+        </Col>
+
+
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item
@@ -2142,23 +2290,64 @@ const AssetInventory = () => {
                       extra={isComponent ? "Components cannot be assigned to users" : "Asset will inherit location from assigned user"}
                     >
                       <Select
-                        placeholder={isComponent ? "N/A - Components cannot be assigned" : "Select user (asset will inherit location from user)"}
-                        showSearch
-                        allowClear
-                        disabled={isComponent}
-                        optionFilterProp="children"
-                        filterOption={(input, option) =>
-                          (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                      placeholder={isComponent ? "N/A - Components cannot be assigned" : "Select user (asset will inherit location from user)"}
+                      showSearch
+                      allowClear
+                      disabled={isComponent}
+                      optionFilterProp="children"
+                      onChange={(value) => {
+                        const selectedUser = users.data?.find(
+                          user => user.id === value
+                        )
+
+                        console.log('Selected User:', selectedUser)
+
+                        if (selectedUser) {
+                          form.setFieldsValue({
+                            location_id: selectedUser.location_id,
+                            department_id:
+                              selectedUser.department_id ||
+                              selectedUser.department?.id ||
+                              selectedUser.department
+                          })
                         }
-                        options={users.data?.map(user => ({
-                          value: user.id,
-                          label: `${user.firstName} ${user.lastName}${user.employeeId ? ` (${user.employeeId})` : ''} (${user.email})`
-                        }))}
-                        loading={users.loading}
-                      />
+                      }}
+                      filterOption={(input, option) =>
+                        (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                      }
+                      options={users.data?.map(user => ({
+                        value: user.id,
+                        label: `${user.firstName} ${user.lastName}${user.employeeId ? ` (${user.employeeId})` : ''} (${user.email})`
+                      }))}
+                      loading={users.loading}
+                    />
                     </Form.Item>
                   )
                 }}
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                label="Department"
+                name="department_id"
+              >
+                <Select
+                  allowClear
+                  placeholder="Select department"
+                  showSearch
+                  filterOption={(input, option) =>
+                    (option?.children?.toString() || '').toLowerCase().includes(input.toLowerCase())
+                  }
+                  optionFilterProp="children"
+                  virtual
+                  listHeight={256}
+                >
+                  {departments.map(dept => (
+                    <Option key={dept.id} value={dept.id}>
+                      {dept.name}
+                    </Option>
+                  ))}
+                </Select>
               </Form.Item>
             </Col>
             <Col span={12}>
