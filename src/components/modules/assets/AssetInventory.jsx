@@ -1082,7 +1082,7 @@ const AssetInventory = () => {
     {
       title: <span className="font-semibold text-gray-700">Product</span>,
       key: 'name',
-      width: 200,
+      width: 100,
       render: (_, record) => (
         <div className="py-1">
           <div className="flex items-center gap-2">
@@ -1101,20 +1101,6 @@ const AssetInventory = () => {
             )}
           </div>
         </div>
-      )
-    },
-    {
-      title: <span className="font-semibold text-gray-700">Asset ID</span>,
-      dataIndex: 'asset_tag',
-      key: 'asset_id',
-      width: 150,
-      render: (text) => (
-        <span
-          className="font-mono text-xs bg-blue-50 px-2 py-1 rounded text-blue-700"
-          style={{ whiteSpace: 'nowrap', display: 'inline-block' }}
-        >
-          {text}
-        </span>
       )
     },
     {
@@ -1220,7 +1206,7 @@ const AssetInventory = () => {
       title: <span className="font-semibold text-gray-700">Notes</span>,
       dataIndex: 'notes',
       key: 'notes',
-      width: 100,
+      width: 200,
       render: (notes) => notes ? <span className="font-mono text-xs">{notes}</span> : <span className="text-gray-400">—</span>
     },
     {
@@ -1247,32 +1233,6 @@ const AssetInventory = () => {
             color={config.color}
             className="font-medium"
             style={{ minWidth: '80px', textAlign: 'center' }}
-          >
-            {config.label}
-          </Tag>
-        )
-      }
-    },
-    {
-      title: <span className="font-semibold text-gray-700">Importance</span>,
-      key: 'importance',
-      width: 100,
-      align: 'center',
-      render: (_, record) => {
-        const importanceConfig = {
-          critical: { color: 'red', label: 'Critical' },
-          high: { color: 'orange', label: 'High' },
-          medium: { color: 'blue', label: 'Medium' },
-          low: { color: 'green', label: 'Low' }
-        };
-
-        const config = importanceConfig[record.importance] || { color: 'default', label: record.importance || 'Medium' };
-
-        return (
-          <Tag
-            color={config.color}
-            className="font-medium"
-            style={{ minWidth: '70px', textAlign: 'center' }}
           >
             {config.label}
           </Tag>
