@@ -370,6 +370,9 @@ const ticketService = {
     if (filters.assigned_to_engineer_id)
       params.assigned_to_engineer_id = filters.assigned_to_engineer_id;
     if (filters.search) params.search = filters.search;
+    // Date range filters - API expects start_date and end_date in DD-MM-YYYY format
+    if (filters.start_date) params.start_date = filters.start_date;
+    if (filters.end_date) params.end_date = filters.end_date;
 
     // Add pagination
     if (pagination.page) params.page = pagination.page;
