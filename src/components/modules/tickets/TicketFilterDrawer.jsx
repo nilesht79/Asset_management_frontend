@@ -21,6 +21,7 @@ import useResponsive from '../../../hooks/useResponsive';
 import { DatePicker } from 'antd'
 const { RangePicker } = DatePicker
 
+
 const { Option } = Select;
 
 const TicketFilterDrawer = ({ visible, onClose, filters, onApplyFilters, form }) => {
@@ -57,10 +58,20 @@ const TicketFilterDrawer = ({ visible, onClose, filters, onApplyFilters, form })
     }
   };
 
+
+
   const handleApply = () => {
   const values = form.getFieldsValue();
 
   if (values.date_range && values.date_range.length === 2) {
+    // Convert date range to start_date and end_date in ISO format
+    // values.start_date = values.date_range[0]
+    //   .startOf('day')
+    //   .toISOString();
+
+    // values.end_date = values.date_range[1]
+    //   .endOf('day')
+    //   .toISOString();
 
     // for API, we need it in YYYY-MM-DD format
     values.start_date = values.date_range[0]
@@ -68,6 +79,7 @@ const TicketFilterDrawer = ({ visible, onClose, filters, onApplyFilters, form })
 
   values.end_date = values.date_range[1]
     .format('YYYY-MM-DD');
+
   }
 
   delete values.date_range;
@@ -86,8 +98,6 @@ const TicketFilterDrawer = ({ visible, onClose, filters, onApplyFilters, form })
       location_id: '',
       assigned_to_engineer_id: '',
       is_guest: undefined,
-      // clear date range fields
-      date_range: null,
       start_date: '',
       end_date: ''
     });
@@ -102,7 +112,11 @@ const TicketFilterDrawer = ({ visible, onClose, filters, onApplyFilters, form })
       department_id: '',
       location_id: '',
       assigned_to_engineer_id: '',
-      is_guest: undefined
+      is_guest: undefined,
+      // clear date range fields
+      date_range: null,
+      start_date: '',
+      end_date: ''
     };
     form.setFieldsValue(clearedValues);
   };
@@ -165,7 +179,7 @@ const TicketFilterDrawer = ({ visible, onClose, filters, onApplyFilters, form })
               ))}
             </Select>
           </Form.Item>
-          
+
           {/* ✅ ADD THIS */}
             <Form.Item
               name="date_range"
