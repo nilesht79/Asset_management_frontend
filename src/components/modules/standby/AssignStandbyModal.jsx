@@ -106,7 +106,7 @@ const AssignStandbyModal = ({ visible, onClose, standbyAsset, onSuccess }) => {
   const userOptions = useMemo(() => {
     return users.map((user) => ({
       value: user.id,
-      label: `${user.firstName} ${user.lastName} (${user.employeeId})`
+      label: `${user.firstName} ${user.lastName} (${user.employeeId})'
     }));
   }, [users]);
 
