@@ -181,19 +181,44 @@ const AssetSelector = ({
     return treeNodes;
   }, [filteredAssets, selectedAssets]);
 
-  const handleCheck = (checkedKeys) => {
-    // Filter out non-leaf keys (parent nodes without actual selection)
-    const leafKeys = checkedKeys.filter(key => {
-      const asset = assets.find(a => a.id === key);
-      return asset !== undefined;
-    });
+  // const handleCheck = (checkedKeys) => {
+  //   // Filter out non-leaf keys (parent nodes without actual selection)
+  //   const leafKeys = checkedKeys.filter(key => {
+  //     const asset = assets.find(a => a.id === key);
+  //     return asset !== undefined;
+  //   });
 
-    if (maxSelections && leafKeys.length > maxSelections) {
-      return; // Don't allow more than max selections
-    }
+  //   if (maxSelections && leafKeys.length > maxSelections) {
+  //     return; // Don't allow more than max selections
+  //   }
 
-    onSelectionChange(leafKeys);
-  };
+  //   onSelectionChange(leafKeys);
+  // };
+
+const handleCheck = (checkedKeys) => {
+
+  const leafKeys = checkedKeys.filter(key => {
+    const asset = assets.find(a => a.id === key);
+    return asset !== undefined;
+  });
+
+  if (maxSelections && leafKeys.length > maxSelections) {
+    return;
+  }
+
+  // Get selected asset objects
+  const selectedAssetObjects = assets.filter(
+    asset => leafKeys.includes(asset.id)
+  );
+
+  // Send both ids and asset details
+  onSelectionChange(
+    leafKeys,
+    selectedAssetObjects
+  );
+};
+
+
 
   const handleSelect = (selectedKeys, { node }) => {
     if (disabled) return;
@@ -294,7 +319,7 @@ const AssetSelector = ({
           description="No assets match your search"
         />
       )}
-
+{/* 
       {selectedAssets.length > 0 && (
         <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid #f0f0f0' }}>
           <Text type="secondary" style={{ fontSize: '12px' }}>
@@ -318,7 +343,128 @@ const AssetSelector = ({
             })}
           </div>
         </div>
-      )}
+      )} */}
+
+    
+{selectedAssets.length > 0 && (
+  <div
+    style={{
+      marginTop: 12,
+      paddingTop: 12,
+      borderTop: '1px solid #f0f0f0'
+    }}
+  >
+
+    {/* Header Row */}
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 40,
+        marginBottom: 10,
+        padding: '0 8px'
+      }}
+    >
+
+      <Text
+        type="secondary"
+        style={{
+          fontSize: '12px',
+          minWidth: 140
+        }}
+      >
+        Selected assets:
+      </Text>
+
+      <Text
+        type="secondary"
+        style={{
+          fontSize: '12px',
+          minWidth: 160
+        }}
+      >
+        Location:
+      </Text>
+
+      <Text
+        type="secondary"
+        style={{
+          fontSize: '12px',
+          minWidth: 160
+        }}
+      >
+        Department:
+      </Text>
+
+    </div>
+
+    {/* Asset Rows */}
+    <div style={{ marginTop: 6 }}>
+
+      {selectedAssets.map(assetId => {
+
+        const asset = assets.find(
+          a => a.id === assetId
+        );
+
+        return asset ? (
+
+          <div
+            key={assetId}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 40,
+              marginBottom: 10,
+              padding: 10,
+              border: '1px solid #f0f0f0',
+              borderRadius: 6,
+              background: '#fafafa'
+            }}
+          >
+
+            {/* Asset Tag */}
+            <div style={{ minWidth: 140 }}>
+              <Tag
+                closable={!disabled}
+                onClose={() => {
+                  onSelectionChange(
+                    selectedAssets.filter(
+                      id => id !== assetId
+                    )
+                  );
+                }}
+                style={{ marginBottom: 0 }}
+              >
+                {asset.asset_tag}
+              </Tag>
+            </div>
+
+            {/* Location */}
+            <div style={{ minWidth: 160 }}>
+              <Text style={{ fontSize: '12px' }}>
+                {asset.location_name || 'N/A'}
+              </Text>
+            </div>
+
+            {/* Department */}
+            <div style={{ minWidth: 160 }}>
+              <Text style={{ fontSize: '12px' }}>
+                {asset.department_name || 'N/A'}
+              </Text>
+            </div>
+
+          </div>
+
+        ) : null;
+      })}
+
+    </div>
+
+  </div>
+)}
+
+
     </Card>
   );
 };
