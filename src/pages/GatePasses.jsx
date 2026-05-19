@@ -79,7 +79,7 @@ const GatePasses = () => {
   const [createModalVisible, setCreateModalVisible] = useState(false);
   const [createForm] = Form.useForm();
   const [createLoading, setCreateLoading] = useState(false);
-  const [createType, setCreateType] = useState('disposal_serviceuserService.getUsers({ limit: 1000 }).catch(() => ({ data: { data: [] } }))');
+  const [createType, setCreateType] = useState('disposal_service');
 
   // Asset search states
   const [assetSearchText, setAssetSearchText] = useState('');
@@ -315,7 +315,7 @@ const GatePasses = () => {
       // }
 
       // for other option, asset is not mandatory
-     if (selectedAssets.length === 0 && !isOtherSelected) {
+      if (selectedAssets.length === 0 && !isOtherSelected) {
           message.error('Please add at least one asset');
           return;
         }
@@ -325,6 +325,8 @@ const GatePasses = () => {
       const payload = {
         gate_pass_type: createType,
         purpose: values.purpose,
+        // for asset mandatory types, proceed_without_asset is false. For others, it can be true
+        proceed_without_asset: isOtherSelected,
         assets: selectedAssets.map(a => ({
           asset_id: a.id,
           condition_out: a.condition_out || 'working',
@@ -847,7 +849,7 @@ const GatePasses = () => {
 
           <Divider orientation="left">Assets</Divider>
 
-           {/* OLD CODE: Asset Search */}
+          {/* OLD CODE: Asset Search */}
           {/* <Form.Item label="Search and Add Assets">
             <Select
               showSearch
@@ -883,7 +885,7 @@ const GatePasses = () => {
             </Select>
           </Form.Item> */}
 
-           {/* Asset Search */}
+          {/* Asset Search */}
               <Form.Item label="Search and Add Assets">
                 <Select
                 showSearch
