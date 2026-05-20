@@ -300,7 +300,7 @@ const LocationMainForm = ({ open, mode, location, onClose, onSuccess }) => {
                 label="PinCode"
                 name="pincode"
                 rules={[
-                  { required: true, message: 'Please enter pincode' },
+                  // { required: true, message: 'Please enter pincode' },
                   { pattern: /^\d{6}$/, message: 'Pincode must be 6 digits' }
                 ]}
               >
@@ -316,7 +316,7 @@ const LocationMainForm = ({ open, mode, location, onClose, onSuccess }) => {
               <Form.Item
                 label="State"
                 name="state_name"
-                rules={[{ required: true, message: 'Please enter state name' }]}
+                {/* rules={[{ required: true, message: 'Please enter state name' }]} */}
               >
                 <Input
                   placeholder="State (auto-filled)"
@@ -329,7 +329,7 @@ const LocationMainForm = ({ open, mode, location, onClose, onSuccess }) => {
               <Form.Item
                 label="City"
                 name="city_name"
-                rules={[{ required: true, message: 'Please enter city name' }]}
+                {/* rules={[{ required: true, message: 'Please enter city name' }]} */}
               >
                 <Input
                   placeholder="City (auto-filled)"
