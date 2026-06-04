@@ -133,17 +133,6 @@ const AssetSelector = ({
               (of {asset.parent_asset_tag})
             </Text>
           )}
-          /* {asset.oem_name && (
-            <Tag color="purple" style={{ fontSize: '10px' }}>
-              {asset.oem_name}
-            </Tag>
-          )}
-          <Tag
-            color={getStatusColor(asset.status)}
-            style={{ fontSize: '10px' }}
-          >
-            {asset.status}
-          </Tag> */
           {isSelected && (
             <CheckCircleOutlined style={{ color: '#52c41a' }} />
           )}
