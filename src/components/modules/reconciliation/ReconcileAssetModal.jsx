@@ -4,6 +4,7 @@ import { WarningOutlined, CheckCircleOutlined, ExclamationCircleOutlined, InfoCi
 import { useDispatch, useSelector } from 'react-redux';
 import { reconcileAsset, selectReconciliationLoading } from '../../../store/slices/reconciliationSlice';
 import { fetchUsers, selectUsers } from '../../../store/slices/userSlice';
+import api from '../../../services/api';
 
 const { TextArea } = Input;
 const { Option } = Select;
@@ -21,6 +22,7 @@ const ReconcileAssetModal = ({ visible, asset, reconciliationId, onClose, onSucc
   const initializedAssetIdRef = useRef(null);
   const usersFetchedRef = useRef(false);
   const previousVisibleRef = useRef(false);
+  const [departments, setDepartments] = useState([]);
 
   // Fetch users only once on component mount
   useEffect(() => {
@@ -29,6 +31,56 @@ const ReconcileAssetModal = ({ visible, asset, reconciliationId, onClose, onSucc
       usersFetchedRef.current = true;
     }
   }, [dispatch]);
+  useEffect(() => {
+  if (asset) {
+    console.log("Asset Data:", asset);
+  }
+}, [asset]);
+
+useEffect(() => {
+  const fetchDepartments = async () => {
+    try {
+      // const response = await api.get('/masters/departments/dropdown');
+      const response = await api.get('/departments/list');
+
+      console.log("Department Response:", response.data);
+
+      if (response.data.success) {
+        console.log("Departments:", response.data.data);
+        // setDepartments(response.data.data);
+        setDepartments(response.data.data.departments);
+      }
+    } catch (error) {
+      console.error('Error fetching departments:', error);
+    }
+  };
+
+  fetchDepartments();
+}, []);
+
+
+const [locations, setLocations] = useState([]);
+
+useEffect(() => {
+  const fetchLocations = async () => {
+    try {
+      const response = await api.get('/masters/locations/dropdown');
+
+      console.log("Location Response:", response.data);
+       console.log("FULL RESPONSE", response);
+      console.log("DATA", response.data);
+
+      if (response.data.success) {
+        console.log("Locations:", response.data.data);
+        setLocations(response.data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching locations:', error);
+    }
+  };
+
+  fetchLocations();
+}, []);
 
   // Initialize form ONLY when modal transitions from closed to open
   useEffect(() => {
@@ -42,7 +94,8 @@ const ReconcileAssetModal = ({ visible, asset, reconciliationId, onClose, onSucc
       // Only initialize if this is a different asset
       if (currentAssetId !== initializedAssetIdRef.current) {
         form.setFieldsValue({
-          physical_location: asset.location_name || '',
+          physical_location: `${asset.location_name}${ asset.location_floor ? ` - Floor ${asset.location_floor}` : ''}`,
+          physical_department: asset.department || '',
           physical_condition: asset.condition_status || '',
           physical_assigned_to: asset.assigned_to || null,
           physical_serial_number: asset.serial_number || '',
@@ -80,14 +133,34 @@ const ReconcileAssetModal = ({ visible, asset, reconciliationId, onClose, onSucc
     const discrepancies = [];
 
     // Location discrepancy
-    if (allValues.physical_location && asset.location_name) {
-      const systemLoc = (asset.location_name || '').trim().toLowerCase();
-      const physicalLoc = (allValues.physical_location || '').trim().toLowerCase();
-      if (systemLoc && physicalLoc && systemLoc !== physicalLoc) {
+    // if (allValues.physical_location && asset.location_name) {
+    //   const systemLoc = (asset.location_name || '').trim().toLowerCase();
+    //   const physicalLoc = (allValues.physical_location || '').trim().toLowerCase();
+    //   if (systemLoc && physicalLoc && systemLoc !== physicalLoc) {
+    //     discrepancies.push({
+    //       field_name: 'location',
+    //       field_display_name: 'Location',
+    //       system_value: asset.location_name,
+    //       physical_value: allValues.physical_location,
+    //       discrepancy_type: 'location_mismatch',
+    //       severity: 'major'
+    //     });
+    //   }
+    // }
+    const systemLocation =
+  `${asset.location_name || ''}${
+    asset.location_floor ? ` - Floor ${asset.location_floor}` : ''
+  }`;
+
+    if (allValues.physical_location) {
+      const systemLoc = systemLocation.trim().toLowerCase();
+      const physicalLoc = allValues.physical_location.trim().toLowerCase();
+
+      if (systemLoc !== physicalLoc) {
         discrepancies.push({
           field_name: 'location',
           field_display_name: 'Location',
-          system_value: asset.location_name,
+          system_value: systemLocation,
           physical_value: allValues.physical_location,
           discrepancy_type: 'location_mismatch',
           severity: 'major'
@@ -170,6 +243,23 @@ const ReconcileAssetModal = ({ visible, asset, reconciliationId, onClose, onSucc
       }
     }
 
+    // Department discrepancy
+if (allValues.physical_department && asset.department) {
+  const systemDept = (asset.department || '').trim().toLowerCase();
+  const physicalDept = (allValues.physical_department || '').trim().toLowerCase();
+
+  if (systemDept !== physicalDept) {
+    discrepancies.push({
+      field_name: 'department',
+      field_display_name: 'Department',
+      system_value: asset.department,
+      physical_value: allValues.physical_department,
+      discrepancy_type: 'department_mismatch',
+      severity: 'major'
+    });
+  }
+}
+
     setDetectedDiscrepancies(discrepancies);
   };
 
@@ -216,18 +306,24 @@ const ReconcileAssetModal = ({ visible, asset, reconciliationId, onClose, onSucc
   }, [users, asset?.assigned_to, asset?.assigned_user_name]);
 
   const handleSubmit = async (values) => {
-    try {
-      // Send all physical verification fields to backend
-      const submitData = {
-        reconciliation_status: values.reconciliation_status,
-        physical_location: values.physical_location || null,
-        physical_condition: values.physical_condition || null,
-        physical_assigned_to: values.physical_assigned_to || null,
-        physical_serial_number: values.physical_serial_number || null,
-        physical_status: values.physical_status || null,
-        discrepancy_notes: values.discrepancy_notes || null
-      };
+  try {
 
+    console.log("FORM VALUES:", values);
+    console.log("PHYSICAL DEPARTMENT:", values.physical_department);
+
+    // Send all physical verification fields to backend
+    const submitData = {
+      reconciliation_status: values.reconciliation_status,
+      physical_location: values.physical_location || null,
+      physical_condition: values.physical_condition || null,
+      physical_assigned_to: values.physical_assigned_to || null,
+      physical_serial_number: values.physical_serial_number || null,
+      physical_status: values.physical_status || null,
+      physical_department: values.physical_department,
+      discrepancy_notes: values.discrepancy_notes || null
+    };
+
+    console.log("SUBMIT DATA:", submitData);
       await dispatch(reconcileAsset({
         reconciliationId,
         assetId: asset.id,
@@ -310,7 +406,16 @@ const ReconcileAssetModal = ({ visible, asset, reconciliationId, onClose, onSucc
             </Col>
             <Col span={8}>
               <Text type="secondary">Location:</Text>
-              <div>{asset.location_name || 'N/A'}</div>
+                <div>
+                  {asset.location_name || 'N/A'}
+                  {asset.location_floor ? ` - Floor ${asset.location_floor}` : ''}
+                </div>
+            </Col>
+            <Col span={8}>
+              <Text type="secondary">Department:</Text>
+                <div>
+                  {asset.department || 'N/A'}
+                </div>
             </Col>
             <Col span={8}>
               <Text type="secondary">Assigned To:</Text>
@@ -371,7 +476,7 @@ const ReconcileAssetModal = ({ visible, asset, reconciliationId, onClose, onSucc
         >
           <Row gutter={16}>
             <Col span={12}>
-              <Form.Item
+              {/* <Form.Item
                 label={
                   <Space>
                     <span>Physical Location</span>
@@ -387,7 +492,41 @@ const ReconcileAssetModal = ({ visible, asset, reconciliationId, onClose, onSucc
                   placeholder="Enter physical location"
                   style={detectedDiscrepancies.find(d => d.field_name === 'location') ? { borderColor: '#faad14', borderWidth: 2 } : {}}
                 />
-              </Form.Item>
+              </Form.Item> */}
+              <Form.Item
+  label={
+    <Space>
+      <span>Physical Location</span>
+      {detectedDiscrepancies.find(d => d.field_name === 'location') && (
+        <Tag color="orange" icon={<WarningOutlined />}>
+          Discrepancy
+        </Tag>
+      )}
+    </Space>
+  }
+  name="physical_location"
+>
+  <Select
+  showSearch
+  optionFilterProp="children"
+>
+  {locations.map((loc) => (
+    <Option
+      key={loc.id}
+      value={
+        loc.floor
+          ? `${loc.label} - Floor ${loc.floor}`
+          : loc.label
+      }
+    >
+      {loc.floor
+        ? `${loc.label} - Floor ${loc.floor}`
+        : loc.label}
+    </Option>
+  ))}
+</Select>
+</Form.Item>
+              
             </Col>
 
             <Col span={12}>
@@ -494,7 +633,32 @@ const ReconcileAssetModal = ({ visible, asset, reconciliationId, onClose, onSucc
               </Form.Item>
             </Col>
 
-            <Col span={12}>
+        
+              <Col span={12}>
+                <Form.Item
+                  label="Department"
+                  name="physical_department"
+                >
+                  <Select
+                    placeholder="Select Department"
+                    showSearch
+                    optionFilterProp="children"
+                  >
+                    {/* {departments?.departments?.map((dept) => ( */}
+                      {departments?.map((dept) => (
+                    <Option
+                      key={dept.id}
+                      value={dept.name}
+                    >
+                      {dept.name}
+                    </Option>
+                  ))}
+                  </Select>
+                </Form.Item>
+          
+            </Col>
+
+            <Col span={24}>
               <Form.Item
                 label="Reconciliation Status"
                 name="reconciliation_status"
