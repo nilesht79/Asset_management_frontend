@@ -283,14 +283,23 @@ const authSlice = createSlice({
 
         console.log('🎉 Auth check fulfilled - user authenticated')
       })
-      .addCase(checkAuth.rejected, (state, action) => {
-        state.isLoading = false
-        state.user = null
-        state.tokens = null
-        state.isAuthenticated = false
-        state.error = action.payload?.message || 'Authentication failed'
-        console.log('❌ Auth check rejected - user not authenticated')
-      })
+      // .addCase(checkAuth.rejected, (state, action) => {
+      //   state.isLoading = false
+      //   state.user = null
+      //   state.tokens = null
+      //   state.isAuthenticated = false
+      //   state.error = action.payload?.message || 'Authentication failed'
+      //   console.log('❌ Auth check rejected - user not authenticated')
+      // })
+       .addCase(checkAuth.rejected, (state) => {
+          state.isLoading = false
+          state.user = null
+          state.tokens = null
+          state.isAuthenticated = false
+
+          // Don't set error when user is simply not logged in
+          state.error = null
+        })
       
       // Update Profile
       .addCase(updateProfile.fulfilled, (state, action) => {
