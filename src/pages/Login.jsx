@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 import { login, clearError } from '../store/slices/authSlice'
 import { Link } from 'react-router-dom'
+import { message } from 'antd'
 
 const { Title, Text } = Typography
 
@@ -14,6 +15,7 @@ const Login = () => {
   const navigate = useNavigate()
   const { isLoading, error, isAuthenticated, user } = useSelector(state => state.auth)
   const [showError, setShowError] = useState(false)
+  
 
   // Handle redirect if already authenticated (e.g., page refresh while logged in)
   useEffect(() => {
@@ -47,8 +49,12 @@ const Login = () => {
         navigate('/dashboard', { replace: true })
       }
     } catch (err) {
-      console.error('Login failed:', err)
-    }
+  console.log('LOGIN ERROR:', err)
+
+  message.error(
+    err?.message || 'Employee ID or Password is incorrect'
+  )
+}
   }
 
   const handleErrorClose = () => {
@@ -133,6 +139,18 @@ const Login = () => {
                 autoComplete="current-password"
               />
             </Form.Item>
+
+             {error && (
+    <div
+      style={{
+        color: '#ff4d4f',
+        marginBottom: '15px',
+        textAlign: 'center'
+      }}
+    >
+      {error}
+    </div>
+  )}
 
             <Form.Item className="mb-0">
               <Button
