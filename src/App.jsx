@@ -61,7 +61,14 @@ function App() {
   }
 
   // Show loading screen while checking authentication
-  if (authLoading) {
+  // if (authLoading) {
+  if (authLoading && !hasInitialized.current) {
+    
+console.log('APP RENDER', {
+  isAuthenticated,
+  authLoading,
+  pathname: window.location.pathname
+})
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
