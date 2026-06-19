@@ -253,7 +253,7 @@ const AssetInventory = () => {
       'under repair': '#faad14',
       'discarded': '#f5222d',
       'disposed': '#f5222d',
-      'not found': '#f5333d'
+      'not found': '#f5333d',
       'in_use': '#1890ff',
       'available': '#52c41a',
       'maintenance': '#faad14'
