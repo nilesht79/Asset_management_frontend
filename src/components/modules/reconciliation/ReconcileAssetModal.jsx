@@ -41,7 +41,8 @@ useEffect(() => {
   const fetchDepartments = async () => {
     try {
       // const response = await api.get('/masters/departments/dropdown');
-      const response = await api.get('/departments/list');
+      // const response = await api.get('/departments/list');
+      const response = await api.get('/departments/list', { params: { limit: 1000 } });
 
       console.log("Department Response:", response.data);
 
