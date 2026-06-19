@@ -253,6 +253,7 @@ const AssetInventory = () => {
       'under repair': '#faad14',
       'discarded': '#f5222d',
       'disposed': '#f5222d',
+      'not found': '#f5333d'
       'in_use': '#1890ff',
       'available': '#52c41a',
       'maintenance': '#faad14'
@@ -2141,6 +2142,7 @@ const AssetInventory = () => {
                   <Option value="under_repair">Under Repair</Option>
                   <Option value="maintenance">Maintenance</Option>
                   <Option value="disposed">Disposed</Option>
+                  <Option value="not found">Not Found</Option>
                 </Select>
               </Form.Item>
             </Col>
@@ -3441,6 +3443,7 @@ const AssetInventory = () => {
               <Option value="under_repair">Under Repair</Option>
               <Option value="maintenance">Maintenance</Option>
               <Option value="disposed">Disposed</Option>
+              <Option value="not found">Not Found</Option>
             </Select>
           </div>
 
