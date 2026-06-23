@@ -227,6 +227,15 @@ const DiscrepancyList = () => {
       render: (text) => <Text code strong>{text}</Text>
     },
     {
+  title: 'Serial Number',
+  dataIndex: 'serial_number',
+  key: 'serial_number',
+  width: 150,
+  render: (text) => (
+    <Text code>{text || 'N/A'}</Text>
+  )
+},
+    {
       title: 'Field',
       dataIndex: 'field_display_name',
       key: 'field_display_name',
