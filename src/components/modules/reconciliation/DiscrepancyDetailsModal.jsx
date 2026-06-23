@@ -111,12 +111,12 @@ const DiscrepancyDetailsModal = ({ visible, discrepancy, reconciliationId, onClo
               type="info"
               message={
                  <Space direction="vertical">
-                  <Space>
+                  {/* <Space>
                     <Text strong>Asset:</Text>
                     <Text code style={{ fontSize: 16 }}>
                       {details.asset_tag}
                     </Text>
-                  </Space>
+                  </Space> */}
             
                   <Space>
                     <Text strong>Serial Number:</Text>
