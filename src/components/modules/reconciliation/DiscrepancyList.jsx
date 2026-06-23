@@ -219,14 +219,6 @@ const DiscrepancyList = () => {
 
   const columns = [
     {
-      title: 'Asset Tag',
-      dataIndex: 'asset_tag',
-      key: 'asset_tag',
-      width: 120,
-      fixed: 'left',
-      render: (text) => <Text code strong>{text}</Text>
-    },
-    {
   title: 'Serial Number',
   dataIndex: 'serial_number',
   key: 'serial_number',
