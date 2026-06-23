@@ -114,6 +114,10 @@ const DiscrepancyDetailsModal = ({ visible, discrepancy, reconciliationId, onClo
                   <Text strong>Asset:</Text>
                   <Text code style={{ fontSize: 16 }}>{details.asset_tag}</Text>
                 </Space>
+                <Space>
+                  <Text strong>Serial Number:</Text>
+                  <Text code>{details.serial_number || 'N/A'}</Text>
+                </Space>
               }
               style={{ marginBottom: 24 }}
               showIcon
