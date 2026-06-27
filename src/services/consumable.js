@@ -48,6 +48,7 @@ const consumableService = {
   getConsumablesForAsset: (assetId) => {
     return api.get(`/consumables/for-asset/${assetId}`)
   },
+  
 
   // =====================
   // COMPATIBILITY
@@ -132,13 +133,49 @@ const consumableService = {
   },
 
   getRequestStats: () => {
-    return api.get('/consumables/requests/statistics/summary')
-  },
+  return api.get('/consumables/requests/statistics/summary')
+},
 
-  // Get engineers for approval assignment
-  getEngineers: () => {
-    return api.get('/consumables/requests/engineers')
-  },
+downloadPDF: async (requestId) => {
+
+  const response = await api.get(
+    `/consumables/requests/${requestId}/pdf`,
+    {
+      responseType: 'blob'
+    }
+  )
+
+  const blob = new Blob(
+    [response.data],
+    {
+      type: 'application/pdf'
+    }
+  )
+
+  const url = window.URL.createObjectURL(blob)
+
+  const link = document.createElement('a')
+
+  link.href = url
+
+  // link.download =
+  //   `consumable-request-${requestId}.pdf`
+
+  link.download = 'E-requisition.pdf';
+
+  document.body.appendChild(link)
+
+  link.click()
+
+  document.body.removeChild(link)
+
+  window.URL.revokeObjectURL(url)
+},
+
+// Get engineers for approval assignment
+getEngineers: () => {
+  return api.get('/consumables/requests/engineers')
+},
 
   // Get stock info for a specific request (for approval modal)
   getRequestStockInfo: (requestId) => {
@@ -158,6 +195,8 @@ const consumableService = {
     const response = await api.get(`/consumables/consumption-report/export${queryString ? `?${queryString}` : ''}`, {
       responseType: 'blob'
     })
+
+    
 
     // Create download link
     const blob = new Blob([response.data], {
