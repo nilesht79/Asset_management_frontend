@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { FilePdfOutlined } from '@ant-design/icons'
 import {
   Card,
   Row,
@@ -32,6 +33,7 @@ import apiClient from '../../../../services/api'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import { Line, Pie } from '@ant-design/charts'
+import consumableService from '../../../../services/consumable'
 
 dayjs.extend(relativeTime)
 
@@ -506,6 +508,22 @@ const EngineerDashboard = () => {
                   width: 80,
                   render: (priority) => (
                     <Tag color={getPriorityColor(priority)}>{priority?.toUpperCase()}</Tag>
+                  )
+                },
+                {
+                  title: 'Actions',
+                  key: 'actions',
+                  width: 100,
+                  render: (_, record) => (
+                    <Tooltip title="Download PDF">
+                      <Button
+                        type="text"
+                        icon={<FilePdfOutlined style={{ color: '#ff4d4f' }} />}
+                        onClick={() =>
+                          consumableService.downloadPDF(record.id)
+                        }
+                      />
+                    </Tooltip>
                   )
                 }
               ]}
