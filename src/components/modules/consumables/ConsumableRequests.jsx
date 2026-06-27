@@ -26,6 +26,7 @@ import {
   Avatar,
   Empty
 } from 'antd'
+import { FilePdfOutlined } from '@ant-design/icons';
 import {
   PlusOutlined,
   CheckOutlined,
@@ -555,6 +556,17 @@ const ConsumableRequests = () => {
             <Button type="text" size="small" icon={<EyeOutlined />} onClick={() => handleViewDetails(record)} />
           </Tooltip>
         )
+
+        actions.push(
+            <Tooltip title="Download PDF" key="pdf">
+              <Button
+                type="text"
+                size="small"
+                icon={<FilePdfOutlined style={{ color: '#ff4d4f' }} />}
+                onClick={() => consumableService.downloadPDF(record.id)}
+              />
+            </Tooltip>
+          )
 
         if (isCoordinator) {
           if (record.status === 'pending') {
@@ -1222,6 +1234,7 @@ const ConsumableRequests = () => {
                 </Tag>
               </Descriptions.Item>
               <Descriptions.Item label="Purpose" span={2}>{selectedRequest.purpose || '-'}</Descriptions.Item>
+              <Descriptions.Item label="Delivery Notes" span={2}>{selectedRequest.notes || '-'}</Descriptions.Item>
               {selectedRequest.approved_by_name && (
                 <Descriptions.Item label="Approved By">{selectedRequest.approved_by_name}</Descriptions.Item>
               )}
@@ -1314,9 +1327,27 @@ const ConsumableRequests = () => {
               <Input.TextArea rows={3} placeholder="Reason for cancellation (optional)" />
             </Form.Item>
           )}
-          {actionType === 'deliver' && (
+          {/* {actionType === 'deliver' && (
             <Form.Item name="delivery_notes" label="Delivery Notes">
               <Input.TextArea rows={2} placeholder="Any notes about the delivery (optional)" />
+            </Form.Item>
+          )} */}
+
+          {actionType === 'deliver' && (
+            <Form.Item
+              name="delivery_notes"
+              label="Delivery Notes"
+              rules={[
+                {
+                  required: true,
+                  message: 'Please enter delivery notes'
+                }
+              ]}
+            >
+              <Input.TextArea
+                rows={3}
+                placeholder="Consumable installed and tested successfully"
+              />
             </Form.Item>
           )}
           {actionType === 'approve' && (
