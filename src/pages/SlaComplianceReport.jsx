@@ -221,9 +221,9 @@ const SlaComplianceReport = () => {
       width: 120
     },
     {
-      title: 'Total Resolved',
-      dataIndex: 'total_resolved',
-      key: 'total_resolved',
+      title: 'Total Tickets',
+      dataIndex: 'total_tickets',
+      key: 'total_tickets',
       width: 120,
       align: 'center'
     },
@@ -277,9 +277,9 @@ const SlaComplianceReport = () => {
       render: (_, record) => record.location_name || record.department_name || '-'
     },
     {
-      title: 'Total Resolved',
-      dataIndex: 'total_resolved',
-      key: 'total_resolved',
+      title: 'Total Tickets',
+      dataIndex: 'total_tickets',
+      key: 'total_tickets',
       width: 120,
       align: 'center'
     },
@@ -683,7 +683,7 @@ const SlaComplianceReport = () => {
               <Card hoverable>
                 <Statistic
                   title="Total Tickets Resolved"
-                  value={summary.total_resolved || 0}
+                  value={summary.total_tickets || 0}
                   prefix={<ClockCircleOutlined style={{ color: '#1890ff' }} />}
                 />
               </Card>
