@@ -700,10 +700,10 @@ const handleTableChange = (paginationInfo, tableFilters) => {
       ),
       filters: [
         { text: 'Open', value: 'open' },
-        { text: 'Assigned', value: 'assigned' },
+        // { text: 'Assigned', value: 'assigned' },
         { text: 'In Progress', value: 'in_progress' },
         { text: 'Pending Closure', value: 'pending_closure' },
-        { text: 'Resolved', value: 'resolved' },
+        // { text: 'Resolved', value: 'resolved' },
         { text: 'Closed', value: 'closed' }
       ]
     },
