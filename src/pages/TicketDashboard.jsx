@@ -108,17 +108,29 @@ const TicketDashboard = () => {
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [selectedCloseRequest, setSelectedCloseRequest] = useState(null);
   const [linkedAssets, setLinkedAssets] = useState([]);
+  const [selectedCard, setSelectedCard] = useState('all');
 
   const { user: currentUser } = useSelector((state) => state.auth);
   const { isMobile, isTablet } = useResponsive();
   const [searchParams, setSearchParams] = useSearchParams();
 
+  // useEffect(() => {
+  //   fetchTickets();
+  //   fetchStats();
+  //   fetchCloseRequestCount();
+  //   fetchPendingServiceTypeRequests();
+  // }, [pagination.current, pagination.pageSize, filters]);
+
   useEffect(() => {
-    fetchTickets();
-    fetchStats();
-    fetchCloseRequestCount();
-    fetchPendingServiceTypeRequests();
-  }, [pagination.current, pagination.pageSize, filters]);
+  fetchTickets();
+  fetchStats();
+  fetchCloseRequestCount();
+  fetchPendingServiceTypeRequests();
+}, [
+  filters,
+  pagination.current,
+  pagination.pageSize
+]);
 
   // Auto-open ticket drawer when navigated via notification with ?viewTicket=<id>
   const openTicketFromUrl = useCallback(async () => {
@@ -146,29 +158,54 @@ const TicketDashboard = () => {
     openTicketFromUrl();
   }, [openTicketFromUrl]);
 
+  // const fetchTickets = async () => {
+  //   setLoading(true);
+  //   try {
+  //     const params = ticketService.buildSearchParams(filters, {
+  //       page: pagination.current,
+  //       limit: pagination.pageSize
+  //     });
+
+  //     const response = await ticketService.getTickets(params);
+  //     const data = response.data.data || response.data;
+
+  //     setTickets(data.tickets || []);
+  //     setPagination((prev) => ({
+  //       ...prev,
+  //       total: data.pagination?.total || 0
+  //     }));
+  //   } catch (error) {
+  //     console.error('Failed to fetch tickets:', error);
+  //     message.error('Failed to load tickets');
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
   const fetchTickets = async () => {
+  try {
     setLoading(true);
-    try {
-      const params = ticketService.buildSearchParams(filters, {
-        page: pagination.current,
-        limit: pagination.pageSize
-      });
 
-      const response = await ticketService.getTickets(params);
-      const data = response.data.data || response.data;
+    const params = ticketService.buildSearchParams(filters, {
+      page: pagination.current,
+      limit: pagination.pageSize,
+    });
 
-      setTickets(data.tickets || []);
-      setPagination((prev) => ({
-        ...prev,
-        total: data.pagination?.total || 0
-      }));
-    } catch (error) {
-      console.error('Failed to fetch tickets:', error);
-      message.error('Failed to load tickets');
-    } finally {
-      setLoading(false);
-    }
-  };
+    console.log("Ticket Filters:", params);
+
+    const response = await ticketService.getTickets(params);
+
+    setTickets(response.data.data.tickets);
+    setPagination(prev => ({
+      ...prev,
+      total: response.data.data.pagination.total,
+    }));
+  } catch (error) {
+    console.error(error);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const fetchStats = async () => {
     try {
@@ -278,13 +315,47 @@ const TicketDashboard = () => {
     }, 500);
   };
 
-  const handleTableChange = (paginationInfo) => {
-    setPagination((prev) => ({
-      ...prev,
-      current: paginationInfo.current,
-      pageSize: paginationInfo.pageSize
-    }));
+  // const handleTableChange = (paginationInfo) => {
+  //   setPagination((prev) => ({
+  //     ...prev,
+  //     current: paginationInfo.current,
+  //     pageSize: paginationInfo.pageSize
+  //   }));
+  // };
+
+//   const handleTableChange = (paginationInfo, tableFilters) => {
+
+//   setPagination(prev => ({
+//     ...prev,
+//     current: paginationInfo.current,
+//     pageSize: paginationInfo.pageSize
+//   }));
+
+//   setFilters(prev => ({
+//     ...prev,
+//     status: tableFilters.status?.[0] || '',
+//     priority: tableFilters.priority?.[0] || ''
+//   }));
+// };
+
+const handleTableChange = (paginationInfo, tableFilters) => {
+
+  setPagination(prev => ({
+    ...prev,
+    current: paginationInfo.current,
+    pageSize: paginationInfo.pageSize
+  }));
+
+  const newFilters = {
+    ...filters
   };
+
+  Object.keys(tableFilters).forEach(key => {
+    newFilters[key] = tableFilters[key]?.[0] || '';
+  });
+
+  setFilters(newFilters);
+};
 
   const handleFilterChange = (key, value) => {
     setFilters((prev) => ({
@@ -297,6 +368,23 @@ const TicketDashboard = () => {
     }));
   };
 
+  // console.log("CARD CLICKED", type);
+
+  const handleStatsCardClick = (type) => {
+
+    setSelectedCard(type);
+
+    setFilters(prev => ({
+        ...prev,
+        status: type === 'all' ? '' : type
+    }));
+
+    setPagination(prev => ({
+        ...prev,
+        current: 1
+    }));
+};
+
   const handleApplyFilters = (newFilters) => {
     setFilters(newFilters);
     setPagination((prev) => ({
@@ -305,7 +393,7 @@ const TicketDashboard = () => {
     }));
   };
 
-  // Clear all filters and reset form fields OLD CODE
+    // Clear all filters and reset form fields OLD CODE
   // const handleClearFilters = () => {
   //   const clearedFilters = {
   //     search: '',
@@ -356,6 +444,7 @@ const TicketDashboard = () => {
         // Fetch all tickets again
         fetchTickets();
       };
+
   const handleRemoveFilter = (filterKey) => {
     setFilters((prev) => ({
       ...prev,
@@ -371,7 +460,7 @@ const TicketDashboard = () => {
     }).length;
   };
 
-  // Generate tags for active filters
+    // Generate tags for active filters
   // const getActiveFilterTags = () => {
   //   const tags = [];
   //   Object.entries(filters).forEach(([key, value]) => {
@@ -677,7 +766,7 @@ const TicketDashboard = () => {
         )
     },
     {
-      title: 'Department',
+      title: 'Department1',
       dataIndex: 'department_name',
       key: 'department_name',
       width: 150,
@@ -721,39 +810,153 @@ const TicketDashboard = () => {
       </div>
 
       {/* Stats Cards - Responsive */}
-      <Row gutter={[16, 16]}>
-          <Col flex="1">
-            <Card>
-              <Statistic title="Total Tickets" value={stats.total_tickets} prefix={<IssuesCloseOutlined />} />
-            </Card>
-          </Col>
-        
-          <Col flex="1">
-            <Card>
-              <Statistic title="Open Tickets" value={stats.open_tickets} valueStyle={{ color: '#1890ff' }} prefix={<AlertOutlined />} />
-            </Card>
-          </Col>
-        
-          <Col flex="1">
-            <Card>
-              <Statistic title="Today's Tickets" value={stats.today_tickets} valueStyle={{ color: '#fa8c16' }} prefix={<ClockCircleOutlined />} />
-            </Card>
-          </Col>
-        
-          <Col flex="1">
-            <Card>
-              <Statistic title="In Progress" value={stats.in_progress_tickets} valueStyle={{ color: '#722ed1' }} prefix={<ClockCircleOutlined />} />
-            </Card>
-          </Col>
-        
-          <Col flex="1">
-            <Card>
-              <Badge count={stats.overdue_tickets} offset={[10, 0]}>
-                <Statistic title="Closed Today" value={stats.closed_today} valueStyle={{ color: '#52c41a' }} prefix={<CheckCircleOutlined />} />
-              </Badge>
-            </Card>
-          </Col>
-        </Row>
+      {/* <Row gutter={[16, 16]}>
+        <Col xs={24} sm={12} md={12} lg={6} xl={6}>
+          <Card>
+            <Statistic
+              title="Total Tickets"
+              value={stats.total_tickets}
+              prefix={<IssuesCloseOutlined />}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} md={12} lg={6} xl={6}>
+          <Card>
+            <Statistic
+              title="Open Tickets"
+              value={stats.open_tickets}
+              valueStyle={{ color: '#1890ff' }}
+              prefix={<AlertOutlined />}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} md={12} lg={6} xl={6}>
+          <Card>
+            <Statistic
+              title="Todays Tickets"
+              value={stats.open_tickets}
+              valueStyle={{ color: '#1890ff' }}
+              prefix={<AlertOutlined />}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} md={12} lg={6} xl={6}>
+          <Card>
+            <Statistic
+              title="In Progress"
+              value={stats.in_progress_tickets}
+              valueStyle={{ color: '#722ed1' }}
+              prefix={<ClockCircleOutlined />}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} md={12} lg={6} xl={6}>
+          <Card>
+            <Badge count={stats.overdue_tickets} offset={[10, 0]}>
+              <Statistic
+                title="Closed Today"
+                value={stats.closed_today}
+                valueStyle={{ color: '#52c41a' }}
+                prefix={<CheckCircleOutlined />}
+              />
+            </Badge>
+          </Card>
+        </Col>
+      </Row> */}
+      <Row gutter={[16,16]}>
+
+  <Col flex="1">
+    <Card
+      hoverable
+      onClick={() => handleStatsCardClick('all')}
+      style={{
+        cursor: 'pointer',
+        border: selectedCard === 'all' ? '2px solid #1677ff' : ''
+      }}
+    >
+      <Statistic
+        title="Total Tickets"
+        value={stats.total_tickets}
+        prefix={<IssuesCloseOutlined />}
+      />
+    </Card>
+  </Col>
+
+  <Col flex="1">
+    <Card
+      hoverable
+      onClick={() => handleStatsCardClick('open')}
+      style={{
+        cursor: 'pointer',
+        border: selectedCard === 'open' ? '2px solid #1677ff' : ''
+      }}
+    >
+      <Statistic
+        title="Open Tickets"
+        value={stats.open_tickets}
+        valueStyle={{ color: '#1890ff' }}
+        prefix={<AlertOutlined />}
+      />
+    </Card>
+  </Col>
+
+  <Col flex="1">
+    <Card
+      hoverable
+      onClick={() => handleStatsCardClick('today')}
+      style={{
+        cursor: 'pointer',
+        border: selectedCard === 'today' ? '2px solid #1677ff' : ''
+      }}
+    >
+      <Statistic
+        title="Today's Tickets"
+        value={stats.today_tickets}
+        valueStyle={{ color: '#fa8c16' }}
+        prefix={<ClockCircleOutlined />}
+      />
+    </Card>
+  </Col>
+
+  <Col flex="1">
+    <Card
+      hoverable
+      onClick={() => handleStatsCardClick('in_progress')}
+      style={{
+        cursor: 'pointer',
+        border: selectedCard === 'in_progress' ? '2px solid #1677ff' : ''
+      }}
+    >
+      <Statistic
+        title="In Progress"
+        value={stats.in_progress_tickets}
+        valueStyle={{ color: '#722ed1' }}
+        prefix={<ClockCircleOutlined />}
+      />
+    </Card>
+  </Col>
+
+  <Col flex="1">
+    <Card
+      hoverable
+      onClick={() => handleStatsCardClick('closed_today')}
+      style={{
+        cursor: 'pointer',
+        border: selectedCard === 'closed_today' ? '2px solid #1677ff' : ''
+      }}
+    >
+      <Badge count={stats.overdue_tickets} offset={[10,0]}>
+        <Statistic
+          title="Closed Today"
+          value={stats.closed_today}
+          valueStyle={{ color: '#52c41a' }}
+          prefix={<CheckCircleOutlined />}
+        />
+      </Badge>
+    </Card>
+  </Col>
+
+</Row>
 
       {/* Filters and Actions */}
       <Card>
@@ -852,6 +1055,16 @@ const TicketDashboard = () => {
           </Space>
         )}
 
+        {/* <Table
+          columns={columns}
+          dataSource={tickets}
+          rowKey="ticket_id"
+          loading={loading}
+          pagination={pagination}
+          onChange={handleTableChange}
+          scroll={{ x: 'max-content' }}
+          sticky
+        /> */}
         <Table
           columns={columns}
           dataSource={tickets}
@@ -861,8 +1074,8 @@ const TicketDashboard = () => {
           onChange={handleTableChange}
           scroll={{ x: 'max-content' }}
           sticky
-        />
-      </Card>
+      />
+            </Card>
 
       {/* Modals */}
       <CreateTicketModal
@@ -970,14 +1183,22 @@ const TicketDashboard = () => {
         onSuccess={handleServiceTypeReviewSuccess}
       />
 
-      {/* Filter Drawer */}
-      <TicketFilterDrawer
+      {/* OLD CODE FOR Filter Drawer */}
+      {/* <TicketFilterDrawer
         visible={filterDrawerVisible}
         onClose={() => setFilterDrawerVisible(false)}
         filters={filters}
         onApplyFilters={handleApplyFilters}
-        form={filterForm}
-      />
+      /> */}
+
+ {/* Updated TicketFilterDrawer with form instance to reset fields on clear */}
+      <TicketFilterDrawer
+      visible={filterDrawerVisible}
+      onClose={() => setFilterDrawerVisible(false)}
+      filters={filters}
+      onApplyFilters={handleApplyFilters}
+      form={filterForm}
+    />
 
       {/* Mobile Floating Action Button */}
       {isMobile && (
