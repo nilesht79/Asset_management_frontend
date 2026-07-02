@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Form, Input, Button, Card, Alert, Typography } from 'antd'
 import { UserOutlined, LockOutlined, ArrowLeftOutlined } from '@ant-design/icons'
 import { useDispatch, useSelector } from 'react-redux'
+// import { useNavigate } from 'react-router-dom'
 import { useNavigate } from 'react-router-dom'
 import { login, clearError } from '../store/slices/authSlice'
 import { Link } from 'react-router-dom'
@@ -13,20 +14,32 @@ const Login = () => {
   const [form] = Form.useForm()
   const dispatch = useDispatch()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const redirect = searchParams.get('redirect')
   const { isLoading, error, isAuthenticated, user } = useSelector(state => state.auth)
   const [showError, setShowError] = useState(false)
   
 
   // Handle redirect if already authenticated (e.g., page refresh while logged in)
+  // useEffect(() => {
+  //   if (isAuthenticated && user) {
+  //     if (user.mustChangePassword) {
+  //       navigate('/force-password-change', { replace: true })
+  //     } else {
+  //       navigate('/dashboard', { replace: true })
+  //     }
+  //   }
+  // }, [isAuthenticated, user, navigate])
+
   useEffect(() => {
-    if (isAuthenticated && user) {
-      if (user.mustChangePassword) {
-        navigate('/force-password-change', { replace: true })
-      } else {
-        navigate('/dashboard', { replace: true })
-      }
+  if (isAuthenticated && user) {
+    if (user.mustChangePassword) {
+      navigate('/force-password-change', { replace: true })
+    } else {
+      navigate(redirect || '/dashboard', { replace: true })
     }
-  }, [isAuthenticated, user, navigate])
+  }
+}, [isAuthenticated, user, redirect, navigate])
 
   useEffect(() => {
     if (error) {
@@ -42,12 +55,17 @@ const Login = () => {
       // Get the login result directly to check mustChangePassword
       const result = await dispatch(login(values)).unwrap()
 
-      // Immediately redirect based on mustChangePassword flag
+      // // Immediately redirect based on mustChangePassword flag
+      // if (result.user?.mustChangePassword) {
+      //   navigate('/force-password-change', { replace: true })
+      // } else {
+      //   navigate('/dashboard', { replace: true })
+      // }
       if (result.user?.mustChangePassword) {
-        navigate('/force-password-change', { replace: true })
-      } else {
-        navigate('/dashboard', { replace: true })
-      }
+  navigate('/force-password-change', { replace: true })
+  } else {
+    navigate(redirect || '/dashboard', { replace: true })
+  }
     } catch (err) {
   console.log('LOGIN ERROR:', err)
 
