@@ -101,13 +101,18 @@ console.log('APP RENDER', {
           />
 
           {/* Login Route */}
-          <Route
+          {/* <Route
             path="/login"
             element={
               isAuthenticated ? (
                 mustChangePassword ? <Navigate to="/force-password-change" replace /> : <Navigate to="/dashboard" replace />
               ) : <Login />
             }
+          /> */}
+
+          <Route
+            path="/login"
+            element={<Login />}
           />
 
           {/* Forgot Password Route */}
