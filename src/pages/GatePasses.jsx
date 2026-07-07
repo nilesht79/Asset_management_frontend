@@ -971,7 +971,7 @@ const GatePasses = () => {
                 </Option>
 
                 {/* Asset List */}
-                /* {assetSearchResults.map((asset) => ( */
+               
                  {(createType === 'end_user' ? userAssets: assetSearchResults ).map((asset) => (
                   <Option key={asset.id} value={asset.id}>
                     <Space>
