@@ -109,6 +109,19 @@ const gatePassService = {
     }
   },
 
+    /**
+ * Get assets assigned to a user
+ */
+getUserAssets: async (userId) => {
+  try {
+    const response = await apiClient.get(`/gate-passes/users/${userId}/assets`);
+    return response;
+  } catch (error) {
+    console.error('Error fetching user assets:', error);
+    throw error;
+  }
+},
+
   /**
    * Get asset with its components
    * @param {string} assetId - Asset ID
