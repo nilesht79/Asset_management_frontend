@@ -13,9 +13,9 @@ if (typeof window !== 'undefined') {
   window.authService = authService
 }
 
-// // Import pages
-// import Landing from './pages/Landing'
-// import Documentation from './pages/Documentation'
+// Import pages
+import Landing from './pages/Landing'
+import Documentation from './pages/Documentation'
 import Login from './pages/Login'
 import ForgotPassword from './pages/ForgotPassword'
 import ResetPassword from './pages/ResetPassword'
