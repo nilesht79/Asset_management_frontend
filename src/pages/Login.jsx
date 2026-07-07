@@ -84,10 +84,10 @@ const Login = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-         <Link to="/" className="inline-flex items-center text-red-600 hover:text-red-700 mb-4">
+         {/* <Link to="/" className="inline-flex items-center text-red-600 hover:text-red-700 mb-4">
             <ArrowLeftOutlined className="mr-2" />
             Back to Home
-          </Link>
+          </Link> */}
         {/* Logo and Title */}
         <div className="text-center mb-8">
           <img
