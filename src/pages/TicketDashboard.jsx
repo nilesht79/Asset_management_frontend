@@ -1065,7 +1065,7 @@ const handleTableChange = (paginationInfo, tableFilters) => {
           scroll={{ x: 'max-content' }}
           sticky
         /> */}
-        <Table
+        {/* <Table
           columns={columns}
           dataSource={tickets}
           rowKey="ticket_id"
@@ -1074,7 +1074,26 @@ const handleTableChange = (paginationInfo, tableFilters) => {
           onChange={handleTableChange}
           scroll={{ x: 'max-content' }}
           sticky
-      />
+      /> */}
+
+        <Table
+            columns={columns}
+            dataSource={tickets}
+            rowKey="ticket_id"
+            loading={loading}
+            onChange={handleTableChange}
+            scroll={{ x: 'max-content' }}
+            sticky
+            pagination={{
+              current: pagination.current,
+              pageSize: pagination.pageSize,
+              total: pagination.total,
+              showSizeChanger: true,
+              showQuickJumper: true,
+              showTotal: (total, range) =>
+                `Showing ${range[0]} to ${range[1]} of ${total} entries`
+            }}
+          />
             </Card>
 
       {/* Modals */}
