@@ -1,7 +1,7 @@
-import React, { useState } from 'react'
-import { Form, Input, Button, Card, Alert, Typography, Result } from 'antd'
+import React, { useState, useEffect } from 'react'
+import { Form, Input, Button, Card, Alert, Typography, Result, Modal } from 'antd'
 import { MailOutlined, ArrowLeftOutlined } from '@ant-design/icons'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import authService from '../services/auth'
 
 const { Title, Text } = Typography
@@ -12,13 +12,22 @@ const ForgotPassword = () => {
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(false)
   const [submittedEmail, setSubmittedEmail] = useState('')
+  const [employeeEmail, setEmployeeEmail] = useState('')
+  const [showEmailPopup, setShowEmailPopup] = useState(false)
+  
+  const location = useLocation()
+  const employeeId = location.state?.employeeId || ""
 
   const handleSubmit = async (values) => {
     setIsLoading(true)
     setError(null)
 
     try {
-      await authService.forgotPassword(values.email)
+      // await authService.forgotPassword(values.email)
+      await authService.forgotPassword({
+        employeeId,
+        email: values.email
+      })
       setSubmittedEmail(values.email)
       setSuccess(true)
     } catch (err) {
@@ -28,6 +37,28 @@ const ForgotPassword = () => {
       setIsLoading(false)
     }
   }
+
+  useEffect(() => {
+
+  if (!employeeId) return
+
+  const loadEmail = async () => {
+    try {
+
+      const res = await authService.getEmployeeEmail(employeeId)
+
+      setEmployeeEmail(res.data.data.email)
+
+      setShowEmailPopup(true)
+
+    } catch (err) {
+      console.log(err)
+    }
+  }
+
+  loadEmail()
+
+}, [employeeId])
 
   if (success) {
     return (
@@ -78,8 +109,11 @@ const ForgotPassword = () => {
           <Title level={2} className="mb-2">
             Forgot Password
           </Title>
-          <Text className="text-gray-600">
+          {/* <Text className="text-gray-600">
             Enter your email to receive a password reset link
+          </Text> */}
+          <Text className="text-gray-600">
+            Verify your email address and click Send Reset Link.
           </Text>
         </div>
 
@@ -120,7 +154,7 @@ const ForgotPassword = () => {
             >
               <Input
                 prefix={<MailOutlined className="text-gray-400" />}
-                placeholder="Enter your email address"
+                placeholder="Enter your registered email address"
                 autoComplete="email"
               />
             </Form.Item>
@@ -153,6 +187,36 @@ const ForgotPassword = () => {
           </Text>
         </div>
       </div>
+            <Modal
+        title="Registered Email"
+        open={showEmailPopup}
+        closable={false}
+        footer={[
+          <Button
+            key="ok"
+            type="primary"
+            onClick={() => {
+              form.resetFields(["email"])
+              setShowEmailPopup(false)
+            }}
+          >
+            OK
+          </Button>
+        ]}
+      >
+        <p>
+          Your Email ID is: <b>{employeeEmail}</b>
+        </p>
+      
+        <p><b>Note:</b></p>
+      
+        <ul style={{ paddingLeft: "20px" }}>
+          <li>Password reset link will be sent only to the registered email.</li>
+          <li>Please remember this email and enter it on the next screen.</li>
+          <li>If you do not receive the email, check your Spam/Junk folder.</li>
+          <li>If the entered email does not match our records, the reset link will not be sent.</li>
+        </ul>
+      </Modal>
     </div>
   )
 }
