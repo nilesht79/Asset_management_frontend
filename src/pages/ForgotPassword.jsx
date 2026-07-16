@@ -211,10 +211,10 @@ const ForgotPassword = () => {
         <p><b>Note:</b></p>
       
         <ul style={{ paddingLeft: "20px" }}>
-          <li>Password reset link will be sent only to the registered email.</li>
-          <li>Please remember this email and enter it on the next screen.</li>
-          <li>If you do not receive the email, check your Spam/Junk folder.</li>
-          <li>If the entered email does not match our records, the reset link will not be sent.</li>
+          <li>The password reset link will be sent only to your registered email address.</li>
+          <li>The password reset link is valid for 1 hour.</li>
+          <li>If you do not receive the email, please check your Spam/Junk folder.</li>
+          <li>If there is any discrepancy, please contact the IT Help Desk at +91 22 6791 8181 or email helpdesk.fms@cidcoindia.com.</li>
         </ul>
       </Modal>
     </div>
