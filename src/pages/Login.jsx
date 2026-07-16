@@ -183,11 +183,37 @@ const Login = () => {
             </Form.Item>
           </Form>
 
-          <div className="mt-4 text-center">
+          {/* <div className="mt-4 text-center">
             <Link to="/forgot-password" className="text-red-600 hover:text-red-700 text-sm">
               Forgot Password?
             </Link>
-          </div>
+          </div> */}
+          <div className="mt-4 text-center">
+  <Button
+    type="link"
+    className="text-red-600"
+    onClick={() => {
+      const employeeId = form.getFieldValue("employeeId");
+
+      if (!employeeId) {
+        return form.setFields([
+          {
+            name: "employeeId",
+            errors: ["Please enter Employee ID first"]
+          }
+        ]);
+      }
+
+      navigate("/forgot-password", {
+        state: {
+          employeeId
+        }
+      });
+    }}
+  >
+    Forgot Password?
+  </Button>
+</div>
         </Card>
 
         {/* Footer */}
