@@ -65,6 +65,7 @@ const SlaComplianceReport = () => {
   const [assetCategoryId, setAssetCategoryId] = useState(null);
   const [oemId, setOemId] = useState(null);
   const [productModel, setProductModel] = useState(null);
+  const [slaMet, setSlaMet] = useState(null);
 
   useEffect(() => {
     loadFilterOptions();
@@ -124,6 +125,7 @@ const SlaComplianceReport = () => {
       if (assetCategoryId) params.asset_category_id = assetCategoryId;
       if (oemId) params.oem_id = oemId;
       if (productModel) params.product_model = productModel;
+      if (slaMet !== null) params.met_sla = slaMet;
 
       const response = await slaService.getComplianceReport(params);
       setReportData(response.data?.data || null);
@@ -154,6 +156,7 @@ const SlaComplianceReport = () => {
       if (assetCategoryId) params.asset_category_id = assetCategoryId;
       if (oemId) params.oem_id = oemId;
       if (productModel) params.product_model = productModel;
+      if (slaMet !== null) params.met_sla = slaMet;
 
       await slaService.exportComplianceReport(params);
       message.success('Report exported successfully');
@@ -210,6 +213,7 @@ const SlaComplianceReport = () => {
     setAssetCategoryId(null);
     setOemId(null);
     setProductModel(null);
+    setSlaMet(null);
   };
 
   // Table columns for period breakdown
@@ -650,6 +654,22 @@ const SlaComplianceReport = () => {
                 ))}
             </Select>
           </Col>
+          <Col xs={24} sm={12} md={8} lg={4}>
+            <Text strong style={{ display: 'block', marginBottom: 8 }}>
+                SLA Met
+            </Text>
+        
+            <Select
+                value={slaMet}
+                onChange={setSlaMet}
+                placeholder="All"
+                allowClear
+                style={{ width: '100%' }}
+            >
+                <Option value={1}>Yes</Option>
+                <Option value={0}>No</Option>
+            </Select>
+        </Col>
           <Col xs={24} sm={12} md={8} lg={4}>
             <Space>
               <Button
