@@ -73,9 +73,17 @@ const authService = {
   },
 
   // Forgot password - request password reset email
-  forgotPassword: (email) => {
-    return api.post('/auth/forgot-password', { email })
-  },
+  // forgotPassword: (email) => {
+  //   return api.post('/auth/forgot-password', { email })
+  // },
+    forgotPassword: (data) => {
+      return api.post('/auth/forgot-password', data)
+    },
+
+  // Get registered email using Employee ID
+getEmployeeEmail: (employeeId) => {
+  return api.get(`/auth/employee-email/${employeeId}`)
+},
 
   // Reset password with token
   resetPassword: (token, new_password) => {
