@@ -19,19 +19,35 @@ export default defineConfig({
       '@assets': path.resolve(__dirname, './src/assets')
     }
   },
+  // server: {
+  //   port: 3000,
+  //   host: true,
+  //   proxy: {
+  //     '/api': {
+  //       target: 'http://localhost:3001',
+  //       changeOrigin: true,
+  //       secure: false,
+  //       timeout: 600000, // 10 minutes for long-running requests like bulk upload
+  //       proxyTimeout: 600000
+  //     }
+  //   }
+  // },
   server: {
-    port: 3000,
-    host: true,
-    proxy: {
-      '/api': {
-        target: 'http://localhost:3001',
-        changeOrigin: true,
-        secure: false,
-        timeout: 600000, // 10 minutes for long-running requests like bulk upload
-        proxyTimeout: 600000
-      }
+  port: 3000,
+  host: true,
+  allowedHosts: [
+    "itsm.cidcoindia.com"
+  ],
+  proxy: {
+    '/api': {
+      target: 'http://localhost:3001',
+      changeOrigin: true,
+      secure: false,
+      timeout: 600000,
+      proxyTimeout: 600000
     }
-  },
+  }
+},
   build: {
     outDir: 'dist',
     sourcemap: process.env.NODE_ENV === 'development',
