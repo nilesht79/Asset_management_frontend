@@ -82,7 +82,10 @@ const Login = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+   <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col">
+
+  <div className="flex-1 flex items-center justify-center p-4">
+      
       <div className="w-full max-w-md">
          {/* <Link to="/" className="inline-flex items-center text-red-600 hover:text-red-700 mb-4">
             <ArrowLeftOutlined className="mr-2" />
@@ -216,10 +219,10 @@ const Login = () => {
 </div>
         </Card>
 
-        
       </div>
-      
     </div>
+
+    
     <footer
   className="mt-auto border-t"
   style={{
@@ -330,10 +333,13 @@ const Login = () => {
         className="h-6 w-auto object-contain"
       />
     </div>
+</div>   
 
-  </div>
-</footer>
-  )
+    </footer>
+
+</div> 
+)
+
 }
 
 export default Login
