@@ -216,14 +216,123 @@ const Login = () => {
 </div>
         </Card>
 
-        {/* Footer */}
-        <div className="text-center mt-6">
-          <Text className="text-gray-500 text-sm">
-            © 2024 Asset Management System. All rights reserved.
-          </Text>
+        
+      </div>
+      
+    </div>
+    <footer
+  className="mt-auto border-t"
+  style={{
+    background: "linear-gradient(90deg, #003062 0%, #0A3D73 50%, #1A4C82 100%)",
+    borderColor: "#0A3D73",
+    color: "#fff",
+    padding: "60px 0 35px"
+  }}
+>
+  <div className="w-full px-6 lg:px-12">
+
+    {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-2 items-start"> */}
+<div
+  className="grid grid-cols-1 md:grid-cols-3 gap-10 items-start"
+  style={{
+    minHeight: "120px"
+  }}
+>
+      <div className="flex items-center space-x-3">
+        <img
+          src="/logo.png"
+          alt="PolePlus Logo"
+          className="h-10 w-auto"
+        />
+
+        <div>
+          <div
+            className="text-4xl font-bold"
+            style={{ color: "#E30613" }}
+          >
+            PolePlus
+          </div>
+
+          <div
+            className="text-lg"
+            style={{ color: "#E5E7EB" }}
+          >
+            Enterprise level IT Services Management (ITSM) Platform
+          </div>
         </div>
       </div>
+
+      <div>
+        
+      </div>
+
+      <div>
+        <h2
+          style={{
+            color: "#FFFFFF",
+            marginBottom: "10px",
+            marginTop: 0
+          }}
+        >
+          Contact Support
+        </h2>
+
+        <div
+          className="space-y-2 text-sm"
+          style={{ color: "#E5E7EB" }}
+        >
+          <div>
+           
+
+            <a
+              href="tel:02265967466"
+              style={{ color: "#FFFFFF", fontSize: "20px" }}
+            >
+              📞 +91 22 6791 8181
+            </a>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span>✉</span>
+
+            <a
+              href="mailto:it.tickets@mailmmrda.maharashtra.gov.in"
+              style={{ color: "#E5E7EB", fontSize: "20px" }}
+            >
+              helpdesk.fms@cidcoindia.com
+            </a>
+          </div>
+        </div>
+      </div>
+
     </div>
+
+    <div
+      className="pt-2 mt-2 flex flex-wrap justify-center items-center gap-2 text-sm"
+      style={{
+        borderTop: "1px solid rgba(255,255,255,0.2)",
+        color: "#E5E7EB"
+      }}
+    >
+      <span style={{
+        fontSize: "20px"
+      }}>
+        © 2026 PolePlus Unified ITSM Platform. All Rights Reserved.
+      </span>
+
+      <span>|</span>
+
+      <span>Powered By</span>
+
+      <img
+        src="/logo.png"
+        alt="PolePlus"
+        className="h-6 w-auto object-contain"
+      />
+    </div>
+
+  </div>
+</footer>
   )
 }
 
