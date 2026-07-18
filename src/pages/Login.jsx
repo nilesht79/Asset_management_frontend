@@ -94,7 +94,7 @@ const Login = () => {
         {/* Logo and Title */}
         <div className="text-center mb-8">
           <img
-            src="/logo.png"
+            src="/logo_cidco.png"
             alt="PolePlus"
             className="h-16 w-auto mx-auto mb-4"
           />
