@@ -50,6 +50,7 @@ const SlaComplianceReport = () => {
     locations: [],
     departments: [],
     categories: [],
+    subCategories: [],
     oems: [],
     products: []
   });
@@ -63,6 +64,7 @@ const SlaComplianceReport = () => {
   const [locationId, setLocationId] = useState(null);
   const [departmentId, setDepartmentId] = useState(null);
   const [assetCategoryId, setAssetCategoryId] = useState(null);
+  const [subCategoryId, setSubCategoryId] = useState(null);
   const [oemId, setOemId] = useState(null);
   const [productModel, setProductModel] = useState(null);
   const [slaMet, setSlaMet] = useState(null);
@@ -86,6 +88,9 @@ const SlaComplianceReport = () => {
       const categoriesRes = await masterService.getCategories();
       const categories = categoriesRes.data?.data?.categories || categoriesRes.data?.data || [];
 
+      const subCategoriesRes = await masterService.getSubCategories();
+      const subCategories = subCategoriesRes.data?.data?.subcategories || subCategoriesRes.data?.data || [];
+
       // Load OEMs
       const oemsRes = await masterService.getOEMs();
       const oems = oemsRes.data?.data?.oems || oemsRes.data?.data || [];
@@ -98,6 +103,7 @@ const SlaComplianceReport = () => {
         locations,
         departments,
         categories,
+        subCategories,
         oems,
         products
       });
@@ -123,6 +129,7 @@ const SlaComplianceReport = () => {
       if (locationId) params.location_id = locationId;
       if (departmentId) params.department_id = departmentId;
       if (assetCategoryId) params.asset_category_id = assetCategoryId;
+      if (subCategoryId) params.sub_category_id = subCategoryId;
       if (oemId) params.oem_id = oemId;
       if (productModel) params.product_model = productModel;
       if (slaMet !== null) params.met_sla = slaMet;
@@ -211,6 +218,7 @@ const SlaComplianceReport = () => {
     setLocationId(null);
     setDepartmentId(null);
     setAssetCategoryId(null);
+    setSubCategoryId(null);
     setOemId(null);
     setProductModel(null);
     setSlaMet(null);
@@ -617,6 +625,23 @@ const SlaComplianceReport = () => {
             >
               {filterOptions.categories.map(cat => (
                 <Option key={cat.id} value={cat.id}>{cat.name}</Option>
+              ))}
+            </Select>
+          </Col>
+          <Col xs={24} sm={12} md={8} lg={4}>
+            <Text strong>Sub Category</Text>
+          
+            <Select
+              value={subCategoryId}
+              onChange={setSubCategoryId}
+              placeholder="All Sub Categories"
+              allowClear
+              style={{ width: '100%' }}
+            >
+              {filterOptions.subCategories.map(sub => (
+                <Option key={sub.id} value={sub.id}>
+                  {sub.name}
+                </Option>
               ))}
             </Select>
           </Col>
