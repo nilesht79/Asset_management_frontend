@@ -815,7 +815,7 @@ const Sidebar = () => {
         {collapsed ? (
           <div className="flex items-center justify-center">
             <img
-              src="/logo.png"
+              src="/logo_cidco.png"
               alt="PolePlus"
               className="h-10 w-auto object-contain"
             />
@@ -823,7 +823,7 @@ const Sidebar = () => {
         ) : (
           <div className="flex items-center space-x-3">
             <img
-              src="/logo.png"
+              src="/logo_cidco.png"
               alt="PolePlus"
               className="h-10 w-auto object-contain"
             />
