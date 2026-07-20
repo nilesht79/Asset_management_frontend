@@ -343,6 +343,12 @@ const SlaComplianceReport = () => {
       width: 100
     },
     {
+    title: 'Sub Category',
+    dataIndex: 'sub_category_name',
+    key: 'sub_category_name',
+    width: 180
+    },
+    {
       title: 'Priority',
       dataIndex: 'priority',
       key: 'priority',
