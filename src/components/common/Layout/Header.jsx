@@ -118,7 +118,7 @@ const Header = () => {
         {/* Logo and title */}
         <div className="flex items-center space-x-3">
           <img
-            src="/logo.png"
+            src="/logo_cidco.png"
             alt="PolePlus"
             className="h-8 w-auto"
           />
