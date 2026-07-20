@@ -88,7 +88,10 @@ const SlaComplianceReport = () => {
       const categoriesRes = await masterService.getCategories();
       const categories = categoriesRes.data?.data?.categories || categoriesRes.data?.data || [];
 
-      const subCategoriesRes = await masterService.getSubCategories();
+      // const subCategoriesRes = await masterService.getSubCategories();
+      const subCategoriesRes = await masterService.getProductSubCategories({
+          limit: 1000
+      });
       const subCategories = subCategoriesRes.data?.data?.subcategories || subCategoriesRes.data?.data || [];
 
       // Load OEMs
