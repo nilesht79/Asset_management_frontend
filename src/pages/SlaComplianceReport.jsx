@@ -323,6 +323,36 @@ const SlaComplianceReport = () => {
     }
   ];
 
+  const subCategoryColumns = [
+  {
+    title: 'Sub Category',
+    dataIndex: 'sub_category_name',
+    key: 'sub_category_name'
+  },
+  {
+    title: 'Total Tickets',
+    dataIndex: 'total_tickets',
+    key: 'total_tickets',
+    align: 'center'
+  },
+  {
+    title: 'Within SLA',
+    dataIndex: 'resolved_within_sla',
+    key: 'resolved_within_sla',
+    align: 'center',
+    render: (val) => <Tag color="green">{val}</Tag>
+  },
+  {
+    title: 'Compliance Rate',
+    dataIndex: 'compliance_rate',
+    key: 'compliance_rate',
+    align: 'center',
+    render: (val) => (
+      <Progress percent={val || 0} size="small" />
+    )
+  }
+];
+
   // Table columns for ticket details
   const detailColumns = [
     {
@@ -499,6 +529,26 @@ const SlaComplianceReport = () => {
             />
           ) : (
             <Empty description="No ticket data available" />
+          )}
+        </Card>
+      )
+    },
+    {
+      key: 'subcategory',
+      label: <span>By Sub Category</span>,
+      children: (
+        <Card title="Sub Category Breakdown">
+          {reportData?.by_sub_category &&
+          reportData.by_sub_category.length > 0 ? (
+            <Table
+              dataSource={reportData.by_sub_category}
+              columns={subCategoryColumns}
+              rowKey="sub_category_id"
+              pagination={false}
+              size="middle"
+            />
+          ) : (
+            <Empty description="No sub category data available" />
           )}
         </Card>
       )
