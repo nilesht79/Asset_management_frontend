@@ -454,8 +454,12 @@ const EmployeeDashboard = () => {
       >
         <Row justify="space-between" align="middle">
           <Col>
-            <Title level={3} style={{ margin: 0, fontWeight: 500, color: '#262626' }}>
+            {/* <Title level={3} style={{ margin: 0, fontWeight: 500, color: '#262626' }}>
               {getGreeting()}, {user?.firstName || 'User'}!
+            </Title> */}
+            <Title level={3} style={{ margin: 0, fontWeight: 500, color: '#262626' }}>
+              {getGreeting()},{" "}
+              {`${user?.firstName || ""} ${user?.lastName || ""}`.trim() || "User"}!
             </Title>
             <Space split={<Divider type="vertical" style={{ borderColor: '#d9d9d9' }} />} style={{ marginTop: 8 }}>
               {user?.employeeId && (
