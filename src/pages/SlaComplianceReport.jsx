@@ -535,7 +535,7 @@ const SlaComplianceReport = () => {
     },
     {
       key: 'subcategory',
-      label: <span>By Sub Category</span>,
+      label: <span><TagsOutlined />By Sub Category</span>,
       children: (
         <Card title="Sub Category Breakdown">
           {reportData?.by_sub_category &&
