@@ -417,6 +417,30 @@ const GatePasses = () => {
       )
     },
     {
+    title: 'Serial Number',
+    dataIndex: 'serial_number',
+    key: 'serial_number',
+    width: 170,
+    ellipsis: true,
+    render: (text) => text || '-'
+  },
+  {
+    title: 'Sub Category',
+    dataIndex: 'category_name',
+    key: 'category_name',
+    width: 180,
+    ellipsis: true,
+    render: (text) => text || '-'
+  },
+  {
+    title: 'Model',
+    dataIndex: 'model',
+    key: 'model',
+    width: 180,
+    ellipsis: true,
+    render: (text) => text || '-'
+  },
+    {
       title: 'Type',
       dataIndex: 'gate_pass_type',
       key: 'gate_pass_type',
