@@ -424,10 +424,10 @@ const GatePasses = () => {
     ellipsis: true,
     render: (text) => text || '-'
   },
-  {
+   {
     title: 'Sub Category',
-    dataIndex: 'category_name',
-    key: 'category_name',
+    dataIndex: 'subcategory_name',
+    key: 'subcategory_name',
     width: 180,
     ellipsis: true,
     render: (text) => text || '-'
