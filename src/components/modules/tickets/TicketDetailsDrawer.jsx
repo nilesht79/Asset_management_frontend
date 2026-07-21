@@ -342,11 +342,11 @@ const TicketDetailsDrawer = ({ visible, ticket, onClose, onUpdate }) => {
                 </Descriptions.Item>
 
                 <Descriptions.Item label="Department">
-                  {ticket.department_name || 'N/A'}
+                  {ticket.asset_department_name || ticket.department_name || 'N/A'}
                 </Descriptions.Item>
-
+                
                 <Descriptions.Item label="Location">
-                  {ticket.location_name || 'N/A'}
+                  {ticket.asset_location_name || ticket.location_name || 'N/A'}
                 </Descriptions.Item>
               </>
             )}
