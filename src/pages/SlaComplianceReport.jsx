@@ -45,6 +45,10 @@ const { Option } = Select;
 
 const SlaComplianceReport = () => {
   const [loading, setLoading] = useState(false);
+  const [ticketPagination, setTicketPagination] = useState({
+  current: 1,
+  pageSize: 20,
+});
   const [exporting, setExporting] = useState(false);
   const [reportData, setReportData] = useState(null);
   const [filterOptions, setFilterOptions] = useState({
@@ -524,7 +528,19 @@ const SlaComplianceReport = () => {
               dataSource={reportData.details}
               columns={detailColumns}
               rowKey="ticket_id"
-              pagination={{ pageSize: 20, showSizeChanger: true }}
+              pagination={{
+                  current: ticketPagination.current,
+                  pageSize: ticketPagination.pageSize,
+                  total: reportData?.details?.length || 0,
+                  showSizeChanger: true,
+                  pageSizeOptions: ['10', '20', '50', '100'],
+                  onChange: (page, pageSize) => {
+                    setTicketPagination({
+                      current: page,
+                      pageSize,
+                    });
+                  },
+                }}
               size="small"
               scroll={{ x: 1600 }}
             />
