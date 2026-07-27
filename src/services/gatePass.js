@@ -226,4 +226,40 @@ getUserAssets: async (userId) => {
   ]
 };
 
+ exportExcel: async (params = {}) => {
+  try {
+    const response = await apiClient.get(
+      "/gate-passes/export",
+      {
+        params,
+        responseType: "blob"
+      }
+    );
+
+    const blob = new Blob([
+      response.data
+    ]);
+
+    const url = window.URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+
+    a.href = url;
+
+    a.download = "GatePasses.xlsx";
+
+    document.body.appendChild(a);
+
+    a.click();
+
+    a.remove();
+
+    window.URL.revokeObjectURL(url);
+
+  } catch (err) {
+    console.error(err);
+    throw err;
+  }
+},
+
 export default gatePassService;
