@@ -41,7 +41,8 @@ import {
   ShopOutlined,
   DesktopOutlined,
   ClearOutlined,
-  BranchesOutlined
+  BranchesOutlined,
+  DownloadOutlined
 } from '@ant-design/icons';
 import gatePassService from '../services/gatePass';
 import masterService from '../services/master';
