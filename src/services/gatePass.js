@@ -214,19 +214,7 @@ getUserAssets: async (userId) => {
     return options[type] || [];
   },
 
-  /**
-   * Condition options
-   */
-  conditionOptions: [
-    { value: 'working', label: 'Working' },
-    { value: 'damaged', label: 'Damaged' },
-    { value: 'for_repair', label: 'For Repair' },
-    { value: 'faulty', label: 'Faulty' },
-    { value: 'unknown', label: 'Unknown' }
-  ]
-};
-
- exportExcel: async (params = {}) => {
+    exportExcel: async (params = {}) => {
   try {
     const response = await apiClient.get(
       "/gate-passes/export",
@@ -261,5 +249,19 @@ getUserAssets: async (userId) => {
     throw err;
   }
 },
+
+  /**
+   * Condition options
+   */
+  conditionOptions: [
+    { value: 'working', label: 'Working' },
+    { value: 'damaged', label: 'Damaged' },
+    { value: 'for_repair', label: 'For Repair' },
+    { value: 'faulty', label: 'Faulty' },
+    { value: 'unknown', label: 'Unknown' }
+  ]
+};
+
+ 
 
 export default gatePassService;
