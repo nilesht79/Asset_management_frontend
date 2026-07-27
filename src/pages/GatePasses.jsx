@@ -416,30 +416,46 @@ const GatePasses = () => {
         </Space>
       )
     },
-    {
-    title: 'Serial Number',
-    dataIndex: 'serial_number',
-    key: 'serial_number',
-    width: 170,
-    ellipsis: true,
-    render: (text) => text || '-'
-  },
    {
-    title: 'Sub Category',
-    dataIndex: 'subcategory_name',
-    key: 'subcategory_name',
-    width: 180,
-    ellipsis: true,
-    render: (text) => text || '-'
-  },
-  {
-    title: 'Model',
-    dataIndex: 'model',
-    key: 'model',
-    width: 180,
-    ellipsis: true,
-    render: (text) => text || '-'
-  },
+  title: 'Serial Number',
+  dataIndex: 'serial_number',
+  key: 'serial_number',
+  width: 170,
+  ellipsis: true,
+  render: (text) => text || '-'
+},
+{
+  title: 'Category',
+  dataIndex: 'category_name',
+  key: 'category_name',
+  width: 140,
+  ellipsis: true,
+  render: (text) => text || '-'
+},
+{
+  title: 'Sub Category',
+  dataIndex: 'subcategory_name',
+  key: 'subcategory_name',
+  width: 180,
+  ellipsis: true,
+  render: (text) => text || '-'
+},
+{
+  title: 'Product',
+  dataIndex: 'product_name',
+  key: 'product_name',
+  width: 250,
+  ellipsis: true,
+  render: (text) => text || '-'
+},
+{
+  title: 'Model',
+  dataIndex: 'model',
+  key: 'model',
+  width: 200,
+  ellipsis: true,
+  render: (text) => text || '-'
+},
     {
       title: 'Type',
       dataIndex: 'gate_pass_type',
@@ -656,7 +672,7 @@ const GatePasses = () => {
               fetchGatePasses(page);
             }
           }}
-          scroll={{ x: 1100 }}
+          scroll={{ x: 1700 }}
           size="small"
         />
       </Card>
