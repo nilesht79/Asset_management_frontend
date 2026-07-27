@@ -92,6 +92,37 @@ const GatePasses = () => {
   // State to track if "Others" option is selected in asset search
   const [isOtherSelected, setIsOtherSelected] = useState(false);
   const [userAssets, setUserAssets] = useState([]);
+    const handleExport = async () => {
+
+    try {
+
+        const params = {};
+
+        if (activeTab !== "all")
+            params.gate_pass_type = activeTab;
+
+        if (dateRange) {
+            params.date_from = dateRange[0].format("YYYY-MM-DD");
+            params.date_to = dateRange[1].format("YYYY-MM-DD");
+        }
+
+        if (searchText)
+            params.search = searchText;
+
+        if (serialNumberSearch)
+            params.serial_number = serialNumberSearch;
+
+        await gatePassService.exportExcel(params);
+
+        message.success("Excel downloaded.");
+
+    } catch {
+
+        message.error("Export failed.");
+
+    }
+
+};
 
   // Fetch dropdown data
   useEffect(() => {
