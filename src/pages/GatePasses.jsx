@@ -651,6 +651,12 @@ const GatePasses = () => {
               <Button icon={<ReloadOutlined />} onClick={() => fetchGatePasses(pagination.page)}>
                 Refresh
               </Button>
+              <Button type="primary"
+                icon={<DownloadOutlined />}
+                onClick={handleExport}
+            >
+                Export
+            </Button>
             </Space>
           </Col>
         </Row>
