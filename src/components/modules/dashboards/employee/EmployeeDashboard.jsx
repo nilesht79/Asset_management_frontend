@@ -284,6 +284,16 @@ const EmployeeDashboard = () => {
       render: (text) => <Tag>{text}</Tag>
     },
     {
+    title: 'Subcategory',
+    dataIndex: 'subcategory_name',
+    key: 'subcategory_name',
+    render: (text) => (
+      <Tag color="purple">
+        {text || '-'}
+      </Tag>
+    )
+  },
+    {
       title: 'Condition',
       dataIndex: 'condition_status',
       key: 'condition_status',
