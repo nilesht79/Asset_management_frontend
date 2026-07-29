@@ -192,6 +192,16 @@ const MyAssets = () => {
         render: (text) => <Tag color="green">{text}</Tag>
       },
       {
+        title: 'Subcategory',
+        dataIndex: 'subcategory_name',
+        key: 'subcategory_name',
+        render: (text) => (
+          <Tag color="purple">
+            {text || '-'}
+          </Tag>
+        )
+      },
+      {
         title: 'Serial Number',
         dataIndex: 'serial_number',
         key: 'serial_number',
