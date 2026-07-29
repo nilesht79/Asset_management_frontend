@@ -367,7 +367,7 @@ const MyAssets = () => {
           My Assets
         </Title>
         <Text type="secondary">
-          View all assets assigned to you
+          View all assets assigned to you1111
         </Text>
       </div>
 
