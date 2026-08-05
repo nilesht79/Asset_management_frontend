@@ -185,7 +185,12 @@ const ConsumableRequests = () => {
   const loadEligibleUsers = async () => {
     try {
       // Get users who are eligible to request consumables (employee, dept_head, it_head, engineer)
-      const response = await userService.getUsers({ role: 'employee,dept_head,it_head,engineer', limit: 5000 })
+      // const response = await userService.getUsers({ role: 'employee,dept_head,it_head,engineer', limit: 5000 })
+      const response = await userService.getUsers({
+  role: 'employee,coordinator,dept_head,it_head,engineer,admin,superadmin',
+  limit: 5000
+});
+      
       if (response.data.success) {
         setEligibleUsers(response.data.data.users || response.data.data || [])
       }
