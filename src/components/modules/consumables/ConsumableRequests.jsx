@@ -182,22 +182,40 @@ const ConsumableRequests = () => {
     }
   }
 
-  const loadEligibleUsers = async () => {
-    try {
-      // Get users who are eligible to request consumables (employee, dept_head, it_head, engineer)
-      // const response = await userService.getUsers({ role: 'employee,dept_head,it_head,engineer', limit: 5000 })
-      const response = await userService.getUsers({
-  role: 'employee,coordinator,dept_head,it_head,engineer,admin,superadmin',
-  limit: 5000
-});
+//   const loadEligibleUsers = async () => {
+//     try {
+//       // Get users who are eligible to request consumables (employee, dept_head, it_head, engineer)
+//       // const response = await userService.getUsers({ role: 'employee,dept_head,it_head,engineer', limit: 5000 })
+//       const response = await userService.getUsers({
+//   role: 'employee,coordinator,dept_head,it_head,engineer,admin,superadmin',
+//   limit: 5000
+// });
       
-      if (response.data.success) {
-        setEligibleUsers(response.data.data.users || response.data.data || [])
+//       if (response.data.success) {
+//         setEligibleUsers(response.data.data.users || response.data.data || [])
+//       }
+//     } catch (error) {
+//       console.error('Failed to load eligible users:', error)
+//     }
+//   }
+
+  const loadEligibleUsers = async () => {
+        try {
+          // Get all active users who can be selected for a consumable request
+          const response = await userService.getUsers({
+            role: 'employee,coordinator,department_head,department_coordinator,it_head,engineer,admin,superadmin',
+            limit: 5000
+          });
+      
+          if (response.data.success) {
+            setEligibleUsers(
+              response.data.data.users || response.data.data || []
+            );
+          }
+        } catch (error) {
+          console.error('Failed to load eligible users:', error);
+        }
       }
-    } catch (error) {
-      console.error('Failed to load eligible users:', error)
-    }
-  }
 
   const loadDepartments = async () => {
     try {
@@ -290,14 +308,30 @@ const ConsumableRequests = () => {
   }, [eligibleUsers, departmentFilter])
 
   // Get role display name
+  // const getRoleLabel = (role) => {
+  //   const roleMap = {
+  //     employee: 'Employee',
+  //     dept_head: 'Dept Head',
+  //     it_head: 'IT Head'
+  //   }
+  //   return roleMap[role] || role
+  // }
+
   const getRoleLabel = (role) => {
-    const roleMap = {
-      employee: 'Employee',
-      dept_head: 'Dept Head',
-      it_head: 'IT Head'
-    }
-    return roleMap[role] || role
+  const roleMap = {
+    employee: 'Employee',
+    department_head: 'Department Head',
+    dept_head: 'Department Head',
+    department_coordinator: 'Department Coordinator',
+    it_head: 'IT Head',
+    coordinator: 'Coordinator',
+    engineer: 'Engineer',
+    admin: 'Admin',
+    superadmin: 'Super Admin'
   }
+
+  return roleMap[role] || role
+}
 
   const handleAssetChange = (assetId) => {
     setSelectedAssetId(assetId)
