@@ -88,6 +88,8 @@ const ServiceReportModal = ({
     try {
       // For replacement, we need standalone/parent assets that are available
       const response = await serviceReportService.getAvailableReplacementAssets();
+      console.log('REPLACEMENT ASSETS:',response.data?.data?.assets);
+
       setAvailableAssets(response.data?.data?.assets || []);
     } catch (error) {
       console.error('Failed to fetch assets:', error);
