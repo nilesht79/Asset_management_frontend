@@ -329,7 +329,7 @@ const ServiceReportModal = ({
               </Select>
             </Form.Item>
           </Col>
-
+{/* 
           {isReplace && (
             <Col span={12}>
     <Form.Item
@@ -355,7 +355,34 @@ const ServiceReportModal = ({
       />
     </Form.Item>
   </Col>
-          )}
+          )} */}
+
+          {isReplace && (
+  <Col span={12}>
+    <Form.Item
+      name="replacement_asset_id"
+      label="Replacement Asset"
+      rules={[
+        {
+          required: true,
+          message: 'Please select replacement asset'
+        }
+      ]}
+    >
+      <Select
+        placeholder="Select replacement asset"
+        loading={loadingAssets}
+        showSearch
+        optionFilterProp="label"
+        style={{ width: '100%' }}
+        options={availableAssets.map((asset) => ({
+          value: asset.asset_id,
+          label: asset.serial_number
+        }))}
+      />
+    </Form.Item>
+  </Col>
+)}
     
         </Row>
 
