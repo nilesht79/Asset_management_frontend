@@ -150,26 +150,61 @@ const ServiceReportModal = ({
 
     setLoading(true);
     try {
-      const reportData = {
-        ticket_id: ticket.ticket_id,
-        service_type: serviceType,
-        asset_id: values.asset_id,
-        replacement_asset_id: isReplace ? values.replacement_asset_id : null,
-        diagnosis: values.diagnosis,
-        work_performed: values.work_performed,
-        // Condition fields only for repair service
-        condition_before: isRepair ? values.condition_before : null,
-        condition_after: isRepair ? values.condition_after : null,
-        total_parts_cost: calculateTotalPartsCost(),
-        labor_cost: values.labor_cost || 0,
-        engineer_notes: values.engineer_notes,
-        parts_used: selectedParts.filter(p => p.asset_id).map(p => ({
-          asset_id: p.asset_id,
-          quantity: p.quantity,
-          unit_cost: p.unit_cost,
-          notes: p.notes
-        }))
-      };
+      // const reportData = {
+      //   ticket_id: ticket.ticket_id,
+      //   service_type: serviceType,
+      //   asset_id: values.asset_id,
+      //   replacement_asset_id: isReplace ? values.replacement_asset_id : null,
+      //   diagnosis: values.diagnosis,
+      //   work_performed: values.work_performed,
+      //   // Condition fields only for repair service
+      //   condition_before: isRepair ? values.condition_before : null,
+      //   condition_after: isRepair ? values.condition_after : null,
+      //   total_parts_cost: calculateTotalPartsCost(),
+      //   labor_cost: values.labor_cost || 0,
+      //   engineer_notes: values.engineer_notes,
+      //   parts_used: selectedParts.filter(p => p.asset_id).map(p => ({
+      //     asset_id: p.asset_id,
+      //     quantity: p.quantity,
+      //     unit_cost: p.unit_cost,
+      //     notes: p.notes
+      //   }))
+      // };
+
+      const selectedReplacementAsset = isReplace
+  ? availableAssets.find(
+      asset => asset.serial_number === values.replacement_asset_id
+    )
+  : null;
+
+        const reportData = {
+          ticket_id: ticket.ticket_id,
+          service_type: serviceType,
+          asset_id: values.asset_id,
+        
+          replacement_asset_id: isReplace
+            ? selectedReplacementAsset?.asset_id || null
+            : null,
+        
+          diagnosis: values.diagnosis,
+          work_performed: values.work_performed,
+        
+          condition_before: isRepair ? values.condition_before : null,
+          condition_after: isRepair ? values.condition_after : null,
+        
+          total_parts_cost: calculateTotalPartsCost(),
+          labor_cost: values.labor_cost || 0,
+          engineer_notes: values.engineer_notes,
+        
+          parts_used: selectedParts
+            .filter(p => p.asset_id)
+            .map(p => ({
+              asset_id: p.asset_id,
+              quantity: p.quantity,
+              unit_cost: p.unit_cost,
+              notes: p.notes
+            }))
+        };
 
       await serviceReportService.createReport(reportData);
       message.success('Service report created successfully');
@@ -329,35 +364,9 @@ const ServiceReportModal = ({
               </Select>
             </Form.Item>
           </Col>
-{/* 
-          {isReplace && (
-            <Col span={12}>
-    <Form.Item
-      name="replacement_asset_id"
-      label="Replacement Asset"
-      rules={[
-        {
-          required: true,
-          message: 'Please select replacement asset'
-        }
-      ]}
-    >
-      <Select
-        placeholder="Select replacement asset"
-        loading={loadingAssets}
-        showSearch
-        optionFilterProp="label"
-        style={{ width: '100%' }}
-        options={availableAssets.map((asset) => ({
-          value: asset.asset_id,
-          label: asset.serial_number
-        }))}
-      />
-    </Form.Item>
-  </Col>
-          )} */}
 
-         /* {isReplace && (
+
+        {isReplace && (
   <Col span={12}>
     <Form.Item
       name="replacement_asset_id"
@@ -373,54 +382,22 @@ const ServiceReportModal = ({
         placeholder="Select replacement asset"
         loading={loadingAssets}
         showSearch
-        optionFilterProp="label"
-        style={{ width: '100%' }}
-        options={availableAssets
-          .filter(
-            asset =>
-              asset.status === 'assigned' ||
-              asset.status === 'available'
-          )
-          .map(asset => ({
-            value: asset.asset_id,
-            label: asset.serial_number
-          }))}
-      />
-    </Form.Item>
-  </Col>
-)} */
-
-          {isReplace && (
-  <Col span={12}>
-    <Form.Item
-      name="replacement_asset_id"
-      label="Replacement Asset"
-      rules={[
-        {
-          required: true,
-          message: 'Please select replacement asset'
-        }
-      ]}
-    >
-      <Select
-        placeholder="Select replacement asset"
-        loading={loadingAssets}
-        showSearch
-        optionFilterProp="label"
+        optionFilterProp="children"
         style={{ width: '100%' }}
       >
         {availableAssets
           .filter(
             asset =>
-              asset.status === 'assigned' ||
-              asset.status === 'available'
+              (asset.status === 'assigned' ||
+                asset.status === 'available') &&
+              asset.serial_number
           )
           .map(asset => (
             <Option
               key={asset.asset_id}
-              value={asset.asset_id}
+              value={asset.serial_number}
             >
-              {asset.serial_number || 'No Serial Number'}
+              {asset.serial_number}
             </Option>
           ))}
       </Select>
