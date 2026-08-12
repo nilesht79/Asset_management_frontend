@@ -242,8 +242,11 @@ const ServiceReportModal = ({
           {availableParts
             .filter(p => !selectedParts.find(sp => sp.asset_id === p.asset_id && sp.key !== record.key))
             .map(p => (
+              // <Option key={p.asset_id} value={p.asset_id}>
+              //   {p.product_name} - {p.asset_tag}
+              // </Option>
               <Option key={p.asset_id} value={p.asset_id}>
-                {p.product_name} - {p.asset_tag}
+                {p.serial_number}
               </Option>
             ))}
         </Select>
