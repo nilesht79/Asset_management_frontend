@@ -369,7 +369,7 @@ const ServiceReportModal = ({
           </Col>
 
 
-        {isReplace && (
+       {isReplace && (
   <Col span={12}>
     <Form.Item
       name="replacement_asset_id"
@@ -393,7 +393,8 @@ const ServiceReportModal = ({
             asset =>
               (asset.status === 'assigned' ||
                 asset.status === 'available') &&
-              asset.serial_number
+              asset.serial_number &&
+              asset.serial_number.trim() !== ''
           )
           .map(asset => (
             <Option
