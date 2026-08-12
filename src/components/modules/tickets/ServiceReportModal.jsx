@@ -357,7 +357,7 @@ const ServiceReportModal = ({
   </Col>
           )} */}
 
-         {isReplace && (
+         /* {isReplace && (
   <Col span={12}>
     <Form.Item
       name="replacement_asset_id"
@@ -386,6 +386,44 @@ const ServiceReportModal = ({
             label: asset.serial_number
           }))}
       />
+    </Form.Item>
+  </Col>
+)} */
+
+          {isReplace && (
+  <Col span={12}>
+    <Form.Item
+      name="replacement_asset_id"
+      label="Replacement Asset"
+      rules={[
+        {
+          required: true,
+          message: 'Please select replacement asset'
+        }
+      ]}
+    >
+      <Select
+        placeholder="Select replacement asset"
+        loading={loadingAssets}
+        showSearch
+        optionFilterProp="label"
+        style={{ width: '100%' }}
+      >
+        {availableAssets
+          .filter(
+            asset =>
+              asset.status === 'assigned' ||
+              asset.status === 'available'
+          )
+          .map(asset => (
+            <Option
+              key={asset.asset_id}
+              value={asset.asset_id}
+            >
+              {asset.serial_number || 'No Serial Number'}
+            </Option>
+          ))}
+      </Select>
     </Form.Item>
   </Col>
 )}
