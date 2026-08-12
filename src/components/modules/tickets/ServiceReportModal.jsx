@@ -357,7 +357,7 @@ const ServiceReportModal = ({
   </Col>
           )} */}
 
-          {isReplace && (
+         {isReplace && (
   <Col span={12}>
     <Form.Item
       name="replacement_asset_id"
@@ -375,10 +375,16 @@ const ServiceReportModal = ({
         showSearch
         optionFilterProp="label"
         style={{ width: '100%' }}
-        options={availableAssets.map((asset) => ({
-          value: asset.asset_id,
-          label: asset.serial_number
-        }))}
+        options={availableAssets
+          .filter(
+            asset =>
+              asset.status === 'assigned' ||
+              asset.status === 'available'
+          )
+          .map(asset => ({
+            value: asset.asset_id,
+            label: asset.serial_number
+          }))}
       />
     </Form.Item>
   </Col>
