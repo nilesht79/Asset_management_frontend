@@ -343,21 +343,16 @@ const ServiceReportModal = ({
                 ]}
               >
                 <Select
-                  placeholder="Select replacement asset"
-                  loading={loadingAssets}
-                  showSearch
-                  optionFilterProp="children"
-                  style={{ width: '100%' }}
-                >
-                  {availableAssets.map((asset) => (
-                    <Option
-                      key={asset.asset_id}
-                      value={asset.asset_id}
-                    >
-                      {asset.serial_number}
-                    </Option>
-                  ))}
-                </Select>
+            placeholder="Select replacement asset"
+            loading={loadingAssets}
+            showSearch
+            optionFilterProp="label"
+            style={{ width: '100%' }}
+            options={availableAssets.map((asset) => ({
+              value: asset.asset_id,
+              label: asset.serial_number,
+            }))}
+           />
               </Form.Item>
             </Col>
           )}
