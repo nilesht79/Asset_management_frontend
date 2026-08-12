@@ -342,8 +342,11 @@ const ServiceReportModal = ({
                   optionFilterProp="children"
                 >
                   {availableAssets.map(asset => (
-                    <Option key={asset.asset_id} value={asset.asset_id}>
-                      {asset.product_name} - {asset.asset_tag}
+                    // <Option key={asset.asset_id} value={asset.asset_id}>
+                    //   {asset.product_name} - {asset.asset_tag}
+                    // </Option>
+                  <Option key={asset.asset_id} value={asset.asset_id}>
+                      {asset.serial_number}
                     </Option>
                   ))}
                 </Select>
