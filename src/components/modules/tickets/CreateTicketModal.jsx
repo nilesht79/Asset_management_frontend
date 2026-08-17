@@ -411,8 +411,8 @@ const CreateTicketModal = ({ visible, onClose, onSuccess, currentUser, preSelect
             <Option value="Speed Test & Daily Tasks">
               Speed Test & Daily Tasks
             </Option>
-            <Option value="VC Reports">
-              VC Reports
+            <Option value="VC setup & presentation">
+              VC setup & presentation
             </Option>
             <Option value="Other">Other</Option>
           </Select>
