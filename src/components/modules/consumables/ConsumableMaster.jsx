@@ -364,6 +364,13 @@ const ConsumableMaster = () => {
       )
     },
     {
+        title: 'Printer Model',
+        dataIndex: 'printer_models',
+        key: 'printer_models',
+        width: 220,
+        render: (text) => text || '-'
+      },
+    {
       title: 'Category',
       dataIndex: 'category_name',
       key: 'category_name',
