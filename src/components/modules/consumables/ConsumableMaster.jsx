@@ -353,16 +353,21 @@ const ConsumableMaster = () => {
       render: (text) => <Text code>{text}</Text>
     },
     {
-      title: 'Name',
-      dataIndex: 'name',
-      key: 'name',
-      render: (text, record) => (
-        <Space direction="vertical" size={0}>
-          <Text strong>{text}</Text>
-          {record.description && <Text type="secondary" style={{ fontSize: 12 }}>{record.description}</Text>}
-        </Space>
-      )
-    },
+        title: 'Name',
+        dataIndex: 'name',
+        key: 'name',
+        width: 300,
+        render: (text, record) => (
+          <Space direction="vertical" size={0}>
+            <Text strong>{text}</Text>
+            {record.description && (
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                {record.description}
+              </Text>
+            )}
+          </Space>
+        )
+      },
     {
         title: 'Printer Model',
         dataIndex: 'printer_models',
