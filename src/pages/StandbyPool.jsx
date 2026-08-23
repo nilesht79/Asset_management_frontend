@@ -290,12 +290,12 @@ const handleUnassignClick = (asset) => {
       width: 130
     },
     {
-  title: 'Subcategory',
-  dataIndex: 'subcategory_name',
-  key: 'subcategory_name',
-  width: 150,
-  render: (text) => text || '-'
-},
+      title: 'Subcategory',
+      dataIndex: 'subcategory_name',
+      key: 'subcategory_name',
+      width: 150,
+      render: (text) => text || '-'
+    },
     {
       title: 'Type',
       dataIndex: 'product_type',
