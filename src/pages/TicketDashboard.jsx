@@ -731,6 +731,27 @@ const handleTableChange = (paginationInfo, tableFilters) => {
     key: 'asset_subcategory',
   },
     {
+  title: 'Serial Number',
+  dataIndex: 'asset_serial_number',
+  key: 'asset_serial_number',
+  width: 180,
+  render: (value) => value || '-'
+},
+{
+  title: 'Location',
+  dataIndex: 'display_location',
+  key: 'display_location',
+  width: 160,
+  render: (value) => value || '-'
+},
+{
+  title: 'Floor',
+  dataIndex: 'display_floor',
+  key: 'display_floor',
+  width: 120,
+  render: (value) => value || '-'
+},
+    {
       title: 'Created For',
       key: 'created_by_user',
       width: 220,
