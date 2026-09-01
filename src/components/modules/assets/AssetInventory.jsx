@@ -377,6 +377,8 @@ const AssetInventory = () => {
       purchase_cost: asset.purchase_cost,
       notes: asset.notes,
       department_id: asset.department_id,
+      ip_address: asset.ip_address || '',
+      hostname: asset.hostname || '',
       location_id: asset.location_id,
       software_installations: softwareInstallations
     })
@@ -1240,6 +1242,30 @@ const AssetInventory = () => {
       width: 130,
       render: (department) => department || <span className="text-gray-400 italic">Unassigned</span>
     },
+    {
+        title: <span className="font-semibold text-gray-700">IP Address</span>,
+        dataIndex: 'ip_address',
+        key: 'ip_address',
+        width: 140,
+        render: (ip) =>
+          ip ? (
+            <span className="font-mono text-xs text-gray-700">{ip}</span>
+          ) : (
+            <span className="text-gray-400">—</span>
+          )
+      },
+      {
+        title: <span className="font-semibold text-gray-700">Hostname</span>,
+        dataIndex: 'hostname',
+        key: 'hostname',
+        width: 160,
+        render: (hostname) =>
+          hostname ? (
+            <span className="font-mono text-xs text-gray-700">{hostname}</span>
+          ) : (
+            <span className="text-gray-400">—</span>
+          )
+      },
     {
       title: <span className="font-semibold text-gray-700">Location</span>,
       dataIndex: 'location_name',
@@ -2346,6 +2372,27 @@ const AssetInventory = () => {
                 </Select>
               </Form.Item>
             </Col>
+            <Col span={12}>
+            <Form.Item
+              label="IP Address"
+              name="ip_address"
+            >
+              <Input
+                placeholder="Enter IP address"
+              />
+            </Form.Item>
+          </Col>
+          
+          <Col span={12}>
+            <Form.Item
+              label="Hostname"
+              name="hostname"
+            >
+              <Input
+                placeholder="Enter hostname"
+              />
+            </Form.Item>
+          </Col>
             <Col span={12}>
               <Form.Item
                 noStyle
