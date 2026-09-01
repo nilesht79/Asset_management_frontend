@@ -169,6 +169,34 @@ const LegacyImportModal = ({ visible, onClose, onSuccess }) => {
       width: 150
     },
     {
+  title: 'IP Address',
+  dataIndex: 'ip_address',
+  key: 'ip_address',
+  width: 140,
+  render: (ip) =>
+    ip ? (
+      <span style={{ fontFamily: 'monospace', fontSize: 12 }}>
+        {ip}
+      </span>
+    ) : (
+      <Text type="secondary">-</Text>
+    )
+},
+{
+  title: 'Hostname',
+  dataIndex: 'hostname',
+  key: 'hostname',
+  width: 160,
+  render: (hostname) =>
+    hostname ? (
+      <span style={{ fontFamily: 'monospace', fontSize: 12 }}>
+        {hostname}
+      </span>
+    ) : (
+      <Text type="secondary">-</Text>
+    )
+},
+    {
       title: 'Product',
       dataIndex: 'product_name',
       key: 'product',
@@ -302,8 +330,11 @@ const LegacyImportModal = ({ visible, onClose, onSuccess }) => {
             <div style={{ marginTop: 32 }}>
               <Title level={5}>Step 2: Upload Completed File</Title>
               <Text type="secondary">
-                Fill in the Assets sheet with your legacy asset data. Use the Additional Software sheet for all software (OS, Office, etc.), then upload for validation.
-              </Text>
+  Fill in the Assets sheet with your legacy asset data,
+  including IP Address and Hostname where applicable.
+  Use the Additional Software sheet for all software
+  (OS, Office, etc.), then upload for validation.
+</Text>
               <Dragger
                 accept=".xlsx,.xls"
                 beforeUpload={handleFileUpload}
