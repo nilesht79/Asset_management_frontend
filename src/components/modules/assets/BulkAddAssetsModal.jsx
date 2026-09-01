@@ -101,6 +101,31 @@ const BulkAddAssetsModal = ({ visible, onClose, onSuccess, products, locations, 
   const previewColumns = [
     { title: 'Row', dataIndex: 'row_number', key: 'row', width: 60 },
     { title: 'Serial Number', dataIndex: 'serial_number', key: 'serial', width: 150 },
+    {
+    title: 'IP Address',
+    dataIndex: 'ip_address',
+    key: 'ip_address',
+    width: 140,
+    render: (ip) =>
+      ip ? (
+        <span className="font-mono text-xs">{ip}</span>
+      ) : (
+        <span className="text-gray-400">—</span>
+      )
+  },
+
+  {
+    title: 'Hostname',
+    dataIndex: 'hostname',
+    key: 'hostname',
+    width: 160,
+    render: (hostname) =>
+      hostname ? (
+        <span className="font-mono text-xs">{hostname}</span>
+      ) : (
+        <span className="text-gray-400">—</span>
+      )
+  },
     { title: 'Asset Type', dataIndex: 'asset_type', key: 'asset_type', width: 100 },
     { title: 'Parent Asset', dataIndex: 'parent_asset_tag', key: 'parent_tag', width: 120 },
     {
@@ -199,7 +224,8 @@ const BulkAddAssetsModal = ({ visible, onClose, onSuccess, products, locations, 
             <h4 className="font-semibold mb-2">Instructions:</h4>
             <ol className="list-decimal list-inside space-y-1 text-sm">
               <li>Click "Download Template" to get the Excel file (2 sheets: Assets + Additional Software)</li>
-              <li><strong>Sheet 1 (Assets):</strong> Fill in Serial Number, Warranty dates, EOL/EOS dates, OS & Office software with license keys</li>
+              <li><strong>Sheet 1 (Assets):</strong> Fill in Serial Number,IP Address, Hostname, Warranty dates, EOL/EOS dates,OS & Office software with license keys</li>
+              <li><strong>IP Address & Hostname:</strong> Enter the IP address and hostnamefor each asset where applicable.</li>
               <li><strong>Sheet 2 (Additional Software):</strong> Add unlimited software installations by matching Serial Number</li>
               <li>Optionally, set "Asset Type" to "component" and specify "Parent Asset Tag" to create components</li>
               <li>You can also update Purchase Date, Cost, Installation Notes, and other fields</li>
