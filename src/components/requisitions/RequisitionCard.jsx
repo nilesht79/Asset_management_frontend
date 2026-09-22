@@ -126,7 +126,7 @@ const RequisitionCard = ({ requisition, onCancel, onSignForDelivery, showActions
               {requisition.department_name}
             </Text>
           </div> */}
-          {/* User / Location / Department */}
+          {/* User / Location / Floor / Department */}
           <div style={{ textAlign: 'right' }}>
           
             {/* User Name */}
@@ -146,6 +146,16 @@ const RequisitionCard = ({ requisition, onCancel, onSignForDelivery, showActions
               </Text>
               <Text strong style={{ fontSize: '12px' }}>
                 {requisition.location || '-'}
+              </Text>
+            </div>
+          
+            {/* Floor */}
+            <div style={{ marginBottom: 10 }}>
+              <Text type="secondary" style={{ fontSize: '12px', display: 'block' }}>
+                Floor
+              </Text>
+              <Text strong style={{ fontSize: '12px' }}>
+                {requisition.floor ?? '-'}
               </Text>
             </div>
           
