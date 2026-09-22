@@ -155,7 +155,7 @@ const RequisitionCard = ({ requisition, onCancel, onSignForDelivery, showActions
                 Floor
               </Text>
               <Text strong style={{ fontSize: '12px' }}>
-                {requisition.floor ?? '-'}
+                {requisition.location_floor ?? '-'}
               </Text>
             </div>
           
