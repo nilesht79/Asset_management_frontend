@@ -118,13 +118,47 @@ const RequisitionCard = ({ requisition, onCancel, onSignForDelivery, showActions
 
         <Col span={6} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', alignItems: 'flex-end' }}>
           {/* Department */}
-          <div style={{ textAlign: 'right' }}>
+          {/* <div style={{ textAlign: 'right' }}>
             <Text type="secondary" style={{ fontSize: '12px', display: 'block' }}>
               Department
             </Text>
             <Text strong style={{ fontSize: '12px' }}>
               {requisition.department_name}
             </Text>
+          </div> */}
+          {/* User / Location / Department */}
+          <div style={{ textAlign: 'right' }}>
+          
+            {/* User Name */}
+            <div style={{ marginBottom: 10 }}>
+              <Text type="secondary" style={{ fontSize: '12px', display: 'block' }}>
+                User
+              </Text>
+              <Text strong style={{ fontSize: '12px' }}>
+                {requisition.requester_name || '-'}
+              </Text>
+            </div>
+          
+            {/* Location */}
+            <div style={{ marginBottom: 10 }}>
+              <Text type="secondary" style={{ fontSize: '12px', display: 'block' }}>
+                Location
+              </Text>
+              <Text strong style={{ fontSize: '12px' }}>
+                {requisition.location || '-'}
+              </Text>
+            </div>
+          
+            {/* Department */}
+            <div>
+              <Text type="secondary" style={{ fontSize: '12px', display: 'block' }}>
+                Department
+              </Text>
+              <Text strong style={{ fontSize: '12px' }}>
+                {requisition.department_name || '-'}
+              </Text>
+            </div>
+          
           </div>
 
           {/* Actions */}
