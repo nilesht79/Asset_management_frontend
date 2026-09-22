@@ -120,30 +120,80 @@ const Sidebar = () => {
           ],
         },
         // Asset Management Module
+        // {
+        //   key: 'assets',
+        //   icon: <DesktopOutlined />,
+        //   label: 'Asset Management',
+        //   children: [
+        //     {
+        //       key: '/assets/inventory',
+        //       label: 'Asset Inventory',
+        //     },
+        //     {
+        //       key: '/assets/movement',
+        //       label: 'Asset Movement',
+        //     },
+        //     {
+        //       key: '/standby/pool',
+        //       label: 'Standby Pool',
+        //       icon: <SwapOutlined />
+        //     },
+        //     {
+        //       key: '/standby/assignments',
+        //       label: 'Standby Assignments',
+        //     }
+        //   ],
+        // },
+
+        // Asset Management Module
+{
+  key: 'assets',
+  icon: <DesktopOutlined />,
+  label: 'Asset Management',
+  children: [
+    {
+      key: '/assets/inventory',
+      label: 'Asset Inventory',
+    },
+    {
+      key: '/assets/movement',
+      label: 'Asset Movement',
+    },
+    {
+      key: '/standby/pool',
+      label: 'Standby Pool',
+      icon: <SwapOutlined />
+    },
+    {
+      key: '/standby/assignments',
+      label: 'Standby Assignments',
+    },
+
+    // Asset Requisitions Module
+    {
+      key: 'asset-requisitions',
+      icon: <ShoppingOutlined />,
+      label: 'Asset Requisitions',
+      children: [
         {
-          key: 'assets',
-          icon: <DesktopOutlined />,
-          label: 'Asset Management',
-          children: [
-            {
-              key: '/assets/inventory',
-              label: 'Asset Inventory',
-            },
-            {
-              key: '/assets/movement',
-              label: 'Asset Movement',
-            },
-            {
-              key: '/standby/pool',
-              label: 'Standby Pool',
-              icon: <SwapOutlined />
-            },
-            {
-              key: '/standby/assignments',
-              label: 'Standby Assignments',
-            }
-          ],
+          key: '/assignments/asset-assignment',
+          icon: <SendOutlined />,
+          label: 'Asset Assignment',
         },
+        {
+          key: '/deliveries/management',
+          icon: <DeliveredProcedureOutlined />,
+          label: 'Delivery Management',
+        },
+        {
+          key: '/requisitions/all-requisitions',
+          icon: <FileTextOutlined />,
+          label: 'All Requisitions',
+        }
+      ]
+    }
+  ],
+},
         // Consumables Module
         {
           key: 'consumables',
