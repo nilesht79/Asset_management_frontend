@@ -43,14 +43,22 @@ const AllRequisitions = () => {
     : 'View and track all requisition requests across the organization';
   const [requisitions, setRequisitions] = useState([]);
   const [loading, setLoading] = useState(false);
+  // const [filters, setFilters] = useState({
+  //   search: '',
+  //   status: '',
+  //   urgency: '',
+  //   board_id: '',
+  //   department_id: '',
+  //   requester_id: ''
+  // });
   const [filters, setFilters] = useState({
-    search: '',
-    status: '',
-    urgency: '',
-    board_id: '',
-    department_id: '',
-    requester_id: ''
-  });
+  search: '',
+  status: '',
+  urgency: '',
+  location_id: '',
+  department_id: '',
+  requester_id: ''
+});
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 10,
@@ -66,7 +74,8 @@ const AllRequisitions = () => {
   });
 
   // Additional filter options
-  const [boards, setBoards] = useState([]);
+  // const [boards, setBoards] = useState([]);
+  const [locations, setLocations] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [users, setUsers] = useState([]);
 
@@ -76,17 +85,22 @@ const AllRequisitions = () => {
   }, [filters, pagination.page]);
 
   // Load boards, departments and users for filters
+  // useEffect(() => {
+  //   loadBoards();
+  //   loadDepartments();
+  // }, []);
+
   useEffect(() => {
-    loadBoards();
-    loadDepartments();
-  }, []);
+  loadLocations();
+  loadDepartments();
+}, []);
 
   // Reload departments when board filter changes
-  useEffect(() => {
-    if (filters.board_id !== undefined) {
-      loadDepartments();
-    }
-  }, [filters.board_id]);
+  // useEffect(() => {
+  //   if (filters.board_id !== undefined) {
+  //     loadDepartments();
+  //   }
+  // }, [filters.board_id]);
 
   // Calculate statistics when requisitions change
   // useEffect(() => {
@@ -193,54 +207,104 @@ if (data.stats) {
     }
   };
 
-  const loadBoards = async () => {
-    try {
-      const response = await api.get('/boards', {
-        params: {
-          limit: 1000,
-          page: 1
-        }
-      });
-      const data = response.data.data || response.data;
-      setBoards(data.boards || data || []);
-    } catch (error) {
-      console.error('Failed to load boards:', error);
-    }
-  };
+  // const loadBoards = async () => {
+  //   try {
+  //     const response = await api.get('/boards', {
+  //       params: {
+  //         limit: 1000,
+  //         page: 1
+  //       }
+  //     });
+  //     const data = response.data.data || response.data;
+  //     setBoards(data.boards || data || []);
+  //   } catch (error) {
+  //     console.error('Failed to load boards:', error);
+  //   }
+  // };
+
+  const loadLocations = async () => {
+  try {
+    const response = await api.get('/locations', {
+      params: {
+        limit: 1000,
+        page: 1
+      }
+    });
+
+    const data = response.data.data || response.data;
+
+    setLocations(data.locations || data || []);
+  } catch (error) {
+    console.error('Failed to load locations:', error);
+  }
+};
+
+  // const loadDepartments = async () => {
+  //   try {
+  //     // Request all departments without pagination for the filter dropdown
+  //     const response = await api.get('/departments', {
+  //       params: {
+  //         limit: 1000, // Large limit to get all departments
+  //         page: 1,
+  //         board_id: filters.board_id || undefined // Filter departments by selected board
+  //       }
+  //     });
+  //     const data = response.data.data || response.data;
+  //     setDepartments(data.departments || data || []);
+  //   } catch (error) {
+  //     console.error('Failed to load departments:', error);
+  //   }
+  // };
 
   const loadDepartments = async () => {
-    try {
-      // Request all departments without pagination for the filter dropdown
-      const response = await api.get('/departments', {
-        params: {
-          limit: 1000, // Large limit to get all departments
-          page: 1,
-          board_id: filters.board_id || undefined // Filter departments by selected board
-        }
-      });
-      const data = response.data.data || response.data;
-      setDepartments(data.departments || data || []);
-    } catch (error) {
-      console.error('Failed to load departments:', error);
-    }
-  };
+  try {
+    const response = await api.get('/departments', {
+      params: {
+        limit: 1000,
+        page: 1
+      }
+    });
+
+    const data = response.data.data || response.data;
+
+    setDepartments(data.departments || data || []);
+  } catch (error) {
+    console.error('Failed to load departments:', error);
+  }
+};
 
   const handleFilterChange = (key, value) => {
     setFilters({ ...filters, [key]: value });
     setPagination(prev => ({ ...prev, page: 1 })); // Reset to first page
   };
 
+  // const handleClearFilters = () => {
+  //   setFilters({
+  //     search: '',
+  //     status: '',
+  //     urgency: '',
+  //     board_id: '',
+  //     department_id: '',
+  //     requester_id: ''
+  //   });
+  //   setPagination(prev => ({ ...prev, page: 1 }));
+  // };
+
   const handleClearFilters = () => {
-    setFilters({
-      search: '',
-      status: '',
-      urgency: '',
-      board_id: '',
-      department_id: '',
-      requester_id: ''
-    });
-    setPagination(prev => ({ ...prev, page: 1 }));
-  };
+  setFilters({
+    search: '',
+    status: '',
+    urgency: '',
+    location_id: '',
+    department_id: '',
+    requester_id: ''
+  });
+
+  setPagination(prev => ({
+    ...prev,
+    page: 1
+  }));
+};
 
   const handlePageChange = (page, pageSize) => {
     setPagination(prev => ({
@@ -411,7 +475,7 @@ if (data.stats) {
             <Option value="critical">Critical</Option>
           </Select>
 
-          <Select
+          {/* <Select
             placeholder="Filter by Board"
             value={filters.board_id || undefined}
             onChange={(value) => {
@@ -431,9 +495,25 @@ if (data.stats) {
                 {board.name}
               </Option>
             ))}
-          </Select>
+          </Select> */}
 
           <Select
+  placeholder="Filter by Location"
+  value={filters.location_id || undefined}
+  onChange={(value) => handleFilterChange('location_id', value)}
+  style={{ width: 200 }}
+  allowClear
+  showSearch
+  optionFilterProp="children"
+>
+  {locations.map(location => (
+    <Option key={location.id} value={location.id}>
+      {location.name}
+    </Option>
+  ))}
+</Select>
+
+          {/* <Select
             placeholder="Filter by Department"
             value={filters.department_id || undefined}
             onChange={(value) => handleFilterChange('department_id', value)}
@@ -447,7 +527,23 @@ if (data.stats) {
                 {dept.name}
               </Option>
             ))}
-          </Select>
+          </Select> */}
+
+          <Select
+  placeholder="Filter by Department"
+  value={filters.department_id || undefined}
+  onChange={(value) => handleFilterChange('department_id', value)}
+  style={{ width: 200 }}
+  allowClear
+  showSearch
+  optionFilterProp="children"
+>
+  {departments.map(dept => (
+    <Option key={dept.id} value={dept.id}>
+      {dept.name}
+    </Option>
+  ))}
+</Select>
 
           <Button
             icon={<FilterOutlined />}
