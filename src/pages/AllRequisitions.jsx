@@ -89,23 +89,56 @@ const AllRequisitions = () => {
   }, [filters.board_id]);
 
   // Calculate statistics when requisitions change
-  useEffect(() => {
-    if (requisitions.length > 0) {
-      const newStats = {
-        total: pagination.total || requisitions.length,
-        pending: requisitions.filter(r =>
-          ['pending_dept_head', 'pending_it_head', 'pending_assignment'].includes(r.status)
-        ).length,
-        approved: requisitions.filter(r =>
-          ['assigned', 'pending_verification', 'delivered', 'completed'].includes(r.status)
-        ).length,
-        rejected: requisitions.filter(r =>
-          ['rejected_by_dept_head', 'rejected_by_it_head', 'cancelled'].includes(r.status)
-        ).length
-      };
-      setStats(newStats);
-    }
-  }, [requisitions, pagination.total]);
+  // useEffect(() => {
+  //   if (requisitions.length > 0) {
+  //     const newStats = {
+  //       total: pagination.total || requisitions.length,
+  //       pending: requisitions.filter(r =>
+  //         ['pending_dept_head', 'pending_it_head', 'pending_assignment'].includes(r.status)
+  //       ).length,
+  //       approved: requisitions.filter(r =>
+  //         ['assigned', 'pending_verification', 'delivered', 'completed'].includes(r.status)
+  //       ).length,
+  //       rejected: requisitions.filter(r =>
+  //         ['rejected_by_dept_head', 'rejected_by_it_head', 'cancelled'].includes(r.status)
+  //       ).length
+  //     };
+  //     setStats(newStats);
+  //   }
+  // }, [requisitions, pagination.total]);
+
+        // Calculate statistics
+      useEffect(() => {
+        if (requisitions.length > 0) {
+          const newStats = {
+            total: pagination.total || requisitions.length,
+      
+            // IT Head Pending only
+            pending: requisitions.filter(
+              r => r.status === 'pending_it_head'
+            ).length,
+      
+            // Approved by IT Head only
+            approved: requisitions.filter(
+              r => r.it_head_status === 'approved'
+            ).length,
+      
+            // Rejected by IT Head only
+            rejected: requisitions.filter(
+              r => r.status === 'rejected_by_it_head'
+            ).length
+          };
+      
+          setStats(newStats);
+        } else {
+          setStats({
+            total: pagination.total || 0,
+            pending: 0,
+            approved: 0,
+            rejected: 0
+          });
+        }
+      }, [requisitions, pagination.total]);
 
   const loadRequisitions = async () => {
     try {
@@ -212,7 +245,7 @@ const AllRequisitions = () => {
 
       {/* Statistics Cards */}
       <Row gutter={16} style={{ marginBottom: 24 }}>
-        <Col xs={24} sm={12} md={6}>
+        {/* <Col xs={24} sm={12} md={6}>
           <Card>
             <Statistic
               title="Total Requisitions"
@@ -220,8 +253,22 @@ const AllRequisitions = () => {
               prefix={<FileTextOutlined />}
             />
           </Card>
-        </Col>
+        </Col> */}
+
         <Col xs={24} sm={12} md={6}>
+          <Card
+            hoverable
+            onClick={handleClearFilters}
+            style={{ cursor: 'pointer' }}
+          >
+            <Statistic
+              title="Total Requisitions"
+              value={stats.total}
+              prefix={<FileTextOutlined />}
+            />
+          </Card>
+        </Col>
+        {/* <Col xs={24} sm={12} md={6}>
           <Card>
             <Statistic
               title="Pending"
@@ -230,8 +277,22 @@ const AllRequisitions = () => {
               valueStyle={{ color: '#faad14' }}
             />
           </Card>
-        </Col>
+        </Col> */}
         <Col xs={24} sm={12} md={6}>
+        <Card
+          hoverable
+          onClick={() => handleFilterChange('status', 'pending_it_head')}
+          style={{ cursor: 'pointer' }}
+        >
+          <Statistic
+            title="Pending"
+            value={stats.pending}
+            prefix={<ClockCircleOutlined />}
+            valueStyle={{ color: '#faad14' }}
+          />
+        </Card>
+      </Col>
+        {/* <Col xs={24} sm={12} md={6}>
           <Card>
             <Statistic
               title="Approved"
@@ -240,9 +301,39 @@ const AllRequisitions = () => {
               valueStyle={{ color: '#52c41a' }}
             />
           </Card>
-        </Col>
+        </Col> */}
+
         <Col xs={24} sm={12} md={6}>
+          <Card
+            hoverable
+            onClick={() => handleFilterChange('status', 'approved_by_it_head')}
+            style={{ cursor: 'pointer' }}
+          >
+            <Statistic
+              title="Approved"
+              value={stats.approved}
+              prefix={<CheckCircleOutlined />}
+              valueStyle={{ color: '#52c41a' }}
+            />
+          </Card>
+        </Col>
+        {/* <Col xs={24} sm={12} md={6}>
           <Card>
+            <Statistic
+              title="Rejected/Cancelled"
+              value={stats.rejected}
+              prefix={<CloseCircleOutlined />}
+              valueStyle={{ color: '#ff4d4f' }}
+            />
+          </Card>
+        </Col> */}
+
+        <Col xs={24} sm={12} md={6}>
+          <Card
+            hoverable
+            onClick={() => handleFilterChange('status', 'rejected_by_it_head')}
+            style={{ cursor: 'pointer' }}
+          >
             <Statistic
               title="Rejected/Cancelled"
               value={stats.rejected}
