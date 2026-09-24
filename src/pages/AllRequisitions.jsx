@@ -108,37 +108,37 @@ const AllRequisitions = () => {
   // }, [requisitions, pagination.total]);
 
         // Calculate statistics
-      useEffect(() => {
-        if (requisitions.length > 0) {
-          const newStats = {
-            total: pagination.total || requisitions.length,
+      // useEffect(() => {
+      //   if (requisitions.length > 0) {
+      //     const newStats = {
+      //       total: pagination.total || requisitions.length,
       
-            // IT Head Pending only
-            pending: requisitions.filter(
-              r => r.status === 'pending_it_head'
-            ).length,
+      //       // IT Head Pending only
+      //       pending: requisitions.filter(
+      //         r => r.status === 'pending_it_head'
+      //       ).length,
       
-            // Approved by IT Head only
-            approved: requisitions.filter(
-              r => r.it_head_status === 'approved'
-            ).length,
+      //       // Approved by IT Head only
+      //       approved: requisitions.filter(
+      //         r => r.it_head_status === 'approved'
+      //       ).length,
       
-            // Rejected by IT Head only
-            rejected: requisitions.filter(
-              r => r.status === 'rejected_by_it_head'
-            ).length
-          };
+      //       // Rejected by IT Head only
+      //       rejected: requisitions.filter(
+      //         r => r.status === 'rejected_by_it_head'
+      //       ).length
+      //     };
       
-          setStats(newStats);
-        } else {
-          setStats({
-            total: pagination.total || 0,
-            pending: 0,
-            approved: 0,
-            rejected: 0
-          });
-        }
-      }, [requisitions, pagination.total]);
+      //     setStats(newStats);
+      //   } else {
+      //     setStats({
+      //       total: pagination.total || 0,
+      //       pending: 0,
+      //       approved: 0,
+      //       rejected: 0
+      //     });
+      //   }
+      // }, [requisitions, pagination.total]);
 
   const loadRequisitions = async () => {
     try {
@@ -157,14 +157,35 @@ const AllRequisitions = () => {
         }
       });
 
-      const response = await api.get('/requisitions/all-requisitions', { params });
-      const data = response.data.data || response.data;
+      // const response = await api.get('/requisitions/all-requisitions', { params });
+      // const data = response.data.data || response.data;
 
-      setRequisitions(data.requisitions || []);
-      setPagination(prev => ({
-        ...prev,
-        total: data.pagination?.total || 0
-      }));
+      // setRequisitions(data.requisitions || []);
+      // setPagination(prev => ({
+      //   ...prev,
+      //   total: data.pagination?.total || 0
+      // }));
+
+      const response = await api.get('/requisitions/all-requisitions', { params });
+const data = response.data.data || response.data;
+
+setRequisitions(data.requisitions || []);
+
+// Keep list pagination separate from card statistics
+setPagination(prev => ({
+  ...prev,
+  total: data.pagination?.total || 0
+}));
+
+// Update global card statistics
+if (data.stats) {
+  setStats({
+    total: Number(data.stats.total || 0),
+    pending: Number(data.stats.pending || 0),
+    approved: Number(data.stats.approved || 0),
+    rejected: Number(data.stats.rejected || 0)
+  });
+}
     } catch (error) {
       console.error('Failed to load requisitions:', error);
     } finally {
