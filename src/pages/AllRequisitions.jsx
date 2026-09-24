@@ -224,12 +224,16 @@ if (data.stats) {
 
   const loadLocations = async () => {
   try {
-    const response = await api.get('/locations', {
-      params: {
-        limit: 1000,
-        page: 1
-      }
-    });
+    // const response = await api.get('/locations', {
+    //   params: {
+    //     limit: 1000,
+    //     page: 1
+    //   }
+    // });
+
+    const response = await api.get('/masters/locations', {
+  params: { limit: 1000, page: 1 }
+});
 
     const data = response.data.data || response.data;
 
