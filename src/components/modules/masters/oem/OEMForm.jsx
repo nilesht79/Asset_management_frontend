@@ -35,7 +35,8 @@ const OEMForm = ({ open, mode, oem, onClose, onSuccess }) => {
         name: values.name,
         code: values.short_name || values.name.toUpperCase().replace(/\s+/g, '').substring(0, 10), // Use short_name as code
         contact_person: values.short_name, // Backend expects contact_person
-        address: values.address,
+        // address: values.address,
+        address: values.address || null,
         // phone: values.contact_number, // Backend expects phone
         // email: values.email,
         phone: values.contact_number || null,
@@ -122,14 +123,21 @@ const OEMForm = ({ open, mode, oem, onClose, onSuccess }) => {
           </Col>
         </Row>
 
-        <Form.Item
+        {/* <Form.Item
           label="Address"
           name="address"
           rules={[
             { required: true, message: 'Address is required' },
             { max: 500, message: 'Address must not exceed 500 characters' }
           ]}
-        >
+        > */}
+          <Form.Item
+            label="Address"
+            name="address"
+            rules={[
+              { max: 500, message: 'Address must not exceed 500 characters' }
+            ]}
+          >
           <TextArea
             rows={3}
             placeholder="Enter complete address (e.g., Crescenzo Building, C-38, 39, G Block, Bandra Kurla Complex,Bandra (East),Mumbai,Maharashtra,India -400051)"
