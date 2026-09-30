@@ -36,8 +36,10 @@ const OEMForm = ({ open, mode, oem, onClose, onSuccess }) => {
         code: values.short_name || values.name.toUpperCase().replace(/\s+/g, '').substring(0, 10), // Use short_name as code
         contact_person: values.short_name, // Backend expects contact_person
         address: values.address,
-        phone: values.contact_number, // Backend expects phone
-        email: values.email,
+        // phone: values.contact_number, // Backend expects phone
+        // email: values.email,
+        phone: values.contact_number || null,
+        email: values.email || null,
         website: values.website || null,
         description: values.description || null,
         is_active: true // Default to active
@@ -138,11 +140,19 @@ const OEMForm = ({ open, mode, oem, onClose, onSuccess }) => {
 
         <Row gutter={16}>
           <Col span={12}>
-            <Form.Item
+            {/* <Form.Item
               label="Contact Number"
               name="contact_number"
               rules={[
                 { required: true, message: 'Contact number is required' },
+                { pattern: /^[\+]?[\d\s\-\(\)]+$/, message: 'Please enter a valid phone number' },
+                { max: 20, message: 'Contact number must not exceed 20 characters' }
+              ]}
+            > */}
+              <Form.Item
+              label="Contact Number"
+              name="contact_number"
+              rules={[
                 { pattern: /^[\+]?[\d\s\-\(\)]+$/, message: 'Please enter a valid phone number' },
                 { max: 20, message: 'Contact number must not exceed 20 characters' }
               ]}
@@ -151,7 +161,7 @@ const OEMForm = ({ open, mode, oem, onClose, onSuccess }) => {
             </Form.Item>
           </Col>
           <Col span={12}>
-            <Form.Item
+            {/* <Form.Item
               label="Email"
               name="email"
               rules={[
@@ -159,6 +169,14 @@ const OEMForm = ({ open, mode, oem, onClose, onSuccess }) => {
                 { type: 'email', message: 'Please enter a valid email address' },
                 { max: 100, message: 'Email must not exceed 100 characters' }
               ]}
+            > */}
+              <Form.Item
+              label="Email"
+              name="email"
+              rules={[
+              { type: 'email', message: 'Please enter a valid email address' },
+              { max: 100, message: 'Email must not exceed 100 characters' }
+            ]}
             >
               <Input placeholder="support@cisco.com" />
             </Form.Item>
