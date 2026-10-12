@@ -174,7 +174,7 @@ getUserAssets: async (userId) => {
         new_assignment: 'New Assignment',
         temporary_handover: 'Temporary Handover',
         permanent_transfer: 'Permanent Transfer',
-        repair_return: 'Repair and Return'
+        repair_return: 'Repair and Working done Successfully'
       }
     };
     return purposes[type]?.[purpose] || purpose || 'N/A';
@@ -208,7 +208,7 @@ getUserAssets: async (userId) => {
         { value: 'new_assignment', label: 'New Assignment' },
         { value: 'temporary_handover', label: 'Temporary Handover' },
         { value: 'permanent_transfer', label: 'Permanent Transfer' },
-        { value: 'repair_return', label: 'Repair and Return' }
+        { value: 'repair_return', label: 'Repair and Working done Successfully' }
       ]
     };
     return options[type] || [];
