@@ -604,8 +604,16 @@ const ReconciliationAssets = () => {
                 <Card className="mb-4">
                   <Row gutter={16}>
                     <Col span={5}>
-                      <Search
+                      {/* <Search
                         placeholder="Search assets..."
+                        allowClear
+                        enterButton={<SearchOutlined />}
+                        onSearch={handleSearch}
+                        value={searchText}
+                        onChange={(e) => setSearchText(e.target.value)}
+                      /> */}
+                      <Search
+                        placeholder="Search product, asset ID, serial no., employee..."
                         allowClear
                         enterButton={<SearchOutlined />}
                         onSearch={handleSearch}
