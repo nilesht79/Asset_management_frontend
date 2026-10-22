@@ -388,7 +388,7 @@ const DiscrepancyList = () => {
           {/* First Row - Filter Inputs */}
           <Col xs={24} sm={12} md={6} lg={6}>
             <Search
-              placeholder="Search by asset tag or notes..."
+              placeholder="Search by serial number, asset tag, or notes..."
               value={filters.search}
               onChange={(e) => handleFilterChange('search', e.target.value)}
               allowClear
