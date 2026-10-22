@@ -53,7 +53,7 @@ import {
 } from '../../../store/slices/reconciliationSlice';
 import ReconcileAssetModal from './ReconcileAssetModal';
 import DiscrepancyList from './DiscrepancyList';
-import departmentService from '../../../services/department';
+// import departmentService from '../../../services/department';
 import { formatLocalDateTime } from '../../../utils/dateUtils';
 
 const { Title, Text } = Typography;
@@ -147,9 +147,9 @@ const ReconciliationAssets = () => {
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState(null);
   const [reconciliationStatusFilter, setReconciliationStatusFilter] = useState(null);
-  const [departmentFilter, setDepartmentFilter] = useState(null);
-  const [departments, setDepartments] = useState([]);
-  const [loadingDepartments, setLoadingDepartments] = useState(false);
+  // const [departmentFilter, setDepartmentFilter] = useState(null);
+  // const [departments, setDepartments] = useState([]);
+  // const [loadingDepartments, setLoadingDepartments] = useState(false);
 
   const handleExportAssets = async () => {
   try {
@@ -175,16 +175,15 @@ const ReconciliationAssets = () => {
       }
     );
 
-    const blob = new Blob(
-      ['\uFEFF', response.data],
-      { type: 'text/csv;charset=utf-8;' }
-    );
+    const blob = new Blob([response.data], {
+  type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+});
 
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
 
     link.href = url;
-    link.download = 'reconciliation_assets.csv';
+    link.download = 'reconciliation_assets.xlsx';
 
     document.body.appendChild(link);
     link.click();
@@ -217,7 +216,8 @@ const ReconciliationAssets = () => {
     if (reconciliationId) {
       loadAssets();
     }
-  }, [reconciliationId, pagination.page, pagination.limit, searchText, statusFilter, reconciliationStatusFilter, departmentFilter]);
+  // }, [reconciliationId, pagination.page, pagination.limit, searchText, statusFilter, reconciliationStatusFilter, departmentFilter]);
+  }, [reconciliationId, pagination.page, pagination.limit, searchText, statusFilter, reconciliationStatusFilter]);
 
   const loadData = () => {
     dispatch(fetchReconciliation(reconciliationId));
@@ -249,7 +249,7 @@ const ReconciliationAssets = () => {
     if (searchText) params.search = searchText;
     if (statusFilter) params.status = statusFilter;
     if (reconciliationStatusFilter) params.reconciliation_status = reconciliationStatusFilter;
-    if (departmentFilter) params.department_id = departmentFilter;
+    // if (departmentFilter) params.department_id = departmentFilter;
 
     dispatch(fetchReconciliationAssets({ reconciliationId, params }));
   };
@@ -262,7 +262,7 @@ const ReconciliationAssets = () => {
   const handleFilterChange = (field, value) => {
     if (field === 'status') setStatusFilter(value);
     if (field === 'reconciliation_status') setReconciliationStatusFilter(value);
-    if (field === 'department') setDepartmentFilter(value);
+    // if (field === 'department') setDepartmentFilter(value);
     dispatch(setAssetsPagination({ page: 1 }));
   };
 
@@ -270,7 +270,7 @@ const ReconciliationAssets = () => {
     setSearchText('');
     setStatusFilter(null);
     setReconciliationStatusFilter(null);
-    setDepartmentFilter(null);
+    // setDepartmentFilter(null);
     dispatch(setAssetsPagination({ page: 1 }));
   };
 
