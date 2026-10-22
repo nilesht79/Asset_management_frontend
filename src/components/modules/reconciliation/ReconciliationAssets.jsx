@@ -165,7 +165,7 @@ const ReconciliationAssets = () => {
     if (reconciliationStatusFilter) {
       params.reconciliation_status = reconciliationStatusFilter;
     }
-    if (departmentFilter) params.department_id = departmentFilter;
+    // if (departmentFilter) params.department_id = departmentFilter;
 
     const response = await axios.get(
       `/api/v1/reconciliations/${reconciliationId}/assets/export`,
@@ -209,7 +209,7 @@ const ReconciliationAssets = () => {
 
   useEffect(() => {
     loadData();
-    fetchDepartments();
+    // fetchDepartments();
   }, [reconciliationId]);
 
   useEffect(() => {
