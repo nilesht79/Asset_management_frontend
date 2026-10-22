@@ -417,13 +417,13 @@ const ReconciliationAssets = () => {
         </div>
       )
     },
-    {
-      title: 'Asset ID',
-      dataIndex: 'asset_tag',
-      key: 'asset_tag',
-      width: 120,
-      render: (text) => <span className="font-mono text-xs bg-blue-50 px-2 py-1 rounded text-blue-700">{text}</span>
-    },
+    // {
+    //   title: 'Asset ID',
+    //   dataIndex: 'asset_tag',
+    //   key: 'asset_tag',
+    //   width: 120,
+    //   render: (text) => <span className="font-mono text-xs bg-blue-50 px-2 py-1 rounded text-blue-700">{text}</span>
+    // },
     {
       title: 'Serial No',
       dataIndex: 'serial_number',
@@ -706,7 +706,7 @@ const ReconciliationAssets = () => {
                         <Option value="damaged">Damaged</Option>
                       </Select>
                     </Col>
-                    <Col span={5}>
+                    {/* <Col span={5}>
                       <Select
                         placeholder="Department"
                         allowClear
@@ -726,7 +726,7 @@ const ReconciliationAssets = () => {
                           </Option>
                         ))}
                       </Select>
-                    </Col>
+                    </Col> */}
                     <Col span={3}>
                       <Button
                         icon={<DownloadOutlined />}
