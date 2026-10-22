@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import {
   Card,
   Table,
@@ -32,7 +33,8 @@ import {
   TagOutlined,
   WarningOutlined,
   UnorderedListOutlined,
-  ExclamationCircleOutlined
+  ExclamationCircleOutlined,
+  DownloadOutlined
 } from '@ant-design/icons';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate, useParams, Link } from 'react-router-dom';
@@ -148,6 +150,60 @@ const ReconciliationAssets = () => {
   const [departmentFilter, setDepartmentFilter] = useState(null);
   const [departments, setDepartments] = useState([]);
   const [loadingDepartments, setLoadingDepartments] = useState(false);
+
+  const handleExportAssets = async () => {
+  try {
+    message.loading({
+      content: 'Exporting assets...',
+      key: 'asset-export'
+    });
+
+    const params = {};
+
+    if (searchText.trim()) params.search = searchText.trim();
+    if (statusFilter) params.status = statusFilter;
+    if (reconciliationStatusFilter) {
+      params.reconciliation_status = reconciliationStatusFilter;
+    }
+    if (departmentFilter) params.department_id = departmentFilter;
+
+    const response = await axios.get(
+      `/api/v1/reconciliations/${reconciliationId}/assets/export`,
+      {
+        params,
+        responseType: 'blob'
+      }
+    );
+
+    const blob = new Blob(
+      ['\uFEFF', response.data],
+      { type: 'text/csv;charset=utf-8;' }
+    );
+
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+
+    link.href = url;
+    link.download = 'reconciliation_assets.csv';
+
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    window.URL.revokeObjectURL(url);
+
+    message.success({
+      content: 'Assets exported successfully',
+      key: 'asset-export'
+    });
+  } catch (error) {
+    console.error('Asset export failed:', error);
+    message.error({
+      content: 'Failed to export assets',
+      key: 'asset-export'
+    });
+  }
+};
 
   // Check permissions
   const canReconcile = ['admin', 'superadmin', 'engineer'].includes(user?.role);
@@ -670,6 +726,15 @@ const ReconciliationAssets = () => {
                           </Option>
                         ))}
                       </Select>
+                    </Col>
+                    <Col span={3}>
+                      <Button
+                        icon={<DownloadOutlined />}
+                        onClick={handleExportAssets}
+                        block
+                      >
+                        Export
+                      </Button>
                     </Col>
                     <Col span={3}>
                       <Button
