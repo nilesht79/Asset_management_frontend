@@ -386,6 +386,32 @@ const SlaComplianceReport = () => {
     key: 'sub_category_name',
     width: 180
     },
+    
+    {
+      title: 'Asset Make',
+      dataIndex: 'asset_make',
+      key: 'asset_make',
+      width: 160,
+      ellipsis: true,
+      render: (value) => value || '-'
+    },
+    {
+      title: 'Asset Model',
+      dataIndex: 'asset_model',
+      key: 'asset_model',
+      width: 180,
+      ellipsis: true,
+      render: (value) => value || '-'
+    },
+    {
+      title: 'Serial Number',
+      dataIndex: 'serial_number',
+      key: 'serial_number',
+      width: 180,
+      ellipsis: true,
+      render: (value) => value || '-'
+    },
+
     {
       title: 'Priority',
       dataIndex: 'priority',
