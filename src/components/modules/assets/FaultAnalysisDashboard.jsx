@@ -819,13 +819,77 @@ const FaultAnalysisDashboard = () => {
                 image={Empty.PRESENTED_IMAGE_SIMPLE}
               />
             ) : (
-              <Table
-                columns={flagColumns}
-                dataSource={activeFlags}
-                rowKey="flag_id"
-                size="small"
-                pagination={{ pageSize: 10 }}
-              />
+              
+<Table
+  columns={flagColumns}
+  dataSource={activeFlags}
+  rowKey="flag_id"
+  size="small"
+  pagination={{ pageSize: 10 }}
+  scroll={{ x: 1300 }}
+  expandable={{
+    expandedRowRender: (record) => (
+      <Table
+        columns={[
+          {
+            title: 'Serial Number',
+            dataIndex: 'serial_number',
+            key: 'serial_number',
+            width: 160,
+            render: (value) => value || '-'
+          },
+          {
+            title: 'Issue / Fault Description',
+            dataIndex: 'issue',
+            key: 'issue',
+            width: 250,
+            render: (value) => value || '-'
+          },
+          {
+            title: 'Engineer Notes',
+            dataIndex: 'engineer_notes',
+            key: 'engineer_notes',
+            width: 250,
+            render: (value) => value || '-'
+          },
+          {
+            title: 'Resolution',
+            dataIndex: 'resolution',
+            key: 'resolution',
+            width: 200,
+            render: (value) => value || '-'
+          },
+          {
+            title: 'Repair Date',
+            dataIndex: 'repair_date',
+            key: 'repair_date',
+            width: 120,
+            render: (value) =>
+              value ? formatDateOnly(value) : '-'
+          },
+          {
+            title: 'Repair Status',
+            dataIndex: 'repair_status',
+            key: 'repair_status',
+            width: 120,
+            render: (value) => value || '-'
+          }
+        ]}
+        dataSource={record.affected_repairs || []}
+        rowKey="repair_id"
+        size="small"
+        pagination={{ pageSize: 5 }}
+        scroll={{ x: 1100 }}
+        locale={{
+          emptyText: 'No repair details available'
+        }}
+      />
+    ),
+    rowExpandable: (record) =>
+      ['product_model', 'asset'].includes(record.flag_type)
+  }}
+/>
+
             )}
           </Tabs.TabPane>
 
