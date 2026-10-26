@@ -366,31 +366,6 @@ const FaultAnalysisDashboard = () => {
     );
   }
 },
-{
-  title: 'Engineer Notes',
-  key: 'engineer_notes',
-  width: 240,
-  render: (_, record) => {
-    const repairs = record.affected_repairs || [];
-    const notes = [
-      ...new Set(
-        repairs
-          .map((repair) => repair.engineer_notes)
-          .filter(Boolean)
-      )
-    ];
-
-    return notes.length > 0 ? (
-      <Tooltip title={notes.join(' | ')}>
-        <Text ellipsis style={{ maxWidth: 220 }}>
-          {notes.join(' | ')}
-        </Text>
-      </Tooltip>
-    ) : (
-      '-'
-    );
-  }
-},
     {
       title: 'Reason',
       dataIndex: 'flag_reason',
