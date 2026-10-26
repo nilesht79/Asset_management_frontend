@@ -319,6 +319,79 @@ const FaultAnalysisDashboard = () => {
       )
     },
     {
+  title: 'Serial Numbers',
+  key: 'serial_numbers',
+  width: 200,
+  render: (_, record) => {
+    const repairs = record.affected_repairs || [];
+    const serials = [
+      ...new Set(
+        repairs
+          .map((repair) => repair.serial_number)
+          .filter(Boolean)
+      )
+    ];
+
+    return serials.length > 0 ? (
+      <Tooltip title={serials.join(', ')}>
+        <Text>{serials.join(', ')}</Text>
+      </Tooltip>
+    ) : (
+      '-'
+    );
+  }
+},
+{
+  title: 'Issue / Fault Description',
+  key: 'issues',
+  width: 240,
+  render: (_, record) => {
+    const repairs = record.affected_repairs || [];
+    const issues = [
+      ...new Set(
+        repairs
+          .map((repair) => repair.issue)
+          .filter(Boolean)
+      )
+    ];
+
+    return issues.length > 0 ? (
+      <Tooltip title={issues.join(' | ')}>
+        <Text ellipsis style={{ maxWidth: 220 }}>
+          {issues.join(' | ')}
+        </Text>
+      </Tooltip>
+    ) : (
+      '-'
+    );
+  }
+},
+{
+  title: 'Engineer Notes',
+  key: 'engineer_notes',
+  width: 240,
+  render: (_, record) => {
+    const repairs = record.affected_repairs || [];
+    const notes = [
+      ...new Set(
+        repairs
+          .map((repair) => repair.engineer_notes)
+          .filter(Boolean)
+      )
+    ];
+
+    return notes.length > 0 ? (
+      <Tooltip title={notes.join(' | ')}>
+        <Text ellipsis style={{ maxWidth: 220 }}>
+          {notes.join(' | ')}
+        </Text>
+      </Tooltip>
+    ) : (
+      '-'
+    );
+  }
+},
+    {
       title: 'Reason',
       dataIndex: 'flag_reason',
       key: 'flag_reason',
@@ -826,7 +899,7 @@ const FaultAnalysisDashboard = () => {
   rowKey="flag_id"
   size="small"
   pagination={{ pageSize: 10 }}
-  scroll={{ x: 1300 }}
+  scroll={{ x: 1900 }}
   expandable={{
     expandedRowRender: (record) => (
       <Table
