@@ -183,42 +183,91 @@ const SlaComplianceReport = () => {
     }
   };
 
-  const handleFrequencyPreset = (preset) => {
-    const today = dayjs();
-    let start, end;
+  // const handleFrequencyPreset = (preset) => {
+  //   const today = dayjs();
+  //   let start, end;
 
-    switch (preset) {
-      case 'today':
-        start = today.startOf('day');
-        end = today.endOf('day');
-        setFrequency('daily');
-        break;
-      case 'week':
-        start = today.startOf('week');
-        end = today.endOf('week');
-        setFrequency('daily');
-        break;
-      case 'month':
-        start = today.startOf('month');
-        end = today.endOf('month');
-        setFrequency('weekly');
-        break;
-      case 'quarter':
-        start = today.startOf('quarter');
-        end = today.endOf('quarter');
-        setFrequency('monthly');
-        break;
-      case 'year':
-        start = today.startOf('year');
-        end = today;
-        setFrequency('monthly');
-        break;
-      default:
-        return;
+  //   switch (preset) {
+  //     case 'today':
+  //       start = today.startOf('day');
+  //       end = today.endOf('day');
+  //       setFrequency('daily');
+  //       break;
+  //     case 'week':
+  //       start = today.startOf('week');
+  //       end = today.endOf('week');
+  //       setFrequency('daily');
+  //       break;
+  //     case 'month':
+  //       start = today.startOf('month');
+  //       end = today.endOf('month');
+  //       setFrequency('weekly');
+  //       break;
+  //     case 'quarter':
+  //       start = today.startOf('quarter');
+  //       end = today.endOf('quarter');
+  //       setFrequency('monthly');
+  //       break;
+  //     case 'year':
+  //       start = today.startOf('year');
+  //       end = today;
+  //       setFrequency('monthly');
+  //       break;
+  //     default:
+  //       return;
+  //   }
+
+  //   setDateRange([start, end]);
+  // };
+
+
+  
+const handleFrequencyPreset = (preset) => {
+  const today = dayjs();
+  let start;
+  let end;
+
+  switch (preset) {
+    case 'today':
+      start = today.startOf('day');
+      end = today.endOf('day');
+      break;
+
+    case 'week':
+      start = today.startOf('week');
+      end = today.endOf('week');
+      break;
+
+    case 'month':
+      start = today.startOf('month');
+      end = today.endOf('month');
+      break;
+
+    case 'quarter': {
+      const quarterStartMonth = Math.floor(today.month() / 3) * 3;
+
+      start = today
+        .month(quarterStartMonth)
+        .startOf('month');
+
+      end = start.add(3, 'month').subtract(1, 'millisecond');
+      break;
     }
 
-    setDateRange([start, end]);
-  };
+    case 'year':
+      start = today.startOf('year');
+      end = today.endOf('day');
+      break;
+
+    default:
+      return;
+  }
+
+  // Quick Presets should change only the date range.
+  // Group By must remain independently controlled.
+  setDateRange([start, end]);
+};
+
 
   const handleResetFilters = () => {
     setDateRange([dayjs().subtract(30, 'day'), dayjs()]);
@@ -647,7 +696,7 @@ const SlaComplianceReport = () => {
           </Col>
           <Col xs={24} lg={8}>
             <Text strong style={{ display: 'block', marginBottom: 8 }}>Group By</Text>
-            <Radio.Group
+            {/* <Radio.Group
               value={frequency}
               onChange={(e) => setFrequency(e.target.value)}
               optionType="button"
@@ -659,7 +708,26 @@ const SlaComplianceReport = () => {
               <Radio.Button value="weekly">Weekly</Radio.Button>
               <Radio.Button value="monthly">Monthly</Radio.Button>
               <Radio.Button value="quarterly">Quarterly</Radio.Button>
-            </Radio.Group>
+            </Radio.Group> */}
+            
+          <Radio.Group
+            value={frequency ?? 'none'}
+            onChange={(e) =>
+              setFrequency(
+                e.target.value === 'none' ? null : e.target.value
+              )
+            }
+            optionType="button"
+            buttonStyle="solid"
+            style={{ display: 'flex', flexWrap: 'wrap' }}
+          >
+            <Radio.Button value="none">None</Radio.Button>
+            <Radio.Button value="daily">Daily</Radio.Button>
+            <Radio.Button value="weekly">Weekly</Radio.Button>
+            <Radio.Button value="monthly">Monthly</Radio.Button>
+            <Radio.Button value="quarterly">Quarterly</Radio.Button>
+          </Radio.Group>
+
           </Col>
         </Row>
 
