@@ -55,7 +55,11 @@ const { Option } = Select;
 const FaultAnalysisDashboard = () => {
   const navigate = useNavigate();
   const { user: currentUser } = useSelector((state) => state.auth);
-  const isAdmin = currentUser?.role === 'admin';
+  // const isAdmin = currentUser?.role === 'admin';
+  const ADMIN_ROLES = ['admin', 'superadmin', 'it_head'];
+  const isAdmin = ADMIN_ROLES.includes(
+    String(currentUser?.role || '').toLowerCase()
+  );
   const [loading, setLoading] = useState(false);
   const [activeFlags, setActiveFlags] = useState([]);
   const [resolvedFlags, setResolvedFlags] = useState([]);
