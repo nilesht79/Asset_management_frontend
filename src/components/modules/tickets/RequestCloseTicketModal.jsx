@@ -206,7 +206,8 @@ const RequestCloseTicketModal = ({ visible, ticket, onClose, onSuccess }) => {
             notes: p.notes
           }))
         };
-
+        console.log('Draft service report payload:', reportData);
+        console.log('Draft parts being submitted:', reportData.parts_used);
         const reportResponse = await serviceReportService.createDraftReport(reportData);
         serviceReportId = reportResponse.data?.data?.report_id;
       }
