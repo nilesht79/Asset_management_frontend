@@ -56,7 +56,7 @@ const InstallComponentModal = ({ visible, onClose, parentAssetId, parentAssetTag
       // Fetch only assets suitable for component installation
       dispatch(fetchAssetsDropdown({
         status: 'available',           // Only available status
-        asset_type: 'standalone',      // Only standalone type
+        // asset_type: 'standalone',      // Only standalone type
         available_only: true,          // Enforce availability
         exclude_standby: true,         // ✅ NEW: Exclude standby pool assets
         exclude_components: true,      // ✅ NEW: Exclude already-installed components
@@ -218,7 +218,8 @@ const InstallComponentModal = ({ visible, onClose, parentAssetId, parentAssetTag
           rules={[
             { required: true, message: 'Please select a component to install' }
           ]}
-          extra="Only available standalone assets (not in standby pool, not assigned, not already components) can be installed"
+          {/* extra="Only available standalone assets (not in standby pool, not assigned, not already components) can be installed" */}
+          extra="Only available, component unassigned assets that are not in the standby pool or already installed can be installed."
         >
           <Select
             placeholder="Select a component..."
