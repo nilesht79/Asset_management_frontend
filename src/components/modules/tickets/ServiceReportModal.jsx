@@ -205,7 +205,8 @@ const ServiceReportModal = ({
               notes: p.notes
             }))
         };
-
+      console.log('Service report payload:', reportData);
+      console.log('Parts being submitted:', reportData.parts_used);
       await serviceReportService.createReport(reportData);
       message.success('Service report created successfully');
       form.resetFields();
