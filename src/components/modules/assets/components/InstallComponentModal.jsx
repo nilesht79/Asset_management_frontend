@@ -218,7 +218,7 @@ const InstallComponentModal = ({ visible, onClose, parentAssetId, parentAssetTag
           rules={[
             { required: true, message: 'Please select a component to install' }
           ]}
-          {/* extra="Only available standalone assets (not in standby pool, not assigned, not already components) can be installed" */}
+          
           extra="Only available, component unassigned assets that are not in the standby pool or already installed can be installed."
         >
           <Select
