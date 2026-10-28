@@ -2169,6 +2169,7 @@ const AssetInventory = () => {
                   <Option value="maintenance">Maintenance</Option>
                   <Option value="disposed">Disposed</Option>
                   <Option value="not found">Not Found</Option>
+                  <Option value="available">Non Reparable</Option>
                 </Select>
               </Form.Item>
             </Col>
