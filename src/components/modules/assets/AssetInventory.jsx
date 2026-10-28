@@ -3230,6 +3230,54 @@ const AssetInventory = () => {
               </>
             )}
 
+            
+            <Divider orientation="left">
+              <span className="text-sm">Asset Audit Information</span>
+            </Divider>
+
+            <Row gutter={[8, 8]}>
+              <Col xs={24} sm={12}>
+                <Text type="secondary" className="text-xs sm:text-sm">
+                  Created By:
+                </Text>
+                <div className="font-medium text-sm sm:text-base">
+                  {viewingAsset.created_by_name || 'Not available'}
+                </div>
+              </Col>
+
+              <Col xs={24} sm={12}>
+                <Text type="secondary" className="text-xs sm:text-sm">
+                  Created On:
+                </Text>
+                <div className="font-medium text-sm sm:text-base">
+                  {viewingAsset.created_at
+                    ? new Date(viewingAsset.created_at).toLocaleString()
+                    : 'Not available'}
+                </div>
+              </Col>
+
+              <Col xs={24} sm={12}>
+                <Text type="secondary" className="text-xs sm:text-sm">
+                  Last Edited By:
+                </Text>
+                <div className="font-medium text-sm sm:text-base">
+                  {viewingAsset.updated_by_name || 'Not available'}
+                </div>
+              </Col>
+
+              <Col xs={24} sm={12}>
+                <Text type="secondary" className="text-xs sm:text-sm">
+                  Last Edited On:
+                </Text>
+                <div className="font-medium text-sm sm:text-base">
+                  {viewingAsset.updated_at
+                    ? new Date(viewingAsset.updated_at).toLocaleString()
+                    : 'Not available'}
+                </div>
+              </Col>
+            </Row>
+
+
             <Divider orientation="left"><span className="text-sm">Software Installations</span></Divider>
             {viewingAsset.id ? (
               <AssetSoftwareView key={viewingAsset.id} assetId={viewingAsset.id} />
