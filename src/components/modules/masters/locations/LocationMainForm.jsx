@@ -52,9 +52,12 @@ const LocationMainForm = ({ open, mode, location, onClose, onSuccess }) => {
     setPincodeData(null)
     
     // Validate pincode format (6 digits)
-    if (!/^\d{6}$/.test(pincode)) {
-      return
-    }
+    // if (!/^\d{6}$/.test(pincode)) {
+    //   return
+    // }
+    if (!/^[1-9]\d{5}$/.test(pincode)) {
+        return;
+      }
     
     try {
       setPincodeLoading(true)
@@ -296,7 +299,7 @@ const LocationMainForm = ({ open, mode, location, onClose, onSuccess }) => {
 
           <Row gutter={16}>
             <Col span={6}>
-              <Form.Item
+              {/* <Form.Item
                 label="PinCode"
                 name="pincode">
                 <Input
@@ -304,6 +307,49 @@ const LocationMainForm = ({ open, mode, location, onClose, onSuccess }) => {
                   maxLength={6}
                   onChange={handlePincodeChange}
                   suffix={pincodeLoading && <Spin indicator={<LoadingOutlined style={{ fontSize: 14 }} spin />} />}
+                />
+              </Form.Item> */}
+
+              <Form.Item
+                label="PinCode"
+                name="pincode"
+                rules={[
+                  {
+                    validator: (_, value) => {
+                      const pincode = String(value ?? '').trim();
+              
+                      // Pincode is optional; validate it when entered.
+                      if (!pincode) {
+                        return Promise.resolve();
+                      }
+              
+                      if (!/^[1-9]\d{5}$/.test(pincode)) {
+                        return Promise.reject(
+                          new Error('Enter a valid 6-digit Indian pincode')
+                        );
+                      }
+              
+                      return Promise.resolve();
+                    }
+                  }
+                ]}
+              >
+                <Input
+                  placeholder="Enter 6-digit pincode"
+                  maxLength={6}
+                  onChange={handlePincodeChange}
+                  suffix={
+                    pincodeLoading && (
+                      <Spin
+                        indicator={
+                          <LoadingOutlined
+                            style={{ fontSize: 14 }}
+                            spin
+                          />
+                        }
+                      />
+                    )
+                  }
                 />
               </Form.Item>
             </Col>
