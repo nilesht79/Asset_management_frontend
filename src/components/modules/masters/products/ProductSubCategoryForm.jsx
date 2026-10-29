@@ -32,22 +32,54 @@ const ProductSubCategoryForm = ({ open, mode, subCategory, onClose, onSuccess })
     }
   }, [form, open, subCategory, mode])
 
-  const handleSubmit = async (values) => {
-    try {
-      if (mode === 'create') {
-        await dispatch(createProductSubCategory(values)).unwrap()
-        message.success('Sub-category created successfully')
-      } else if (mode === 'edit') {
-        await dispatch(updateProductSubCategory({ id: subCategory.id, data: values })).unwrap()
-        message.success('Sub-category updated successfully')
-      }
+  // const handleSubmit = async (values) => {
+  //   try {
+  //     if (mode === 'create') {
+  //       await dispatch(createProductSubCategory(values)).unwrap()
+  //       message.success('Sub-category created successfully')
+  //     } else if (mode === 'edit') {
+  //       await dispatch(updateProductSubCategory({ id: subCategory.id, data: values })).unwrap()
+  //       message.success('Sub-category updated successfully')
+  //     }
       
-      form.resetFields()
-      onSuccess()
-    } catch (error) {
-      message.error(error.message || `Failed to ${mode} sub-category`)
+  //     form.resetFields()
+  //     onSuccess()
+  //   } catch (error) {
+  //     message.error(error.message || `Failed to ${mode} sub-category`)
+  //   }
+  // }
+
+  
+const handleSubmit = async (values) => {
+  try {
+    const payload = {
+      ...values,
+      description: values.description?.trim() || ''
     }
+
+    if (mode === 'create') {
+      await dispatch(createProductSubCategory(payload)).unwrap()
+      message.success('Sub-category created successfully')
+    } else if (mode === 'edit') {
+      await dispatch(
+        updateProductSubCategory({
+          id: subCategory.id,
+          data: payload
+        })
+      ).unwrap()
+
+      message.success('Sub-category updated successfully')
+    }
+
+    form.resetFields()
+    onSuccess()
+  } catch (error) {
+    message.error(
+      error?.message || `Failed to ${mode} sub-category`
+    )
   }
+}
+
 
   const handleCancel = () => {
     form.resetFields()
