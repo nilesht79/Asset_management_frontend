@@ -158,6 +158,7 @@ const AssetInventory = () => {
   const [productLicenses, setProductLicenses] = useState({}) // Map of productId -> available licenses
 
   // Redux selectors
+  const { user: currentUser } = useSelector(state => state.auth)
   const assets = useSelector(selectAssets)
   const statistics = useSelector(selectAssetStatistics)
   const filters = useSelector(selectAssetFilters)
@@ -3230,7 +3231,10 @@ const AssetInventory = () => {
               </>
             )}
 
-            
+            {['admin', 'super admin'].includes(
+              String(userRole || '').trim().toLowerCase()
+            ) && (
+              <>
             <Divider orientation="left">
               <span className="text-sm">Asset Audit Information</span>
             </Divider>
@@ -3276,6 +3280,9 @@ const AssetInventory = () => {
                 </div>
               </Col>
             </Row>
+
+                  </>
+)}
 
 
             <Divider orientation="left"><span className="text-sm">Software Installations</span></Divider>
