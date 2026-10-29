@@ -3231,10 +3231,10 @@ const AssetInventory = () => {
               </>
             )}
 
-            {['admin', 'super admin'].includes(
-              String(userRole || '').trim().toLowerCase()
-            ) && (
-              <>
+            {['admin', 'superadmin'].includes(
+            String(currentUser?.role || '').trim().toLowerCase()
+          ) && (
+            <>
             <Divider orientation="left">
               <span className="text-sm">Asset Audit Information</span>
             </Divider>
@@ -3280,9 +3280,8 @@ const AssetInventory = () => {
                 </div>
               </Col>
             </Row>
-
-                  </>
-)}
+        </>
+        )}
 
 
             <Divider orientation="left"><span className="text-sm">Software Installations</span></Divider>
