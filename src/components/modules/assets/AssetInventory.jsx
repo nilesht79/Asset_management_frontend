@@ -1315,6 +1315,7 @@ const AssetInventory = () => {
           in_transit: { color: 'orange', label: 'In Transit' },
           in_use: { color: 'cyan', label: 'In Use' },
           under_repair: { color: 'red', label: 'Under Repair' },
+          non_repairable: { color: 'red', label: 'Non Reparable' },
           retired: { color: 'default', label: 'Retired' },
           lost: { color: 'volcano', label: 'Lost' },
           damaged: { color: 'magenta', label: 'Damaged' }
@@ -2170,7 +2171,7 @@ const AssetInventory = () => {
                   <Option value="maintenance">Maintenance</Option>
                   <Option value="disposed">Disposed</Option>
                   <Option value="not found">Not Found</Option>
-                  <Option value="available">Non Reparable</Option>
+                  <Option value="non_repairable">Non Reparable</Option>
                 </Select>
               </Form.Item>
             </Col>
