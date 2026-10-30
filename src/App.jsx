@@ -20,6 +20,7 @@ import Login from './pages/Login'
 import ForgotPassword from './pages/ForgotPassword'
 import ResetPassword from './pages/ResetPassword'
 import ForcePasswordChange from './pages/ForcePasswordChange'
+import SessionTimeout from './components/common/SessionTimeout'
 
 function App() {
   const dispatch = useDispatch()
@@ -83,6 +84,7 @@ console.log('APP RENDER', {
   return (
     <ConfigProvider theme={antdTheme}>
       <div className={`app ${currentTheme}`}>
+        <SessionTimeout />
         <Routes>
           {/* Main Landing Page */}
           {/* <Route
