@@ -240,6 +240,7 @@ const AssetInventory = () => {
     .toLowerCase()
   
   const isEngineer = userRole === 'engineer'
+  const isCoordinator = userRole === 'coordinator'
   const assets = useSelector(selectAssets)
   const statistics = useSelector(selectAssetStatistics)
   const filters = useSelector(selectAssetFilters)
@@ -1593,21 +1594,23 @@ const AssetInventory = () => {
               trigger={['click']}
               placement="bottomRight"
               menu={{
-                  items: isEngineer
-                    ? [
-                        {
-                          key: 'view',
-                          label: 'View Details',
-                          icon: <EyeOutlined />,
-                          onClick: () => showViewDetailsModal(record)
-                        },
+                  items: (isEngineer || isCoordinator)
+                  ? [
+                      {
+                        key: 'view',
+                        label: 'View Details',
+                        icon: <EyeOutlined />,
+                        onClick: () => showViewDetailsModal(record)
+                      },
+                      ...(isEngineer ? [
                         {
                           key: 'edit',
                           label: 'Update Department',
                           icon: <EditOutlined />,
                           onClick: () => showEditModal(record)
                         }
-                      ]
+                      ] : [])
+                    ]
                     : [
                         {
                           key: 'view',
@@ -2227,7 +2230,7 @@ const AssetInventory = () => {
 
         <div className="mb-4">
           <Space wrap size={[8, 8]} className="w-full">
-            {!isEngineer && (
+            {!isEngineer && !isCoordinator && (
                 <>
             <Button
               type="primary"
@@ -3265,19 +3268,21 @@ const AssetInventory = () => {
         }}
    
       footer={[
-          <Button
-            key="edit"
-            icon={<EditOutlined />}
-            size="small"
-            onClick={() => {
-              setViewDetailsModalVisible(false)
-              showEditModal(viewingAsset)
-            }}
-          >
-            {isEngineer ? 'Update Department' : 'Edit Asset'}
-          </Button>,
+          {!isCoordinator && (
+              <Button
+                key="edit"
+                icon={<EditOutlined />}
+                size="small"
+                onClick={() => {
+                  setViewDetailsModalVisible(false)
+                  showEditModal(viewingAsset)
+                }}
+              >
+                {isEngineer ? 'Update Department' : 'Edit Asset'}
+              </Button>
+            )},
           
-          ...(!isEngineer && viewingAsset?.asset_type !== 'component'
+          ...(!isEngineer && !isCoordinator && viewingAsset?.asset_type !== 'component'
             ? [
                 <Button
                   key="assign"
