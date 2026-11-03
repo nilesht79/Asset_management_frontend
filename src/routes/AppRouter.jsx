@@ -121,7 +121,7 @@ const AppRouter = () => {
         )}
 
         {/* Asset Management Routes */}
-        {['it_head', 'coordinator', 'admin', 'superadmin', 'department_coordinator'].includes(user?.role) && (
+       {/*  {['it_head', 'coordinator', 'admin', 'superadmin', 'department_coordinator'].includes(user?.role) && (
           <>
             <Route path="assets/inventory" element={<AssetInventory />} />
             {['coordinator', 'admin', 'superadmin'].includes(user?.role) && (
@@ -138,6 +138,30 @@ const AppRouter = () => {
             )}
           </>
         )}
+*/}
+
+        
+            {/* Asset Management Routes */}
+            {['it_head', 'coordinator', 'admin', 'superadmin', 'department_coordinator', 'engineer'].includes(user?.role) && (
+              <>
+                <Route path="assets/inventory" element={<AssetInventory />} />
+            
+                {['coordinator', 'admin', 'superadmin'].includes(user?.role) && (
+                  <Route path="assets/lifecycle" element={<AssetLifecycle />} />
+                )}
+            
+                {['coordinator', 'admin', 'superadmin', 'department_coordinator'].includes(user?.role) && (
+                  <>
+                    <Route path="assets/assignment" element={<div>Asset Assignment (To be implemented)</div>} />
+                    <Route path="assets/movement" element={<AssetMovement />} />
+                    <Route path="assets/requisitions" element={<div>Asset Requisitions (To be implemented)</div>} />
+                    <Route path="standby/pool" element={<StandbyPool />} />
+                    <Route path="standby/assignments" element={<StandbyAssignments />} />
+                  </>
+                )}
+              </>
+            )}
+
 
 
         {/* Employee Routes - Available to all users */}
