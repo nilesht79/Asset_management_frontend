@@ -7,6 +7,7 @@ import {
   Modal,
   Form,
   Input,
+  Checkbox,
   Select,
   Tag,
   Space,
@@ -111,6 +112,79 @@ const { Title, Text } = Typography
 const { Option } = Select
 const { Search } = Input
 
+// Reusable searchable checkbox list for multi-value inventory filters
+const CheckboxFilter = ({
+  value,
+  options = [],
+  onChange,
+  placeholder = 'Search options...',
+  onSearch,
+  loading = false
+}) => {
+  const [searchText, setSearchText] = useState('')
+  const selectedValues = Array.isArray(value) ? value : value ? [value] : []
+  const mergedOptions = [
+    ...options,
+    ...selectedValues
+      .filter(value => !options.some(option => option.value === value))
+      .map(value => ({ value, label: value }))
+  ]
+  const filteredOptions = mergedOptions.filter(option =>
+    String(option.label || '').toLowerCase().includes(searchText.toLowerCase())
+  )
+
+  return (
+    <div>
+      <Input
+        size="small"
+        allowClear
+        value={searchText}
+        placeholder={placeholder}
+        onChange={(event) => {
+          const value = event.target.value
+          setSearchText(value)
+          if (onSearch) onSearch(value)
+        }}
+      />
+      <div
+        style={{
+          maxHeight: 180,
+          overflowY: 'auto',
+          border: '1px solid #d9d9d9',
+          borderRadius: 6,
+          padding: 10,
+          marginTop: 8
+        }}
+      >
+        {loading ? (
+          <div className="text-sm text-gray-500">Loading...</div>
+        ) : filteredOptions.length > 0 ? (
+          <Checkbox.Group
+            value={selectedValues}
+            onChange={onChange}
+            style={{ width: '100%' }}
+          >
+            <div className="flex flex-col gap-2">
+              {filteredOptions.map(option => (
+                <Checkbox key={option.value} value={option.value}>
+                  {option.label}
+                </Checkbox>
+              ))}
+            </div>
+          </Checkbox.Group>
+        ) : (
+          <div className="text-sm text-gray-500">No options found</div>
+        )}
+      </div>
+      {selectedValues.length > 0 && (
+        <div className="text-xs text-gray-500 mt-1">
+          {selectedValues.length} selected
+        </div>
+      )}
+    </div>
+  )
+}
+
 const AssetInventory = () => {
   const dispatch = useDispatch()
   const navigate = useNavigate()
@@ -139,17 +213,18 @@ const AssetInventory = () => {
   const [managingComponentsAsset, setManagingComponentsAsset] = useState(null)
   const [tempFilters, setTempFilters] = useState({
     search: '',
-    status: '',
-    condition_status: '',
-    location_id: '',
-    assigned_to: '',
-    employee_code: '',
-    product_id: '',
-    category_id: '',
-    subcategory_id: '',
-    oem_id: '',
-    board_id: '',
-    serial_number: ''
+    status: [],
+    condition_status: [],
+    location_id: [],
+    department_id: [],
+    assigned_to: [],
+    employee_code: [],
+    product_id: [],
+    category_id: [],
+    subcategory_id: [],
+    oem_id: [],
+    board_id: [],
+    serial_number: []
   })
   const [serialNumberOptions, setSerialNumberOptions] = useState([])
   const [serialNumberSearching, setSerialNumberSearching] = useState(false)
@@ -298,7 +373,7 @@ const AssetInventory = () => {
         let hasMore = true
   
         // If a board is selected, fetch only departments for that board
-        const baseParams = filters.board_id ? { board_id: filters.board_id } : {}
+        const baseParams = filters.board_id && !Array.isArray(filters.board_id) ? { board_id: filters.board_id } : {}
   
         // Fetch all departments with pagination (max limit is 100)
         while (hasMore) {
@@ -751,43 +826,73 @@ const AssetInventory = () => {
   }
 
   // Filter drawer handlers
+  const normalizeMultiFilter = (value) => {
+    if (Array.isArray(value)) return value
+    return value ? [value] : []
+  }
+
   const showFilterDrawer = () => {
+    setSerialNumberOptions(
+      normalizeMultiFilter(filters?.serial_number).map(value => ({
+        value,
+        label: value
+      }))
+    )
     setTempFilters({
       search: filters?.search || '',
-      status: filters?.status || '',
-      condition_status: filters?.condition_status || '',
-      location_id: filters?.location_id || '',
-      assigned_to: filters?.assigned_to || '',
-      employee_code: filters?.employee_code || '',
-      product_id: filters?.product_id || '',
-      category_id: filters?.category_id || '',
-      oem_id: filters?.oem_id || '',
-      board_id: filters?.board_id || '',
-      serial_number: filters?.serial_number || ''
+      status: normalizeMultiFilter(filters?.status),
+      condition_status: normalizeMultiFilter(filters?.condition_status),
+      location_id: normalizeMultiFilter(filters?.location_id),
+      department_id: normalizeMultiFilter(filters?.department_id),
+      assigned_to: normalizeMultiFilter(filters?.assigned_to),
+      employee_code: normalizeMultiFilter(filters?.employee_code),
+      product_id: normalizeMultiFilter(filters?.product_id),
+      category_id: normalizeMultiFilter(filters?.category_id),
+      subcategory_id: normalizeMultiFilter(filters?.subcategory_id),
+      oem_id: normalizeMultiFilter(filters?.oem_id),
+      board_id: normalizeMultiFilter(filters?.board_id),
+      serial_number: normalizeMultiFilter(filters?.serial_number)
     })
     setFilterDrawerVisible(true)
   }
 
   const handleApplyFilters = () => {
-    dispatch(setAssetFilters(tempFilters))
-    dispatch(fetchAssets({ ...tempFilters, page: 1 }))
+    const appliedFilters = {
+      ...tempFilters,
+      status: normalizeMultiFilter(tempFilters.status),
+      condition_status: normalizeMultiFilter(tempFilters.condition_status),
+      location_id: normalizeMultiFilter(tempFilters.location_id),
+      department_id: normalizeMultiFilter(tempFilters.department_id),
+      assigned_to: normalizeMultiFilter(tempFilters.assigned_to),
+      employee_code: normalizeMultiFilter(tempFilters.employee_code),
+      product_id: normalizeMultiFilter(tempFilters.product_id),
+      category_id: normalizeMultiFilter(tempFilters.category_id),
+      subcategory_id: normalizeMultiFilter(tempFilters.subcategory_id),
+      oem_id: normalizeMultiFilter(tempFilters.oem_id),
+      board_id: normalizeMultiFilter(tempFilters.board_id),
+      serial_number: normalizeMultiFilter(tempFilters.serial_number)
+    }
+
+    dispatch(setAssetFilters(appliedFilters))
+    dispatch(fetchAssets({ ...appliedFilters, page: 1 }))
     setFilterDrawerVisible(false)
   }
 
   const handleClearFilters = () => {
     const clearedFilters = {
       search: '',
-      status: '',
-      condition_status: '',
-      location_id: '',
-      assigned_to: '',
-      employee_code: '',
-      product_id: '',
-      category_id: '',
-      subcategory_id: '',
-      oem_id: '',
-      board_id: '',
-      serial_number: ''
+      status: [],
+      condition_status: [],
+      location_id: [],
+      department_id: [],
+      assigned_to: [],
+      employee_code: [],
+      product_id: [],
+      category_id: [],
+      subcategory_id: [],
+      oem_id: [],
+      board_id: [],
+      serial_number: []
     }
     setTempFilters(clearedFilters)
     dispatch(setAssetFilters(clearedFilters))
@@ -796,24 +901,31 @@ const AssetInventory = () => {
   }
 
   const handleTempFilterChange = (key, value) => {
-    setTempFilters({ ...tempFilters, [key]: value })
+    setTempFilters(prev => ({ ...prev, [key]: value }))
   }
 
   const handleFilterDrawerClose = () => {
     setFilterDrawerVisible(false)
-    // Reset tempFilters to current applied filters when closing without applying
+    setSerialNumberOptions(
+      normalizeMultiFilter(filters?.serial_number).map(value => ({
+        value,
+        label: value
+      }))
+    )
     setTempFilters({
       search: filters?.search || '',
-      status: filters?.status || '',
-      condition_status: filters?.condition_status || '',
-      location_id: filters?.location_id || '',
-      assigned_to: filters?.assigned_to || '',
-      employee_code: filters?.employee_code || '',
-      product_id: filters?.product_id || '',
-      category_id: filters?.category_id || '',
-      oem_id: filters?.oem_id || '',
-      board_id: filters?.board_id || '',
-      serial_number: filters?.serial_number || ''
+      status: normalizeMultiFilter(filters?.status),
+      condition_status: normalizeMultiFilter(filters?.condition_status),
+      location_id: normalizeMultiFilter(filters?.location_id),
+      department_id: normalizeMultiFilter(filters?.department_id),
+      assigned_to: normalizeMultiFilter(filters?.assigned_to),
+      employee_code: normalizeMultiFilter(filters?.employee_code),
+      product_id: normalizeMultiFilter(filters?.product_id),
+      category_id: normalizeMultiFilter(filters?.category_id),
+      subcategory_id: normalizeMultiFilter(filters?.subcategory_id),
+      oem_id: normalizeMultiFilter(filters?.oem_id),
+      board_id: normalizeMultiFilter(filters?.board_id),
+      serial_number: normalizeMultiFilter(filters?.serial_number)
     })
   }
 
@@ -3455,7 +3567,7 @@ const AssetInventory = () => {
         title={
           <div className="flex items-center justify-between">
             <span className="text-base sm:text-lg font-semibold">Filter Assets</span>
-            <Badge count={Object.values(tempFilters).filter(v => v && v !== '').length} showZero={false} />
+            <Badge count={Object.values(tempFilters).reduce((count, value) => count + (Array.isArray(value) ? (value.length > 0 ? 1 : 0) : (value && value !== '' ? 1 : 0)), 0)} showZero={false} />
           </div>
         }
         placement="right"
@@ -3485,231 +3597,179 @@ const AssetInventory = () => {
             />
           </div>
 
-          {/* Serial Number */}
+          {/* Serial Number - Multiple Checkbox Selection */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Serial Number</label>
-            <Select
-              placeholder="Type to search serial number (min 2 chars)..."
-              value={tempFilters.serial_number || undefined}
-              onChange={(value) => handleTempFilterChange('serial_number', value)}
-              onSearch={handleSerialNumberSearch}
-              allowClear
-              showSearch
-              filterOption={false}
-              loading={serialNumberSearching}
-              notFoundContent={
-                serialNumberSearching
-                  ? 'Searching...'
-                  : serialNumberOptions.length === 0
-                    ? 'Type at least 2 characters to search'
-                    : 'No serial numbers found'
-              }
-              style={{ width: '100%' }}
+            <CheckboxFilter
+              value={tempFilters.serial_number}
               options={serialNumberOptions}
+              onChange={(values) => handleTempFilterChange('serial_number', values)}
+              placeholder="Type at least 2 characters..."
+              onSearch={handleSerialNumberSearch}
+              loading={serialNumberSearching}
             />
           </div>
 
-          {/* Board */}
+          {/* Board - Multiple Checkbox Selection */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Board</label>
-            <Select
-              placeholder="Select board"
-              value={tempFilters.board_id || undefined}
-              onChange={(value) => handleTempFilterChange('board_id', value)}
-              allowClear
-              showSearch
-              optionFilterProp="children"
-              filterOption={(input, option) => {
-                const searchText = `${option.label || ''}`.toLowerCase()
-                return searchText.includes(input.toLowerCase())
-              }}
-              style={{ width: '100%' }}
-              options={boards.data?.map(board => ({
+            <CheckboxFilter
+              value={tempFilters.board_id}
+              options={(boards.data || []).map(board => ({
                 value: board.id,
                 label: board.name
               }))}
+              onChange={(values) => handleTempFilterChange('board_id', values)}
+              placeholder="Search boards..."
             />
           </div>
 
-          {/* Status */}
+          {/* Status - Multiple Checkbox Selection */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
-            <Select
-              placeholder="Select status"
-              value={tempFilters.status || undefined}
-              onChange={(value) => handleTempFilterChange('status', value)}
-              allowClear
-              style={{ width: '100%' }}
-            >
-              <Option value="available">Available</Option>
-              <Option value="assigned">Assigned</Option>
-              <Option value="in_use">In Use</Option>
-              <Option value="under_repair">Under Repair</Option>
-              {/* <Option value="maintenance">Maintenance</Option> */}
-              <Option value="not_working">Not Working</Option>
-              <Option value="disposed">Disposed</Option>
-              <Option value="not found">Not Found</Option>
-            </Select>
+            <CheckboxFilter
+              value={tempFilters.status}
+              options={[
+                { value: 'available', label: 'Available' },
+                { value: 'assigned', label: 'Assigned' },
+                { value: 'in_use', label: 'In Use' },
+                { value: 'under_repair', label: 'Under Repair' },
+                { value: 'not_working', label: 'Not Working' },
+                { value: 'disposed', label: 'Disposed' },
+                { value: 'not found', label: 'Not Found' }
+              ]}
+              onChange={(values) => handleTempFilterChange('status', values)}
+              placeholder="Search statuses..."
+            />
           </div>
 
-          {/* Condition Status */}
+          {/* Condition - Multiple Checkbox Selection */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Condition</label>
-            <Select
-              placeholder="Select condition"
-              value={tempFilters.condition_status || undefined}
-              onChange={(value) => handleTempFilterChange('condition_status', value)}
-              allowClear
-              style={{ width: '100%' }}
-            >
-              <Option value="excellent">Excellent</Option>
-              <Option value="good">Good</Option>
-              <Option value="fair">Fair</Option>
-              <Option value="poor">Poor</Option>
-            </Select>
+            <CheckboxFilter
+              value={tempFilters.condition_status}
+              options={[
+                { value: 'excellent', label: 'Excellent' },
+                { value: 'good', label: 'Good' },
+                { value: 'fair', label: 'Fair' },
+                { value: 'poor', label: 'Poor' }
+              ]}
+              onChange={(values) => handleTempFilterChange('condition_status', values)}
+              placeholder="Search conditions..."
+            />
           </div>
 
-          {/* Category */}
+          {/* Category - Multiple Checkbox Selection */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
-            <Select
-              placeholder="Select category"
-              value={tempFilters.category_id || undefined}
-              onChange={(value) => handleTempFilterChange('category_id', value)}
-              allowClear
-              showSearch
-              optionFilterProp="children"
-              filterOption={(input, option) => {
-                const searchText = `${option.label || ''}`.toLowerCase()
-                return searchText.includes(input.toLowerCase())
-              }}
-              style={{ width: '100%' }}
-              options={categories.data?.map(category => ({
+            <CheckboxFilter
+              value={tempFilters.category_id}
+              options={(categories.data || []).map(category => ({
                 value: category.id,
                 label: category.name
               }))}
+              onChange={(values) => handleTempFilterChange('category_id', values)}
+              placeholder="Search categories..."
             />
           </div>
 
-          {/* Sub-Category */}
+          {/* Sub-Category - Multiple Checkbox Selection */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Sub-Category</label>
-            <Select
-              placeholder="Select sub-category"
-              value={tempFilters.subcategory_id || undefined}
-              onChange={(value) => handleTempFilterChange('subcategory_id', value)}
-              allowClear
-              showSearch
-              optionFilterProp="children"
-              filterOption={(input, option) => {
-                const searchText = `${option.label || ''}`.toLowerCase()
-                return searchText.includes(input.toLowerCase())
-              }}
-              style={{ width: '100%' }}
-              options={subcategories.data?.map(subcat => ({
+            <CheckboxFilter
+              value={tempFilters.subcategory_id}
+              options={(subcategories.data || []).map(subcat => ({
                 value: subcat.id,
                 label: subcat.name
               }))}
+              onChange={(values) => handleTempFilterChange('subcategory_id', values)}
+              placeholder="Search sub-categories..."
             />
           </div>
 
-          {/* Product */}
+          {/* Product - Multiple Checkbox Selection */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Product</label>
-            <Select
-              placeholder="Select product"
-              value={tempFilters.product_id || undefined}
-              onChange={(value) => handleTempFilterChange('product_id', value)}
-              allowClear
-              showSearch
-              optionFilterProp="children"
-              filterOption={(input, option) => {
-                const searchText = `${option.label || ''}`.toLowerCase()
-                return searchText.includes(input.toLowerCase())
-              }}
-              style={{ width: '100%' }}
-              options={products.data?.map(product => ({
+            <CheckboxFilter
+              value={tempFilters.product_id}
+              options={(products.data || []).map(product => ({
                 value: product.id,
                 label: `${product.name}${product.model ? ` (${product.model})` : ''}`
               }))}
+              onChange={(values) => handleTempFilterChange('product_id', values)}
+              placeholder="Search products..."
             />
           </div>
 
-          {/* OEM */}
+          {/* OEM - Multiple Checkbox Selection */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">OEM/Manufacturer</label>
-            <Select
-              placeholder="Select OEM"
-              value={tempFilters.oem_id || undefined}
-              onChange={(value) => handleTempFilterChange('oem_id', value)}
-              allowClear
-              showSearch
-              optionFilterProp="children"
-              filterOption={(input, option) => {
-                const searchText = `${option.label || ''}`.toLowerCase()
-                return searchText.includes(input.toLowerCase())
-              }}
-              style={{ width: '100%' }}
-              options={oems.data?.map(oem => ({
+            <CheckboxFilter
+              value={tempFilters.oem_id}
+              options={(oems.data || []).map(oem => ({
                 value: oem.id,
                 label: oem.name
               }))}
+              onChange={(values) => handleTempFilterChange('oem_id', values)}
+              placeholder="Search OEMs..."
             />
           </div>
 
-          {/* Location */}
+          {/* Location - Multiple Checkbox Selection */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
-            <Select
-              placeholder="Select location"
-              value={tempFilters.location_id || undefined}
-              onChange={(value) => handleTempFilterChange('location_id', value)}
-              allowClear
-              showSearch
-              optionFilterProp="children"
-              filterOption={(input, option) => {
-                const searchText = `${option.label || ''}`.toLowerCase()
-                return searchText.includes(input.toLowerCase())
-              }}
-              style={{ width: '100%' }}
-              // options={locations.data?.map(location => ({
-                options={locations.map(location => ({
+            <CheckboxFilter
+              value={tempFilters.location_id}
+              options={locations.map(location => ({
                 value: location.id,
                 label: `${location.name}${location.building ? ` - ${location.building}` : ''}${location.floor ? ` (Floor: ${location.floor})` : ''}`
               }))}
+              onChange={(values) => handleTempFilterChange('location_id', values)}
+              placeholder="Search locations..."
             />
           </div>
 
-          {/* Assigned To */}
+          {/* Department - Multiple Checkbox Selection */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Department</label>
+            <CheckboxFilter
+              value={tempFilters.department_id}
+              options={(departments || []).map(department => ({
+                value: department.department_id,
+                label: department.department_name
+              }))}
+              onChange={(values) => handleTempFilterChange('department_id', values)}
+              placeholder="Search departments..."
+            />
+          </div>
+
+          {/* Assigned To - Multiple Checkbox Selection */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Assigned To</label>
-            <Select
-              placeholder="Select user"
-              value={tempFilters.assigned_to || undefined}
-              onChange={(value) => handleTempFilterChange('assigned_to', value)}
-              allowClear
-              showSearch
-              optionFilterProp="children"
-              filterOption={(input, option) => {
-                const searchText = `${option.label || ''}`.toLowerCase()
-                return searchText.includes(input.toLowerCase())
-              }}
-              style={{ width: '100%' }}
-              options={users.data?.map(user => ({
-                value: user.id,
-                label: `${user.firstName} ${user.lastName} (${user.email})`
+            <CheckboxFilter
+              value={tempFilters.assigned_to}
+              options={(users.data || []).map(user => ({
+                value: user.id || user.user_id,
+                label: `${user.firstName || user.first_name || ''} ${user.lastName || user.last_name || ''} (${user.email || ''})`
               }))}
+              onChange={(values) => handleTempFilterChange('assigned_to', values)}
+              placeholder="Search users..."
             />
           </div>
 
-          {/* Employee Code */}
+          {/* Employee Code - Multiple Checkbox Selection */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Employee Code</label>
-            <Input
-              placeholder="Search by employee code (e.g., T-12345)"
-              value={tempFilters.employee_code || ''}
-              onChange={(e) => handleTempFilterChange('employee_code', e.target.value)}
-              allowClear
+            <CheckboxFilter
+              value={tempFilters.employee_code}
+              options={(users.data || [])
+                .filter(user => user.employee_id || user.employeeId)
+                .map(user => ({
+                  value: user.employee_id || user.employeeId,
+                  label: `${user.employee_id || user.employeeId} - ${user.firstName || user.first_name || ''} ${user.lastName || user.last_name || ''}`.trim()
+                }))}
+              onChange={(values) => handleTempFilterChange('employee_code', values)}
+              placeholder="Search employee codes..."
             />
           </div>
         </div>
