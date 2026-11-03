@@ -373,7 +373,10 @@ const AssetInventory = () => {
         let hasMore = true
   
         // If a board is selected, fetch only departments for that board
-        const baseParams = filters.board_id && !Array.isArray(filters.board_id) ? { board_id: filters.board_id } : {}
+        // const baseParams = filters.board_id && !Array.isArray(filters.board_id) ? { board_id: filters.board_id } : {}
+        const baseParams = filters.board_id
+          ? { board_id: filters.board_id }
+          : {}
   
         // Fetch all departments with pagination (max limit is 100)
         while (hasMore) {
@@ -3730,7 +3733,7 @@ const AssetInventory = () => {
           </div>
 
           {/* Department - Multiple Checkbox Selection */}
-          <div>
+          {/* <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Department</label>
             <CheckboxFilter
               value={tempFilters.department_id}
@@ -3741,7 +3744,30 @@ const AssetInventory = () => {
               onChange={(values) => handleTempFilterChange('department_id', values)}
               placeholder="Search departments..."
             />
+          </div> */}
+          
+          {/* Department - Multiple Checkbox Selection */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Department
+            </label>
+          
+            <CheckboxFilter
+              value={tempFilters.department_id}
+              options={(departments || [])
+                .map(department => ({
+                  value: department.id || department.department_id,
+                  label: department.name || department.department_name
+                }))
+                .filter(department => department.value && department.label)
+              }
+              onChange={(values) =>
+                handleTempFilterChange('department_id', values)
+              }
+              placeholder="Search departments..."
+            />
           </div>
+
 
           {/* Assigned To - Multiple Checkbox Selection */}
           <div>
