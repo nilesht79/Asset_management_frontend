@@ -3233,30 +3233,7 @@ const AssetInventory = () => {
           setViewDetailsModalVisible(false)
           setViewingAsset(null)
         }}
-        {/* footer={[
-          <Button key="edit" icon={<EditOutlined />} size="small" onClick={() => {
-            setViewDetailsModalVisible(false)
-            showEditModal(viewingAsset)
-          }}>
-            <span className="hidden sm:inline">Edit Asset</span>
-            <span className="inline sm:hidden">Edit</span>
-          </Button>,
-          ...(viewingAsset?.asset_type !== 'component' ? [
-            <Button key="assign" type="primary" icon={<UserOutlined />} size="small" onClick={() => {
-              setViewDetailsModalVisible(false)
-              showAssignModal(viewingAsset)
-            }}>
-              <span className="hidden sm:inline">Assign Asset</span>
-              <span className="inline sm:hidden">Assign</span>
-            </Button>
-          ] : []),
-          <Button key="close" size="small" onClick={() => {
-            setViewDetailsModalVisible(false)
-            setViewingAsset(null)
-          }}>
-            Close
-          </Button>
-        ]} */}
+   
       footer={[
           <Button
             key="edit"
