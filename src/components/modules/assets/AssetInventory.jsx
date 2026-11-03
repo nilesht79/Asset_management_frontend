@@ -3268,19 +3268,19 @@ const AssetInventory = () => {
         }}
    
       footer={[
-          {!isCoordinator && (
-              <Button
-                key="edit"
-                icon={<EditOutlined />}
-                size="small"
-                onClick={() => {
-                  setViewDetailsModalVisible(false)
-                  showEditModal(viewingAsset)
-                }}
-              >
-                {isEngineer ? 'Update Department' : 'Edit Asset'}
-              </Button>
-            )},
+          !isCoordinator ? (
+            <Button
+              key="edit"
+              icon={<EditOutlined />}
+              size="small"
+              onClick={() => {
+                setViewDetailsModalVisible(false)
+                showEditModal(viewingAsset)
+              }}
+            >
+              {isEngineer ? 'Update Department' : 'Edit Asset'}
+            </Button>
+          ) : null,
           
           ...(!isEngineer && !isCoordinator && viewingAsset?.asset_type !== 'component'
             ? [
