@@ -2269,7 +2269,36 @@ const AssetInventory = () => {
                    </>
             )}
             {/* <Badge count={Object.values(filters || {}).filter(v => v && v !== '').length} offset={[-5, 5]}> */}
-              <Button icon={<FilterOutlined />} onClick={showFilterDrawer} size="small">Filters</Button>
+
+            
+              {/* <Button icon={<FilterOutlined />} onClick={showFilterDrawer} size="small">Filters</Button> */}
+
+            
+              {isEngineer ? (
+                <Search
+                  placeholder="Search Serial Number, Make, Model, Employee Code or Employee Name"
+                  allowClear
+                  enterButton="Search"
+                  size="middle"
+                  value={filters?.search || ''}
+                  onSearch={handleSearch}
+                  onChange={(e) => {
+                    if (!e.target.value) {
+                      handleSearch('')
+                    }
+                  }}
+                  style={{ width: 420, maxWidth: '100%' }}
+                />
+              ) : (
+                <Button
+                  icon={<FilterOutlined />}
+                  onClick={showFilterDrawer}
+                  size="small"
+                >
+                  Filters
+                </Button>
+              )}
+
             {/* </Badge> */}
             {/* <Button
               icon={<DeleteOutlined />}
