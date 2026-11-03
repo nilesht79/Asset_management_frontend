@@ -223,7 +223,7 @@ const AssetInventory = () => {
     category_id: [],
     subcategory_id: [],
     oem_id: [],
-    board_id: [],
+    // board_id: [],
     serial_number: []
   })
   const [serialNumberOptions, setSerialNumberOptions] = useState([])
@@ -269,7 +269,7 @@ const AssetInventory = () => {
     dispatch(fetchAssetStatistics())
 
     // Fetch master data for dropdowns with high limit to get all items
-    dispatch(fetchBoards({ limit: 1000 }))
+    // dispatch(fetchBoards({ limit: 1000 }))
     dispatch(fetchOEMs({ limit: 1000 }))
     dispatch(fetchVendors({ limit: 1000 }))
     dispatch(fetchProducts({ limit: 1000 }))
@@ -313,9 +313,13 @@ const AssetInventory = () => {
     }
   }, [])
 
-     useEffect(() => {
-      fetchDepartments()
-    }, [filters.board_id])
+    //  useEffect(() => {
+    //   fetchDepartments()
+    // }, [filters.board_id])
+
+  useEffect(() => {
+  fetchDepartments()
+}, [])
 
 
 
@@ -2121,9 +2125,9 @@ const AssetInventory = () => {
             >
               <Button icon={<ExportOutlined />} size="small">Export</Button>
             </Dropdown>
-            <Badge count={Object.values(filters || {}).filter(v => v && v !== '').length} offset={[-5, 5]}>
+            {/* <Badge count={Object.values(filters || {}).filter(v => v && v !== '').length} offset={[-5, 5]}> */}
               <Button icon={<FilterOutlined />} onClick={showFilterDrawer} size="small">Filters</Button>
-            </Badge>
+            {/* </Badge> */}
             {/* <Button
               icon={<DeleteOutlined />}
               onClick={showDeletedAssetsModal}
@@ -3614,7 +3618,7 @@ const AssetInventory = () => {
           </div>
 
           {/* Board - Multiple Checkbox Selection */}
-          <div>
+          {/* <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Board</label>
             <CheckboxFilter
               value={tempFilters.board_id}
@@ -3625,7 +3629,7 @@ const AssetInventory = () => {
               onChange={(values) => handleTempFilterChange('board_id', values)}
               placeholder="Search boards..."
             />
-          </div>
+          </div> */}
 
           {/* Status - Multiple Checkbox Selection */}
           <div>
