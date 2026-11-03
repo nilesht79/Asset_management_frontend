@@ -211,6 +211,7 @@ const AssetInventory = () => {
   const [filterDrawerVisible, setFilterDrawerVisible] = useState(false)
   const [componentDrawerVisible, setComponentDrawerVisible] = useState(false)
   const [managingComponentsAsset, setManagingComponentsAsset] = useState(null)
+  const [engineerSearch, setEngineerSearch] = useState('')
   const [tempFilters, setTempFilters] = useState({
     search: '',
     status: [],
@@ -2274,18 +2275,17 @@ const AssetInventory = () => {
               {/* <Button icon={<FilterOutlined />} onClick={showFilterDrawer} size="small">Filters</Button> */}
 
             
+              
               {isEngineer ? (
                 <Search
-                  placeholder="Search Serial Number, Make, Model, Employee Code or Employee Name"
+                  placeholder="Search Serial Number, Make, Model, Employee Code or Name"
                   allowClear
                   enterButton="Search"
                   size="middle"
-                  value={filters?.search || ''}
-                  onSearch={handleSearch}
-                  onChange={(e) => {
-                    if (!e.target.value) {
-                      handleSearch('')
-                    }
+                  value={engineerSearch}
+                  onChange={(e) => setEngineerSearch(e.target.value)}
+                  onSearch={(value) => {
+                    handleSearch(value.trim())
                   }}
                   style={{ width: 420, maxWidth: '100%' }}
                 />
@@ -2298,6 +2298,7 @@ const AssetInventory = () => {
                   Filters
                 </Button>
               )}
+
 
             {/* </Badge> */}
             {/* <Button
