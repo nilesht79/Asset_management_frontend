@@ -257,7 +257,7 @@ const AssetInventory = () => {
       'not found': '#f5333d',
       'in_use': '#1890ff',
       'available': '#52c41a',
-      'maintenance': '#faad14'
+      'not_working': '#faad14'
     }
     return colors[statusLower] || '#8c8c8c'
   }
@@ -2168,7 +2168,8 @@ const AssetInventory = () => {
                   <Option value="assigned">Assigned</Option>
                   <Option value="in_use">In Use</Option>
                   <Option value="under_repair">Under Repair</Option>
-                  <Option value="maintenance">Maintenance</Option>
+                  {/* <Option value="maintenance">Maintenance</Option> */}
+                  <Option value="not_working">Not Working</Option>
                   <Option value="disposed">Disposed</Option>
                   <Option value="not found">Not Found</Option>
                   <Option value="not_repairable">Not Repairable</Option>
@@ -3544,7 +3545,8 @@ const AssetInventory = () => {
               <Option value="assigned">Assigned</Option>
               <Option value="in_use">In Use</Option>
               <Option value="under_repair">Under Repair</Option>
-              <Option value="maintenance">Maintenance</Option>
+              {/* <Option value="maintenance">Maintenance</Option> */}
+              <Option value="not_working">Not Working</Option>
               <Option value="disposed">Disposed</Option>
               <Option value="not found">Not Found</Option>
             </Select>
