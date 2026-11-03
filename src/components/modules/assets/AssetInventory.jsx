@@ -3233,7 +3233,7 @@ const AssetInventory = () => {
           setViewDetailsModalVisible(false)
           setViewingAsset(null)
         }}
-        footer={[
+        {/* footer={[
           <Button key="edit" icon={<EditOutlined />} size="small" onClick={() => {
             setViewDetailsModalVisible(false)
             showEditModal(viewingAsset)
@@ -3256,7 +3256,48 @@ const AssetInventory = () => {
           }}>
             Close
           </Button>
-        ]}
+        ]} */}
+      footer={[
+          <Button
+            key="edit"
+            icon={<EditOutlined />}
+            size="small"
+            onClick={() => {
+              setViewDetailsModalVisible(false)
+              showEditModal(viewingAsset)
+            }}
+          >
+            {isEngineer ? 'Update Department' : 'Edit Asset'}
+          </Button>,
+          
+          ...(!isEngineer && viewingAsset?.asset_type !== 'component'
+            ? [
+                <Button
+                  key="assign"
+                  type="primary"
+                  icon={<UserOutlined />}
+                  size="small"
+                  onClick={() => {
+                    setViewDetailsModalVisible(false)
+                    showAssignModal(viewingAsset)
+                  }}
+                >
+                  Assign Asset
+                </Button>
+              ]
+            : []),
+          
+          <Button
+            key="close"
+            size="small"
+            onClick={() => {
+              setViewDetailsModalVisible(false)
+              setViewingAsset(null)
+            }}
+          >
+            Close
+          </Button>
+          ]}
         width={typeof window !== 'undefined' && window.innerWidth < 640 ? '95vw' : typeof window !== 'undefined' && window.innerWidth < 768 ? '90vw' : 900}
         className="responsive-modal"
       >
