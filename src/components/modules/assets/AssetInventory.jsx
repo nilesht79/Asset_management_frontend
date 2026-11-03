@@ -2009,7 +2009,7 @@ const AssetInventory = () => {
             <Badge count={Object.values(filters || {}).filter(v => v && v !== '').length} offset={[-5, 5]}>
               <Button icon={<FilterOutlined />} onClick={showFilterDrawer} size="small">Filters</Button>
             </Badge>
-            <Button
+            {/* <Button
               icon={<DeleteOutlined />}
               onClick={showDeletedAssetsModal}
               className="text-red-500 border-red-500 hover:bg-red-50"
@@ -2017,8 +2017,8 @@ const AssetInventory = () => {
             >
               <span className="hidden lg:inline">View Deleted Assets</span>
               <span className="inline lg:hidden">Deleted</span>
-            </Button>
-            <Button
+            </Button> */}
+            {/* <Button
               icon={<QrcodeOutlined />}
               onClick={handleGenerateSelectedLabels}
               disabled={selectedRowKeys.length === 0}
@@ -2038,7 +2038,7 @@ const AssetInventory = () => {
             >
               <span className="hidden lg:inline">Generate All Labels ({assets.pagination?.total || 0})</span>
               <span className="inline lg:hidden">All Labels</span>
-            </Button>
+            </Button> */}
           </Space>
         </div>
 
