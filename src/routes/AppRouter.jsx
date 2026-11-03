@@ -93,6 +93,20 @@ import EmployeeTicketDashboard from '../pages/EmployeeTicketDashboard'
 const AppRouter = () => {
   const { user } = useSelector(state => state.auth)
 
+    // Coordinator - Dashboard and Asset Inventory only
+  if (user?.role === 'coordinator') {
+    return (
+      <Routes>
+        <Route path="/" element={<MainLayout />}>
+          <Route index element={<Navigate to="/assets/inventory" replace />} />
+          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="assets/inventory" element={<AssetInventory />} />
+          <Route path="*" element={<Navigate to="/assets/inventory" replace />} />
+        </Route>
+      </Routes>
+    )
+  }
+
 
   return (
     <Routes>
