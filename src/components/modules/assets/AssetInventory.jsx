@@ -234,6 +234,11 @@ const AssetInventory = () => {
 
   // Redux selectors
   const { user: currentUser } = useSelector(state => state.auth)
+  const userRole = String(currentUser?.role || '')
+    .trim()
+    .toLowerCase()
+  
+  const isEngineer = userRole === 'engineer'
   const assets = useSelector(selectAssets)
   const statistics = useSelector(selectAssetStatistics)
   const filters = useSelector(selectAssetFilters)
@@ -469,6 +474,44 @@ const AssetInventory = () => {
 
   const handleSubmit = async (values) => {
     try {
+
+                // Engineer: update only Department
+          if (isEngineer) {
+            if (!editingAsset) {
+              message.error('Engineers cannot create assets')
+              return
+            }
+          
+            try {
+              await dispatch(
+                updateAsset({
+                  id: editingAsset.id,
+                  data: {
+                    department_id: values.department_id
+                  }
+                })
+              ).unwrap()
+          
+              message.success('Department updated successfully')
+          
+              setIsAddModalVisible(false)
+              form.resetFields()
+              setEditingAsset(null)
+          
+              dispatch(
+                fetchAssets({
+                  page: assets.pagination?.page || 1,
+                  limit: assets.pagination?.pageSize || 10
+                })
+              )
+          
+              dispatch(fetchAssetStatistics())
+              return
+            } catch (error) {
+              message.error(error.message || 'Department update failed')
+              return
+            }
+          }
       // Validate: Components cannot be assigned to users
       if (values.asset_type === 'component' && values.assigned_to) {
         message.error('Components cannot be assigned to users. Please remove the assignment or change asset type.')
@@ -1462,76 +1505,172 @@ const AssetInventory = () => {
       render: (_, record) => {
         const isAssigned = record.assigned_to
 
+        // return (
+        //   <div className="flex items-center justify-center">
+        //     <Dropdown
+        //       trigger={['click']}
+        //       placement="bottomRight"
+        //       menu={{
+        //         items: [
+        //           {
+        //             key: 'view',
+        //             label: 'View Details',
+        //             icon: <EyeOutlined />,
+        //             onClick: () => showViewDetailsModal(record)
+        //           },
+        //           ...(record.asset_type !== 'component' ? [{
+        //             key: 'components',
+        //             label: 'Manage Components',
+        //             icon: <ApiOutlined />,
+        //             onClick: () => handleManageComponents(record)
+        //           }] : []),
+        //           {
+        //             key: 'edit',
+        //             label: 'Edit Asset',
+        //             icon: <EditOutlined />,
+        //             onClick: () => showEditModal(record)
+        //           },
+        //           {
+        //             key: 'settings',
+        //             label: 'Settings',
+        //             icon: <SettingOutlined />,
+        //             onClick: () => handleAssetSettings(record)
+        //           },
+        //           {
+        //             key: 'tag',
+        //             label: 'Tag Asset',
+        //             icon: <TagOutlined />,
+        //             onClick: () => handleTagAsset(record)
+        //           },
+        //           {
+        //             key: 'generate-label',
+        //             label: 'Generate Label',
+        //             icon: <QrcodeOutlined />,
+        //             onClick: () => handleGenerateLabel(record)
+        //           },
+        //           {
+        //             type: 'divider'
+        //           },
+        //           {
+        //             key: 'assign',
+        //             label: isAssigned ? 'Reassign' : 'Assign',
+        //             icon: <UserOutlined />,
+        //             onClick: () => showAssignModal(record)
+        //           },
+        //           ...(isAssigned ? [{
+        //             key: 'unassign',
+        //             label: 'Unassign / Release',
+        //             icon: <UserOutlined />,
+        //             onClick: () => handleUnassignAsset(record)
+        //           }] : []),
+        //           {
+        //             type: 'divider'
+        //           },
+        //           {
+        //             key: 'delete',
+        //             label: 'Delete Asset',
+        //             icon: <DeleteOutlined />,
+        //             danger: true,
+        //             onClick: () => handleDelete(record)
+        //           }
+        //         ]
+        //       }}
+        //     >
+        //       <Button
+        //         type="text"
+        //         size="small"
+        //         icon={<MoreOutlined />}
+        //         className="flex items-center justify-center w-8 h-8"
+        //       />
+        //     </Dropdown>
+        //   </div>
+        // )
+
         return (
           <div className="flex items-center justify-center">
             <Dropdown
               trigger={['click']}
               placement="bottomRight"
               menu={{
-                items: [
-                  {
-                    key: 'view',
-                    label: 'View Details',
-                    icon: <EyeOutlined />,
-                    onClick: () => showViewDetailsModal(record)
-                  },
-                  ...(record.asset_type !== 'component' ? [{
-                    key: 'components',
-                    label: 'Manage Components',
-                    icon: <ApiOutlined />,
-                    onClick: () => handleManageComponents(record)
-                  }] : []),
-                  {
-                    key: 'edit',
-                    label: 'Edit Asset',
-                    icon: <EditOutlined />,
-                    onClick: () => showEditModal(record)
-                  },
-                  {
-                    key: 'settings',
-                    label: 'Settings',
-                    icon: <SettingOutlined />,
-                    onClick: () => handleAssetSettings(record)
-                  },
-                  {
-                    key: 'tag',
-                    label: 'Tag Asset',
-                    icon: <TagOutlined />,
-                    onClick: () => handleTagAsset(record)
-                  },
-                  {
-                    key: 'generate-label',
-                    label: 'Generate Label',
-                    icon: <QrcodeOutlined />,
-                    onClick: () => handleGenerateLabel(record)
-                  },
-                  {
-                    type: 'divider'
-                  },
-                  {
-                    key: 'assign',
-                    label: isAssigned ? 'Reassign' : 'Assign',
-                    icon: <UserOutlined />,
-                    onClick: () => showAssignModal(record)
-                  },
-                  ...(isAssigned ? [{
-                    key: 'unassign',
-                    label: 'Unassign / Release',
-                    icon: <UserOutlined />,
-                    onClick: () => handleUnassignAsset(record)
-                  }] : []),
-                  {
-                    type: 'divider'
-                  },
-                  {
-                    key: 'delete',
-                    label: 'Delete Asset',
-                    icon: <DeleteOutlined />,
-                    danger: true,
-                    onClick: () => handleDelete(record)
-                  }
-                ]
-              }}
+                  items: isEngineer
+                    ? [
+                        {
+                          key: 'view',
+                          label: 'View Details',
+                          icon: <EyeOutlined />,
+                          onClick: () => showViewDetailsModal(record)
+                        },
+                        {
+                          key: 'edit',
+                          label: 'Update Department',
+                          icon: <EditOutlined />,
+                          onClick: () => showEditModal(record)
+                        }
+                      ]
+                    : [
+                        {
+                          key: 'view',
+                          label: 'View Details',
+                          icon: <EyeOutlined />,
+                          onClick: () => showViewDetailsModal(record)
+                        },
+                        ...(record.asset_type !== 'component' ? [{
+                          key: 'components',
+                          label: 'Manage Components',
+                          icon: <ApiOutlined />,
+                          onClick: () => handleManageComponents(record)
+                        }] : []),
+                        {
+                          key: 'edit',
+                          label: 'Edit Asset',
+                          icon: <EditOutlined />,
+                          onClick: () => showEditModal(record)
+                        },
+                        {
+                          key: 'settings',
+                          label: 'Settings',
+                          icon: <SettingOutlined />,
+                          onClick: () => handleAssetSettings(record)
+                        },
+                        {
+                          key: 'tag',
+                          label: 'Tag Asset',
+                          icon: <TagOutlined />,
+                          onClick: () => handleTagAsset(record)
+                        },
+                        {
+                          key: 'generate-label',
+                          label: 'Generate Label',
+                          icon: <QrcodeOutlined />,
+                          onClick: () => handleGenerateLabel(record)
+                        },
+                        {
+                          type: 'divider'
+                        },
+                        {
+                          key: 'assign',
+                          label: isAssigned ? 'Reassign' : 'Assign',
+                          icon: <UserOutlined />,
+                          onClick: () => showAssignModal(record)
+                        },
+                        ...(isAssigned ? [{
+                          key: 'unassign',
+                          label: 'Unassign / Release',
+                          icon: <UserOutlined />,
+                          onClick: () => handleUnassignAsset(record)
+                        }] : []),
+                        {
+                          type: 'divider'
+                        },
+                        {
+                          key: 'delete',
+                          label: 'Delete Asset',
+                          icon: <DeleteOutlined />,
+                          danger: true,
+                          onClick: () => handleDelete(record)
+                        }
+                      ]
+                }}
             >
               <Button
                 type="text"
@@ -2087,6 +2226,8 @@ const AssetInventory = () => {
 
         <div className="mb-4">
           <Space wrap size={[8, 8]} className="w-full">
+            {!isEngineer && (
+                <>
             <Button
               type="primary"
               icon={<PlusOutlined />}
@@ -2125,6 +2266,8 @@ const AssetInventory = () => {
             >
               <Button icon={<ExportOutlined />} size="small">Export</Button>
             </Dropdown>
+                   </>
+            )}
             {/* <Badge count={Object.values(filters || {}).filter(v => v && v !== '').length} offset={[-5, 5]}> */}
               <Button icon={<FilterOutlined />} onClick={showFilterDrawer} size="small">Filters</Button>
             {/* </Badge> */}
@@ -2240,6 +2383,36 @@ const AssetInventory = () => {
             }
           }}
         >
+          {isEngineer ? (
+              <Form.Item
+                name="department_id"
+                label="Department"
+                rules={[
+                  {
+                    required: true,
+                    message: 'Please select a department'
+                  }
+                ]}
+              >
+                <Select
+                  placeholder="Select department"
+                  showSearch
+                  optionFilterProp="children"
+                  filterOption={(input, option) =>
+                    (option?.children?.toString() || '')
+                      .toLowerCase()
+                      .includes(input.toLowerCase())
+                  }
+                >
+                  {departments.map(dept => (
+                    <Option key={dept.id} value={dept.id}>
+                      {dept.name}
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            ) : (
+              <>
           <Row gutter={16}>
             <Col span={24}>
               <Form.Item
@@ -2936,6 +3109,8 @@ const AssetInventory = () => {
               }
             ]}
           />
+            </>
+)}      
         </Form>
       </Drawer>
 
