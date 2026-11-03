@@ -3663,7 +3663,7 @@ const AssetInventory = () => {
           </div>
 
           {/* Category - Multiple Checkbox Selection */}
-          <div>
+          {/* <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
             <CheckboxFilter
               value={tempFilters.category_id}
@@ -3674,7 +3674,30 @@ const AssetInventory = () => {
               onChange={(values) => handleTempFilterChange('category_id', values)}
               placeholder="Search categories..."
             />
-          </div>
+          </div> */}
+          
+            {/* Category - Main Categories Only */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Category
+              </label>
+            
+              <CheckboxFilter
+                value={tempFilters.category_id}
+                options={(categories.data || [])
+                  .filter(category => !category.parent_category_id)
+                  .map(category => ({
+                    value: category.id,
+                    label: category.name
+                  }))
+                }
+                onChange={(values) =>
+                  handleTempFilterChange('category_id', values)
+                }
+                placeholder="Search categories..."
+              />
+            </div>
+
 
           {/* Sub-Category - Multiple Checkbox Selection */}
           <div>
