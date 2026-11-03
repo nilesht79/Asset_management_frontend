@@ -642,6 +642,17 @@ const Sidebar = () => {
     if (['engineer'].includes(user?.role)) {
       baseItems.push(
         {
+            key: 'assets',
+            icon: <DesktopOutlined />,
+            label: 'Asset Management',
+            children: [
+              {
+                key: '/assets/inventory',
+                label: 'Asset Inventory',
+              },
+            ],
+          },
+        {
           key: '/deliveries/my-deliveries',
           icon: <DeliveredProcedureOutlined />,
           label: 'Asset Deliveries',
