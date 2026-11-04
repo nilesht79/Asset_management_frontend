@@ -669,7 +669,7 @@ const ReconciliationAssets = () => {
                         onChange={(e) => setSearchText(e.target.value)}
                       /> */}
                       <Search
-                        placeholder="Search product, asset ID, serial no., employee..."
+                        placeholder="Search product, asset ID, serial no., employee name / ID..."
                         allowClear
                         enterButton={<SearchOutlined />}
                         onSearch={handleSearch}
