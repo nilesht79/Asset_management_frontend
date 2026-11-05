@@ -66,12 +66,19 @@ const AllRequisitions = () => {
   });
 
   // Statistics state
+  // const [stats, setStats] = useState({
+  //   total: 0,
+  //   pending: 0,
+  //   approved: 0,
+  //   rejected: 0
+  // });
   const [stats, setStats] = useState({
-    total: 0,
-    pending: 0,
-    approved: 0,
-    rejected: 0
-  });
+  total: 0,
+  pending: 0,
+  approved: 0,
+  rejected: 0,
+  cancelled: 0
+});
 
   // Additional filter options
   // const [boards, setBoards] = useState([]);
@@ -193,12 +200,19 @@ setPagination(prev => ({
 
 // Update global card statistics
 if (data.stats) {
+  // setStats({
+  //   total: Number(data.stats.total || 0),
+  //   pending: Number(data.stats.pending || 0),
+  //   approved: Number(data.stats.approved || 0),
+  //   rejected: Number(data.stats.rejected || 0)
+  // });
   setStats({
-    total: Number(data.stats.total || 0),
-    pending: Number(data.stats.pending || 0),
-    approved: Number(data.stats.approved || 0),
-    rejected: Number(data.stats.rejected || 0)
-  });
+  total: Number(data.stats.total || 0),
+  pending: Number(data.stats.pending || 0),
+  approved: Number(data.stats.approved || 0),
+  rejected: Number(data.stats.rejected || 0),
+  cancelled: Number(data.stats.cancelled || 0)
+});
 }
     } catch (error) {
       console.error('Failed to load requisitions:', error);
@@ -333,106 +347,88 @@ if (data.stats) {
       </div>
 
       {/* Statistics Cards */}
-      <Row gutter={16} style={{ marginBottom: 24 }}>
-        {/* <Col xs={24} sm={12} md={6}>
-          <Card>
-            <Statistic
-              title="Total Requisitions"
-              value={stats.total}
-              prefix={<FileTextOutlined />}
-            />
-          </Card>
-        </Col> */}
-
-        <Col xs={24} sm={12} md={6}>
-          <Card
-            hoverable
-            onClick={handleClearFilters}
-            style={{ cursor: 'pointer' }}
-          >
-            <Statistic
-              title="Total Requisitions"
-              value={stats.total}
-              prefix={<FileTextOutlined />}
-            />
-          </Card>
-        </Col>
-        {/* <Col xs={24} sm={12} md={6}>
-          <Card>
-            <Statistic
-              title="Pending"
-              value={stats.pending}
-              prefix={<ClockCircleOutlined />}
-              valueStyle={{ color: '#faad14' }}
-            />
-          </Card>
-        </Col> */}
-        <Col xs={24} sm={12} md={6}>
-        <Card
-          hoverable
-          onClick={() => handleFilterChange('status', 'pending_it_head')}
-          style={{ cursor: 'pointer' }}
-        >
-          <Statistic
-            title="Pending"
-            value={stats.pending}
-            prefix={<ClockCircleOutlined />}
-            valueStyle={{ color: '#faad14' }}
-          />
-        </Card>
-      </Col>
-        {/* <Col xs={24} sm={12} md={6}>
-          <Card>
-            <Statistic
-              title="Approved"
-              value={stats.approved}
-              prefix={<CheckCircleOutlined />}
-              valueStyle={{ color: '#52c41a' }}
-            />
-          </Card>
-        </Col> */}
-
-        <Col xs={24} sm={12} md={6}>
-          <Card
-            hoverable
-            onClick={() => handleFilterChange('status', 'approved_by_it_head')}
-            style={{ cursor: 'pointer' }}
-          >
-            <Statistic
-              title="Approved"
-              value={stats.approved}
-              prefix={<CheckCircleOutlined />}
-              valueStyle={{ color: '#52c41a' }}
-            />
-          </Card>
-        </Col>
-        {/* <Col xs={24} sm={12} md={6}>
-          <Card>
-            <Statistic
-              title="Rejected/Cancelled"
-              value={stats.rejected}
-              prefix={<CloseCircleOutlined />}
-              valueStyle={{ color: '#ff4d4f' }}
-            />
-          </Card>
-        </Col> */}
-
-        <Col xs={24} sm={12} md={6}>
-          <Card
-            hoverable
-            onClick={() => handleFilterChange('status', 'rejected_by_it_head')}
-            style={{ cursor: 'pointer' }}
-          >
-            <Statistic
-              title="Rejected/Cancelled"
-              value={stats.rejected}
-              prefix={<CloseCircleOutlined />}
-              valueStyle={{ color: '#ff4d4f' }}
-            />
-          </Card>
-        </Col>
-      </Row>
-
+            <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+            
+              {/* Total Requisitions */}
+              <Col xs={24} sm={12} md={8} lg={4}>
+                <Card
+                  hoverable
+                  onClick={handleClearFilters}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <Statistic
+                    title="Total Requisitions"
+                    value={stats.total}
+                    prefix={<FileTextOutlined />}
+                  />
+                </Card>
+              </Col>
+            
+              {/* Pending */}
+              <Col xs={24} sm={12} md={8} lg={4}>
+                <Card
+                  hoverable
+                  onClick={() => handleFilterChange('status', 'pending_it_head')}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <Statistic
+                    title="Pending"
+                    value={stats.pending}
+                    prefix={<ClockCircleOutlined />}
+                    valueStyle={{ color: '#faad14' }}
+                  />
+                </Card>
+              </Col>
+            
+              {/* Approved */}
+              <Col xs={24} sm={12} md={8} lg={4}>
+                <Card
+                  hoverable
+                  onClick={() => handleFilterChange('status', 'approved_by_it_head')}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <Statistic
+                    title="Approved"
+                    value={stats.approved}
+                    prefix={<CheckCircleOutlined />}
+                    valueStyle={{ color: '#52c41a' }}
+                  />
+                </Card>
+              </Col>
+            
+              {/* Cancelled */}
+              <Col xs={24} sm={12} md={8} lg={4}>
+                <Card
+                  hoverable
+                  onClick={() => handleFilterChange('status', 'cancelled')}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <Statistic
+                    title="Cancelled"
+                    value={stats.cancelled}
+                    prefix={<CloseCircleOutlined />}
+                    valueStyle={{ color: '#8c8c8c' }}
+                  />
+                </Card>
+              </Col>
+            
+              {/* Rejected */}
+              <Col xs={24} sm={12} md={8} lg={4}>
+                <Card
+                  hoverable
+                  onClick={() => handleFilterChange('status', 'rejected_by_it_head')}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <Statistic
+                    title="Rejected"
+                    value={stats.rejected}
+                    prefix={<CloseCircleOutlined />}
+                    valueStyle={{ color: '#ff4d4f' }}
+                  />
+                </Card>
+              </Col>
+            
+            </Row>
       {/* Filters */}
       <Card style={{ marginBottom: 16 }}>
         <Space size="middle" wrap style={{ width: '100%' }}>
