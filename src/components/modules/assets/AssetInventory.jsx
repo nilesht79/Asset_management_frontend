@@ -212,6 +212,7 @@ const AssetInventory = () => {
   const [componentDrawerVisible, setComponentDrawerVisible] = useState(false)
   const [managingComponentsAsset, setManagingComponentsAsset] = useState(null)
   const [engineerSearch, setEngineerSearch] = useState('')
+  const [globalAssetSearch, setGlobalAssetSearch] = useState('')
   const [tempFilters, setTempFilters] = useState({
     search: '',
     status: [],
@@ -241,6 +242,7 @@ const AssetInventory = () => {
   
   const isEngineer = userRole === 'engineer'
   const isCoordinator = userRole === 'coordinator'
+  const canUseGlobalAssetSearch = ['admin', 'superadmin'].includes(userRole)
   const assets = useSelector(selectAssets)
   const statistics = useSelector(selectAssetStatistics)
   const filters = useSelector(selectAssetFilters)
@@ -264,6 +266,7 @@ const AssetInventory = () => {
     // Check for search query parameter from URL
     const searchParams = new URLSearchParams(location.search)
     const searchQuery = searchParams.get('search')
+    setGlobalAssetSearch(searchQuery || '')
 
     // Fetch assets with search param if present
     if (searchQuery) {
@@ -2228,7 +2231,7 @@ const AssetInventory = () => {
       <Card className="border-0 shadow-sm">
 
 
-        <div className="mb-4">
+        {/* <div className="mb-4">
           <Space wrap size={[8, 8]} className="w-full">
             {!isEngineer && !isCoordinator && (
                 <>
@@ -2272,12 +2275,7 @@ const AssetInventory = () => {
             </Dropdown>
                    </>
             )}
-            {/* <Badge count={Object.values(filters || {}).filter(v => v && v !== '').length} offset={[-5, 5]}> */}
-
-            
-              {/* <Button icon={<FilterOutlined />} onClick={showFilterDrawer} size="small">Filters</Button> */}
-
-            
+         
               
               {isEngineer ? (
                 <Search
@@ -2303,8 +2301,8 @@ const AssetInventory = () => {
               )}
 
 
-            {/* </Badge> */}
-            {/* <Button
+           
+           <Button
               icon={<DeleteOutlined />}
               onClick={showDeletedAssetsModal}
               className="text-red-500 border-red-500 hover:bg-red-50"
@@ -2312,8 +2310,8 @@ const AssetInventory = () => {
             >
               <span className="hidden lg:inline">View Deleted Assets</span>
               <span className="inline lg:hidden">Deleted</span>
-            </Button> */}
-            {/* <Button
+            </Button> 
+            <Button
               icon={<QrcodeOutlined />}
               onClick={handleGenerateSelectedLabels}
               disabled={selectedRowKeys.length === 0}
@@ -2333,9 +2331,129 @@ const AssetInventory = () => {
             >
               <span className="hidden lg:inline">Generate All Labels ({assets.pagination?.total || 0})</span>
               <span className="inline lg:hidden">All Labels</span>
-            </Button> */}
+            </Button> 
           </Space>
-        </div>
+        </div> */}
+
+        
+<div className="mb-4">
+  <div
+    style={{
+      display: 'flex',
+      alignItems: 'center',
+      flexWrap: 'wrap',
+      gap: 8,
+      width: '100%'
+    }}
+  >
+    {!isEngineer && !isCoordinator && (
+      <>
+        <Button
+          type="primary"
+          icon={<PlusOutlined />}
+          onClick={showAddModal}
+          className="bg-blue-500"
+          size="small"
+        >
+          <span className="hidden sm:inline">Add Single Asset</span>
+          <span className="inline sm:hidden">Add Asset</span>
+        </Button>
+
+        <Button
+          type="default"
+          icon={<PlusOutlined />}
+          onClick={() => setBulkAddModalVisible(true)}
+          size="small"
+        >
+          <span className="hidden md:inline">Bulk Add Assets</span>
+          <span className="inline md:hidden">Bulk Add</span>
+        </Button>
+
+        <Button
+          type="default"
+          icon={<DownloadOutlined />}
+          onClick={() => setLegacyImportModalVisible(true)}
+          size="small"
+        >
+          <span className="hidden md:inline">Import Legacy Data</span>
+          <span className="inline md:hidden">Import</span>
+        </Button>
+
+        <Dropdown
+          menu={{
+            items: [
+              {
+                key: 'all',
+                label: 'Export All Assets',
+                icon: <DownloadOutlined />,
+                onClick: () => handleExport(true)
+              },
+              {
+                key: 'filtered',
+                label: 'Export Filtered View',
+                icon: <FilterOutlined />,
+                onClick: () => handleExport(false)
+              }
+            ]
+          }}
+        >
+          <Button icon={<ExportOutlined />} size="small">
+            Export
+          </Button>
+        </Dropdown>
+      </>
+    )}
+
+    {isEngineer ? (
+      <Search
+        placeholder="Search Serial Number, Make, Model, Employee Code or Name"
+        allowClear
+        enterButton="Search"
+        size="middle"
+        value={engineerSearch}
+        onChange={(e) => setEngineerSearch(e.target.value)}
+        onSearch={(value) => handleSearch(value.trim())}
+        style={{ width: 420, maxWidth: '100%' }}
+      />
+    ) : (
+      <Button
+        icon={<FilterOutlined />}
+        onClick={showFilterDrawer}
+        size="small"
+      >
+        Filters
+      </Button>
+    )}
+
+    {/* Global Search - Admin and Super Admin Only */}
+    {canUseGlobalAssetSearch && (
+      <Search
+        placeholder="Global Search - Asset, Employee, Serial No, Product, Location, Department..."
+        allowClear
+        enterButton="Search"
+        size="middle"
+        value={globalAssetSearch}
+        onChange={(e) => {
+          const value = e.target.value;
+          setGlobalAssetSearch(value);
+
+          if (!value) {
+            handleSearch('');
+          }
+        }}
+        onSearch={(value) => {
+          handleSearch(value.trim());
+        }}
+        style={{
+          flex: '1 1 300px',
+          minWidth: 250,
+          maxWidth: '100%'
+        }}
+      />
+    )}
+  </div>
+</div>
+
 
         <Table
           columns={columns}
