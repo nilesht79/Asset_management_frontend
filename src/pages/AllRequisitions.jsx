@@ -350,7 +350,7 @@ if (data.stats) {
             <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
             
               {/* Total Requisitions */}
-              <Col xs={24} sm={12} md={8} lg={4}>
+              <Col xs={24} sm={12} md={8} lg={24 / 5}>
                 <Card
                   hoverable
                   onClick={handleClearFilters}
@@ -365,7 +365,7 @@ if (data.stats) {
               </Col>
             
               {/* Pending */}
-              <Col xs={24} sm={12} md={8} lg={4}>
+              <Col xs={24} sm={12} md={8} lg={24 / 5}>
                 <Card
                   hoverable
                   onClick={() => handleFilterChange('status', 'pending_it_head')}
@@ -381,7 +381,7 @@ if (data.stats) {
               </Col>
             
               {/* Approved */}
-              <Col xs={24} sm={12} md={8} lg={4}>
+              <Col xs={24} sm={12} md={8} lg={24 / 5}>
                 <Card
                   hoverable
                   onClick={() => handleFilterChange('status', 'approved_by_it_head')}
@@ -397,7 +397,7 @@ if (data.stats) {
               </Col>
             
               {/* Cancelled */}
-              <Col xs={24} sm={12} md={8} lg={4}>
+              <Col xs={24} sm={12} md={8} lg={24 / 5}>
                 <Card
                   hoverable
                   onClick={() => handleFilterChange('status', 'cancelled')}
@@ -413,7 +413,7 @@ if (data.stats) {
               </Col>
             
               {/* Rejected */}
-              <Col xs={24} sm={12} md={8} lg={4}>
+              <Col xs={24} sm={12} md={8} lg={24 / 5}>
                 <Card
                   hoverable
                   onClick={() => handleFilterChange('status', 'rejected_by_it_head')}
