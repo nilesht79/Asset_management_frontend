@@ -494,7 +494,7 @@ const handleFrequencyPreset = (preset) => {
       title: 'User Name',
       dataIndex: 'user_name',
       key: 'user_name',
-      width: 180,
+      width: 250,
       ellipsis: true,
       render: (value) => value?.trim() || '-'
     },
