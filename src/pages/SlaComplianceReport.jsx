@@ -491,6 +491,14 @@ const handleFrequencyPreset = (preset) => {
       width: 120
     },
     {
+      title: 'User Name',
+      dataIndex: 'user_name',
+      key: 'user_name',
+      width: 180,
+      ellipsis: true,
+      render: (value) => value?.trim() || '-'
+    },
+    {
       title: 'SLA Rule',
       dataIndex: 'rule_name',
       key: 'rule_name',
