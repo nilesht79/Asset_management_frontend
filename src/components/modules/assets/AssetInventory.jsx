@@ -339,6 +339,7 @@ const AssetInventory = () => {
     const colors = {
       'free': '#52c41a',
       'assigned': '#1890ff',
+      'standby': '#722ed1',
       'under_repair': '#faad14',
       'under repair': '#faad14',
       'discarded': '#f5222d',
@@ -1479,6 +1480,7 @@ const AssetInventory = () => {
         const statusConfig = {
           available: { color: 'green', label: 'Available' },
           assigned: { color: 'blue', label: 'Assigned' },
+          standby: { color: 'purple', label: 'Standby' },
           in_transit: { color: 'orange', label: 'In Transit' },
           in_use: { color: 'cyan', label: 'In Use' },
           under_repair: { color: 'red', label: 'Under Repair' },
@@ -2608,6 +2610,7 @@ const AssetInventory = () => {
               >
                 <Select placeholder="Select status">
                   <Option value="available">Available</Option>
+                  <Option value="standby">Standby</Option>
                   <Option value="assigned">Assigned</Option>
                   <Option value="in_use">In Use</Option>
                   <Option value="under_repair">Under Repair</Option>
@@ -3985,6 +3988,7 @@ const AssetInventory = () => {
               options={[
                 { value: 'available', label: 'Available' },
                 { value: 'assigned', label: 'Assigned' },
+                { value: 'standby', label: 'Standby' },
                 { value: 'in_use', label: 'In Use' },
                 { value: 'under_repair', label: 'Under Repair' },
                 { value: 'not_working', label: 'Not Working' },
