@@ -182,7 +182,7 @@ const NewRequisition = () => {
             rules={[{ required: true, message: 'Please select asset category' }]}
           >
             <Select
-              placeholder="Select category (Hardware)"
+              placeholder="Select category"
               allowClear
               onChange={(value) => {
                 setFormData({ ...formData, asset_category_id: value });
@@ -213,7 +213,7 @@ const NewRequisition = () => {
             rules={[{ required: true, message: 'Please select subcategory' }]}
           >
             <Select
-              placeholder={formData.asset_category_id ? "Select subcategory" : "Select category first"}
+              placeholder={formData.asset_category_id ? "Select subcategory" : "Select subcategory"}
               allowClear
               disabled={!formData.asset_category_id}
               loading={subcategoriesLoading}
