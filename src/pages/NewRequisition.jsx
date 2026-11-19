@@ -44,6 +44,38 @@ const NewRequisition = () => {
   const subcategories = master.subcategoriesByParent?.data || [];
   const subcategoriesLoading = master.subcategoriesByParent?.loading || false;
 
+  // Only allow subcategories approved for Asset Requisitions.
+// Subcategories marked 0 in the approved list are excluded.
+
+      const allowedRequisitionSubcategories = [
+        'PROJECTOR',
+        'MULTIFUNCTION PRINTER',
+        'DESKTOP',
+        'ALL IN ONE',
+        'ROUTER',
+        'LAPTOP',
+        'HARD DISK',
+        'OTHERS',
+        'MONITOR',
+        'DDR3 RAM',
+        'WEBCAM',
+        'PLOTTER',
+        'PRINTER',
+        'BATTERY',
+        'UPS',
+        'SCANNER',
+        'MICROPHONE SPEAKER',
+        'WORKSTATION',
+        'TABLET',
+        'DDR4 RAM'
+      ];
+      
+      const allowedSubcategories = subcategories.filter((subcat) =>
+        allowedRequisitionSubcategories.includes(
+          (subcat.name || '').trim().toLowerCase()
+        )
+      );
+
   const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({});
@@ -57,20 +89,31 @@ const NewRequisition = () => {
     };
   }, [dispatch]);
 
+  // const steps = [
+  //   {
+  //     title: 'Asset Details',
+  //     description: 'What do you need?'
+  //   },
+  //   {
+  //     title: 'Justification',
+  //     description: 'Why do you need it?'
+  //   },
+  //   {
+  //     title: 'Review & Submit',
+  //     description: 'Confirm details'
+  //   }
+  // ];
+
   const steps = [
-    {
-      title: 'Asset Details',
-      description: 'What do you need?'
-    },
-    {
-      title: 'Justification',
-      description: 'Why do you need it?'
-    },
-    {
-      title: 'Review & Submit',
-      description: 'Confirm details'
-    }
-  ];
+  {
+    title: 'Asset Details',
+    description: 'What do you need?'
+  },
+  {
+    title: 'Review & Submit',
+    description: 'Confirm details'
+  }
+];
 
   const handleNext = async () => {
     try {
@@ -169,7 +212,7 @@ const NewRequisition = () => {
               showSearch
               optionFilterProp="children"
             >
-              {subcategories.map((subcat) => (
+              {allowedSubcategories.map((subcat) => (
                 <Option key={subcat.id} value={subcat.id}>
                   {subcat.name}
                 </Option>
@@ -229,7 +272,7 @@ const NewRequisition = () => {
         </Col>
       </Row>
 
-      <Form.Item
+      {/* <Form.Item
         name="specifications"
         label="Additional Specifications (Optional)"
         help="Any specific requirements or preferences"
@@ -238,60 +281,192 @@ const NewRequisition = () => {
           rows={4}
           placeholder="E.g., RAM requirements, storage capacity, screen size, etc."
         />
-      </Form.Item>
+      </Form.Item> */}
+
+      <Form.Item
+            name="specifications"
+            label="Additional Specifications"
+            rules={[
+              {
+                required: true,
+                whitespace: true,
+                message: 'Please enter additional specifications'
+              },
+              {
+                max: 1000,
+                message: 'Specifications must not exceed 1000 characters'
+              }
+            ]}
+            help="Please provide the required configuration or specifications"
+          >
+            <TextArea
+              rows={4}
+              placeholder="Enter required specifications, configuration, model preferences, etc."
+              showCount
+              maxLength={1000}
+            />
+          </Form.Item>
+          
+          <Alert
+            message="Important Note"
+            description="Printer Spares requests must not be raised under Asset Requisitions. For Printer Spares, toner cartridges and other consumables, please navigate to the Consumables section."
+            type="error"
+            showIcon
+            style={{ marginBottom: 16 }}
+          />
     </div>
   );
 
   // Step 2: Justification
-  const renderStep2 = () => (
-    <div className="form-step">
-      <Title level={4}>Justification & Purpose</Title>
-      <Text type="secondary">Explain why you need this asset</Text>
-      <Divider />
+  // const renderStep2 = () => (
+  //   <div className="form-step">
+  //     <Title level={4}>Justification & Purpose</Title>
+  //     <Text type="secondary">Explain why you need this asset</Text>
+  //     <Divider />
 
-      <Form.Item
-        name="purpose"
-        label="Purpose (Optional)"
-        rules={[
-          { max: 500, message: 'Purpose must not exceed 500 characters' }
-        ]}
-      >
-        <TextArea
-          rows={4}
-          placeholder="Briefly describe what you will use this asset for..."
-          showCount
-          maxLength={500}
-        />
-      </Form.Item>
+  //     <Form.Item
+  //       name="purpose"
+  //       label="Purpose (Optional)"
+  //       rules={[
+  //         { max: 500, message: 'Purpose must not exceed 500 characters' }
+  //       ]}
+  //     >
+  //       <TextArea
+  //         rows={4}
+  //         placeholder="Briefly describe what you will use this asset for..."
+  //         showCount
+  //         maxLength={500}
+  //       />
+  //     </Form.Item>
 
-      <Form.Item
-        name="justification"
-        label="Business Justification (Optional)"
-        rules={[
-          { max: 1000, message: 'Justification must not exceed 1000 characters' }
-        ]}
-        help="Explain how this asset will benefit your work and the organization"
-      >
-        <TextArea
-          rows={6}
-          placeholder="Provide detailed justification including:\n- How this asset will improve your productivity\n- Business impact and value\n- Why existing resources are insufficient\n- Any project or deadline dependencies"
-          showCount
-          maxLength={1000}
-        />
-      </Form.Item>
+  //     <Form.Item
+  //       name="justification"
+  //       label="Business Justification (Optional)"
+  //       rules={[
+  //         { max: 1000, message: 'Justification must not exceed 1000 characters' }
+  //       ]}
+  //       help="Explain how this asset will benefit your work and the organization"
+  //     >
+  //       <TextArea
+  //         rows={6}
+  //         placeholder="Provide detailed justification including:\n- How this asset will improve your productivity\n- Business impact and value\n- Why existing resources are insufficient\n- Any project or deadline dependencies"
+  //         showCount
+  //         maxLength={1000}
+  //       />
+  //     </Form.Item>
 
-      <Alert
-        message="Approval Process"
-        description="Your requisition will be reviewed by your Department Head, followed by IT Head approval. Providing clear justification helps expedite the approval process."
-        type="info"
-        showIcon
-        style={{ marginTop: 16 }}
-      />
-    </div>
-  );
+  //     <Alert
+  //       message="Approval Process"
+  //       description="Your requisition will be reviewed by your Department Head, followed by IT Head approval. Providing clear justification helps expedite the approval process."
+  //       type="info"
+  //       showIcon
+  //       style={{ marginTop: 16 }}
+  //     />
+  //   </div>
+  // );
 
   // Step 3: Review
-  const renderStep3 = () => {
+  // const renderStep3 = () => {
+  //   const allData = { ...formData, ...form.getFieldsValue() };
+
+  //   const selectedCategory = categories.find(c => c.id === allData.asset_category_id);
+  //   const selectedSubcategory = subcategories.find(sc => sc.id === allData.product_type_id);
+
+  //   const urgencyColors = {
+  //     low: 'green',
+  //     medium: 'blue',
+  //     high: 'orange',
+  //     critical: 'red'
+  //   };
+
+  //   return (
+  //     <div className="form-step">
+  //       <Title level={4}>Review Your Requisition</Title>
+  //       <Text type="secondary">Please review all details before submitting</Text>
+  //       <Divider />
+
+  //       <Card title="Asset Details" className="review-section">
+  //         <Row gutter={[16, 16]}>
+  //           <Col span={12}>
+  //             <Text type="secondary">Category:</Text>
+  //             <div><Text strong>{selectedCategory?.name || 'N/A'}</Text></div>
+  //           </Col>
+  //           <Col span={12}>
+  //             <Text type="secondary">Subcategory:</Text>
+  //             <div><Text strong>{selectedSubcategory?.name || 'N/A'}</Text></div>
+  //           </Col>
+  //           <Col span={12}>
+  //             <Text type="secondary">Quantity:</Text>
+  //             <div><Text strong>{allData.quantity || 1}</Text></div>
+  //           </Col>
+  //           <Col span={12}>
+  //             <Text type="secondary">Urgency:</Text>
+  //             <div>
+  //               <span
+  //                 className="urgency-badge"
+  //                 style={{
+  //                   backgroundColor: urgencyColors[allData.urgency],
+  //                   color: 'white',
+  //                   padding: '2px 8px',
+  //                   borderRadius: '4px',
+  //                   textTransform: 'capitalize'
+  //                 }}
+  //               >
+  //                 {allData.urgency}
+  //               </span>
+  //             </div>
+  //           </Col>
+  //           <Col span={12}>
+  //             <Text type="secondary">Required By:</Text>
+  //             <div>
+  //               <Text strong>
+  //                 {allData.required_by_date
+  //                   ? allData.required_by_date.format('YYYY-MM-DD')
+  //                   : 'Not specified'}
+  //               </Text>
+  //             </div>
+  //           </Col>
+  //           {allData.specifications && (
+  //             <Col span={24}>
+  //               <Text type="secondary">Specifications:</Text>
+  //               <div><Text>{allData.specifications}</Text></div>
+  //             </Col>
+  //           )}
+  //         </Row>
+  //       </Card>
+
+  //       {(allData.purpose || allData.justification) && (
+  //         <Card title="Purpose & Justification" className="review-section" style={{ marginTop: 16 }}>
+  //           <Row gutter={[16, 16]}>
+  //             {allData.purpose && (
+  //               <Col span={24}>
+  //                 <Text type="secondary">Purpose:</Text>
+  //                 <div><Text>{allData.purpose}</Text></div>
+  //               </Col>
+  //             )}
+  //             {allData.justification && (
+  //               <Col span={24}>
+  //                 <Text type="secondary">Justification:</Text>
+  //                 <div><Text>{allData.justification}</Text></div>
+  //               </Col>
+  //             )}
+  //           </Row>
+  //         </Card>
+  //       )}
+
+  //       <Alert
+  //         message="Ready to Submit"
+  //         description="Once submitted, your requisition will be sent to your Department Head for approval. You will be notified of any updates."
+  //         type="success"
+  //         showIcon
+  //         icon={<CheckCircleOutlined />}
+  //         style={{ marginTop: 16 }}
+  //       />
+  //     </div>
+  //   );
+  // };
+
+   const renderStep3 = () => {
     const allData = { ...formData, ...form.getFieldsValue() };
 
     const selectedCategory = categories.find(c => c.id === allData.asset_category_id);
@@ -360,25 +535,6 @@ const NewRequisition = () => {
           </Row>
         </Card>
 
-        {(allData.purpose || allData.justification) && (
-          <Card title="Purpose & Justification" className="review-section" style={{ marginTop: 16 }}>
-            <Row gutter={[16, 16]}>
-              {allData.purpose && (
-                <Col span={24}>
-                  <Text type="secondary">Purpose:</Text>
-                  <div><Text>{allData.purpose}</Text></div>
-                </Col>
-              )}
-              {allData.justification && (
-                <Col span={24}>
-                  <Text type="secondary">Justification:</Text>
-                  <div><Text>{allData.justification}</Text></div>
-                </Col>
-              )}
-            </Row>
-          </Card>
-        )}
-
         <Alert
           message="Ready to Submit"
           description="Once submitted, your requisition will be sent to your Department Head for approval. You will be notified of any updates."
@@ -391,18 +547,31 @@ const NewRequisition = () => {
     );
   };
 
+  // const renderStepContent = () => {
+  //   switch (currentStep) {
+  //     case 0:
+  //       return renderStep1();
+  //     case 1:
+  //       return renderStep2();
+  //     case 2:
+  //       return renderStep3();
+  //     default:
+  //       return null;
+  //   }
+  // };
+
   const renderStepContent = () => {
-    switch (currentStep) {
-      case 0:
-        return renderStep1();
-      case 1:
-        return renderStep2();
-      case 2:
-        return renderStep3();
-      default:
-        return null;
-    }
-  };
+  switch (currentStep) {
+    case 0:
+      return renderStep1();
+
+    case 1:
+      return renderStep3();
+
+    default:
+      return null;
+  }
+};
 
   return (
     <div className="new-requisition-page">
