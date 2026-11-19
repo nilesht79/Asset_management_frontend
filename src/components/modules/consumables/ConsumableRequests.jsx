@@ -171,6 +171,24 @@ const ConsumableRequests = () => {
     }
   }
 
+  const handleStatCardClick = (status) => {
+  // Switch to All Requests
+      setActiveTab('all');
+    
+      // Reset pagination
+      setPagination(prev => ({
+        ...prev,
+        current: 1
+      }));
+    
+      // Apply selected filter
+      setFilters({
+        search: '',
+        status: status,
+        priority: ''
+      });
+    };
+
   const loadUserAssets = async () => {
     try {
       const response = await assetService.getMyAssets()
@@ -669,7 +687,7 @@ const ConsumableRequests = () => {
     <div style={{ padding: isMobile ? 12 : 24 }}>
       {isCoordinator && (
         <Row gutter={[12, 12]} style={{ marginBottom: isMobile ? 16 : 24 }}>
-          <Col xs={12} sm={12} md={6}>
+          {/* <Col xs={12} sm={12} md={6}>
             <Card size="small">
               <Statistic
                 title="Pending"
@@ -678,8 +696,23 @@ const ConsumableRequests = () => {
                 valueStyle={{ fontSize: isMobile ? 20 : 24 }}
               />
             </Card>
-          </Col>
+          </Col> */}
           <Col xs={12} sm={12} md={6}>
+            <Card
+              size="small"
+              hoverable
+              onClick={() => handleStatCardClick('pending')}
+              style={{ cursor: 'pointer' }}
+            >
+              <Statistic
+                title="Pending"
+                value={stats.pending || 0}
+                prefix={<ClockCircleOutlined style={{ color: '#faad14' }} />}
+                valueStyle={{ fontSize: isMobile ? 20 : 24 }}
+              />
+            </Card>
+          </Col>
+          {/* <Col xs={12} sm={12} md={6}>
             <Card size="small">
               <Statistic
                 title={isMobile ? "Approved" : "Approved (Awaiting Delivery)"}
@@ -688,8 +721,23 @@ const ConsumableRequests = () => {
                 valueStyle={{ fontSize: isMobile ? 20 : 24 }}
               />
             </Card>
-          </Col>
+          </Col> */}
           <Col xs={12} sm={12} md={6}>
+          <Card
+            size="small"
+            hoverable
+            onClick={() => handleStatCardClick('approved')}
+            style={{ cursor: 'pointer' }}
+          >
+            <Statistic
+              title={isMobile ? "Approved" : "Approved (Awaiting Delivery)"}
+              value={stats.approved || 0}
+              prefix={<CheckCircleOutlined style={{ color: '#1890ff' }} />}
+              valueStyle={{ fontSize: isMobile ? 20 : 24 }}
+            />
+          </Card>
+        </Col>
+          {/* <Col xs={12} sm={12} md={6}>
             <Card size="small">
               <Statistic
                 title="Delivered"
@@ -698,13 +746,46 @@ const ConsumableRequests = () => {
                 valueStyle={{ fontSize: isMobile ? 20 : 24 }}
               />
             </Card>
-          </Col>
+          </Col> */}
           <Col xs={12} sm={12} md={6}>
+            <Card
+              size="small"
+              hoverable
+              onClick={() => handleStatCardClick('delivered')}
+              style={{ cursor: 'pointer' }}
+            >
+              <Statistic
+                title="Delivered"
+                value={stats.delivered || 0}
+                prefix={<GiftOutlined style={{ color: '#52c41a' }} />}
+                valueStyle={{ fontSize: isMobile ? 20 : 24 }}
+              />
+            </Card>
+          </Col>
+          {/* <Col xs={12} sm={12} md={6}>
             <Card size="small">
               <Statistic
                 title={isMobile ? "Urgent" : "Urgent Pending"}
                 value={stats.urgent_pending || 0}
                 valueStyle={{ color: stats.urgent_pending > 0 ? '#ff4d4f' : undefined, fontSize: isMobile ? 20 : 24 }}
+                prefix={<WarningOutlined style={{ color: '#ff4d4f' }} />}
+              />
+            </Card>
+          </Col> */}
+          <Col xs={12} sm={12} md={6}>
+            <Card
+              size="small"
+              hoverable
+              onClick={() => handleStatCardClick('urgent_pending')}
+              style={{ cursor: 'pointer' }}
+            >
+              <Statistic
+                title={isMobile ? "Urgent" : "Urgent Pending"}
+                value={stats.urgent_pending || 0}
+                valueStyle={{
+                  color: stats.urgent_pending > 0 ? '#ff4d4f' : undefined,
+                  fontSize: isMobile ? 20 : 24
+                }}
                 prefix={<WarningOutlined style={{ color: '#ff4d4f' }} />}
               />
             </Card>
@@ -772,6 +853,9 @@ const ConsumableRequests = () => {
               {Object.entries(statusConfig).map(([key, config]) => (
                 <Option key={key} value={key}>{config.text}</Option>
               ))}
+              <Option value="urgent_pending">
+                Urgent Pending
+              </Option>
             </Select>
           </Col>
           <Col xs={12} sm={6} md={4} lg={3}>
