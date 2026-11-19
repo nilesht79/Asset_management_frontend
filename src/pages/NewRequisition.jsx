@@ -182,7 +182,6 @@ const NewRequisition = () => {
             rules={[{ required: true, message: 'Please select asset category' }]}
           >
             <Select
-              {/* placeholder="Select category (Hardware/Software)" */}
               placeholder="Select category (Hardware)"
               allowClear
               onChange={(value) => {
