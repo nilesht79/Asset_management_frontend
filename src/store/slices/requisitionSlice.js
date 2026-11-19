@@ -38,6 +38,29 @@ export const fetchRequisitionById = createAsyncThunk(
   }
 );
 
+
+  // Add Remark to Requisition
+  export const addRequisitionRemark = createAsyncThunk(
+    'requisitions/addRemark',
+    async ({ id, comments }, { rejectWithValue }) => {
+      try {
+        const response = await api.post(
+          `/requisitions/${id}/remark`,
+          { comments }
+        );
+  
+        return response.data;
+      } catch (error) {
+        return rejectWithValue(
+          error.response?.data || {
+            message: 'Failed to submit remark'
+          }
+        );
+      }
+    }
+  );
+
+
 export const createRequisition = createAsyncThunk(
   'requisitions/create',
   async (requisitionData, { rejectWithValue }) => {
