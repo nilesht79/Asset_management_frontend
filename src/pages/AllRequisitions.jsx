@@ -33,6 +33,20 @@ const AllRequisitions = () => {
   const navigate = useNavigate();
   const user = useSelector((state) => state.auth.user);
 
+  // Role-based pending requisition filters
+const isITHead = user?.role === 'it_head';
+
+const isAdminOrSuperAdmin = [
+  'admin',
+  'superadmin'
+].includes(user?.role);
+
+// IT Head sees only IT Head pending.
+// Admin and Super Admin see all pending stages.
+const pendingCardStatus = isAdminOrSuperAdmin
+  ? 'pending'
+  : 'pending_it_head';
+
   // Check if user is department head or coordinator - they see department requisitions only
   const isDeptHeadOrCoordinator = ['department_head', 'department_coordinator'].includes(user?.role);
 
@@ -365,10 +379,25 @@ if (data.stats) {
               </Col>
             
               {/* Pending */}
-              <Col xs={24} sm={12} md={8} lg={24 / 5}>
+              {/* <Col xs={24} sm={12} md={8} lg={24 / 5}>
                 <Card
                   hoverable
                   onClick={() => handleFilterChange('status', 'pending_it_head')}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <Statistic
+                    title="Pending"
+                    value={stats.pending}
+                    prefix={<ClockCircleOutlined />}
+                    valueStyle={{ color: '#faad14' }}
+                  />
+                </Card>
+              </Col> */}
+
+              <Col xs={24} sm={12} md={6}>
+                <Card
+                  hoverable
+                  onClick={() => handleFilterChange('status', pendingCardStatus)}
                   style={{ cursor: 'pointer' }}
                 >
                   <Statistic
@@ -441,13 +470,14 @@ if (data.stats) {
             allowClear
           />
 
-          <Select
+          {/* <Select
             placeholder="Filter by Status"
             value={filters.status || undefined}
             onChange={(value) => handleFilterChange('status', value)}
             style={{ width: 200 }}
             allowClear
           >
+            
             <Option value="pending_dept_head">Pending Dept Head</Option>
             <Option value="approved_by_dept_head">Approved by Dept Head</Option>
             <Option value="rejected_by_dept_head">Rejected by Dept Head</Option>
@@ -457,6 +487,34 @@ if (data.stats) {
             <Option value="pending_assignment">Pending Assignment</Option>
             <Option value="assigned">Assigned</Option>
             <Option value="pending_verification">Pending Verification</Option>
+            <Option value="delivered">Delivered</Option>
+            <Option value="completed">Completed</Option>
+            <Option value="cancelled">Cancelled</Option>
+          </Select> */}
+
+          <Select
+            placeholder="Filter by Status"
+            value={filters.status || undefined}
+            onChange={(value) => handleFilterChange('status', value)}
+            style={{ width: 200 }}
+            allowClear
+          >
+            {isAdminOrSuperAdmin && (
+              <Option value="pending">All Pending Requisitions</Option>
+            )}
+          
+            <Option value="pending_dept_head">Pending Dept Head</Option>
+            <Option value="approved_by_dept_head">Approved by Dept Head</Option>
+            <Option value="rejected_by_dept_head">Rejected by Dept Head</Option>
+          
+            <Option value="pending_it_head">Pending IT Head</Option>
+            <Option value="approved_by_it_head">Approved by IT Head</Option>
+            <Option value="rejected_by_it_head">Rejected by IT Head</Option>
+          
+            <Option value="pending_assignment">Pending Assignment</Option>
+            <Option value="assigned">Assigned</Option>
+            <Option value="pending_verification">Pending Verification</Option>
+          
             <Option value="delivered">Delivered</Option>
             <Option value="completed">Completed</Option>
             <Option value="cancelled">Cancelled</Option>
