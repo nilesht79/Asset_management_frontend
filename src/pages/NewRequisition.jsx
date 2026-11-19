@@ -39,14 +39,25 @@ const NewRequisition = () => {
   const navigate = useNavigate();
   const [form] = Form.useForm();
 
+  // const master = useSelector((state) => state.master || {});
+  // const categories = master.categories?.data || [];
+  // const subcategories = master.subcategoriesByParent?.data || [];
+  // const subcategoriesLoading = master.subcategoriesByParent?.loading || false;
+
   const master = useSelector((state) => state.master || {});
+
   const categories = master.categories?.data || [];
+  
+  const requisitionCategories = categories.filter(
+    (cat) => (cat.name || '').trim().toLowerCase() === 'hardware'
+  );
+  
   const subcategories = master.subcategoriesByParent?.data || [];
   const subcategoriesLoading = master.subcategoriesByParent?.loading || false;
 
-  // Only allow subcategories approved for Asset Requisitions.
-// Subcategories marked 0 in the approved list are excluded.
 
+
+      // Only allow approved Hardware subcategories for Asset Requisitions
       const allowedRequisitionSubcategories = [
         'PROJECTOR',
         'MULTIFUNCTION PRINTER',
@@ -55,7 +66,7 @@ const NewRequisition = () => {
         'ROUTER',
         'LAPTOP',
         'HARD DISK',
-        'OTHERS',
+        'OTHER',
         'MONITOR',
         'DDR3 RAM',
         'WEBCAM',
@@ -72,7 +83,7 @@ const NewRequisition = () => {
       
       const allowedSubcategories = subcategories.filter((subcat) =>
         allowedRequisitionSubcategories.includes(
-          (subcat.name || '').trim().toLowerCase()
+          (subcat.name || '').trim().toUpperCase()
         )
       );
 
@@ -186,9 +197,9 @@ const NewRequisition = () => {
               showSearch
               optionFilterProp="children"
             >
-              {categories.map((cat) => (
+              {requisitionCategories.map((cat) => (
                 <Option key={cat.id} value={cat.id}>
-                  {cat.name}
+                  Hardware
                 </Option>
               ))}
             </Select>
