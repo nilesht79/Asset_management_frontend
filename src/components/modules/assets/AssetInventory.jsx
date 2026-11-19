@@ -825,10 +825,32 @@ const AssetInventory = () => {
     })
   }
 
-  const handleSearch = (value) => {
-    dispatch(setAssetFilters({ ...filters, search: value }))
-    dispatch(fetchAssets({ ...filters, search: value, page: 1 }))
-  }
+  // const handleSearch = (value) => {
+  //   dispatch(setAssetFilters({ ...filters, search: value }))
+  //   dispatch(fetchAssets({ ...filters, search: value, page: 1 }))
+  // }
+
+  
+const handleSearch = (value) => {
+  const searchValue = String(value || '').trim();
+
+  const newFilters = {
+    ...filters,
+    search: searchValue
+  };
+
+  dispatch(setAssetFilters(newFilters));
+
+  dispatch(setAssetPagination({
+    page: 1
+  }));
+
+  dispatch(fetchAssets({
+    ...newFilters,
+    page: 1
+  }));
+};
+
 
   const handleFilterChange = (key, value) => {
     const newFilters = { ...filters, [key]: value }
@@ -836,17 +858,34 @@ const AssetInventory = () => {
     dispatch(fetchAssets({ ...newFilters, page: 1 }))
   }
 
-  const handleTableChange = (pagination) => {
-    const { current: page, pageSize } = pagination
-    dispatch(setAssetPagination({ page, pageSize }))
+  // const handleTableChange = (pagination) => {
+  //   const { current: page, pageSize } = pagination
+  //   dispatch(setAssetPagination({ page, pageSize }))
 
-    // Refetch with new pagination
-    dispatch(fetchAssets({
-      page,
-      limit: pageSize,
-      ...filters
-    }))
-  }
+  //   // Refetch with new pagination
+  //   dispatch(fetchAssets({
+  //     page,
+  //     limit: pageSize,
+  //     ...filters
+  //   }))
+  // }
+
+  
+const handleTableChange = (pagination) => {
+  const { current: page, pageSize } = pagination;
+
+  dispatch(setAssetPagination({
+    page,
+    limit: pageSize
+  }));
+
+  dispatch(fetchAssets({
+    ...filters,
+    page,
+    limit: pageSize
+  }));
+};
+
 
   const handleExport = async (exportAll = false) => {
     try {
