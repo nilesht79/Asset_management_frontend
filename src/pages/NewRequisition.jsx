@@ -318,13 +318,34 @@ const NewRequisition = () => {
             />
           </Form.Item>
           
-          <Alert
+          {/* <Alert
             message="Important Note"
             description="Printer Spares requests must not be raised under Asset Requisitions. For Printer Spares, toner cartridges and other consumables, please navigate to the Consumables section."
             type="error"
             showIcon
             style={{ marginBottom: 16 }}
-          />
+          /> */}
+      <Alert
+  message={
+    <span style={{ fontSize: '17px', fontWeight: 700 }}>
+      Important Note
+    </span>
+  }
+  description={
+    <span style={{ fontSize: '15px', lineHeight: '1.8', fontWeight: 500 }}>
+      Printer Spares requests must not be raised under Asset Requisitions.
+      For Printer Spares, toner cartridges and other consumables, please
+      navigate to the Consumables section.
+    </span>
+  }
+  type="error"
+  showIcon
+  style={{
+    padding: '16px 20px',
+    borderRadius: '8px',
+    marginTop: '12px'
+  }}
+/>
     </div>
   );
 
