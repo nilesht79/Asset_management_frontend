@@ -4,18 +4,32 @@ import assetService from '../../services/asset'
 // Initial state
 const initialState = {
   // Assets
+  // assets: {
+  //   data: [],
+  //   total: 0,
+  //   loading: false,
+  //   error: null,
+  //   pagination: {
+  //     page: 1,
+  //     limit: 10,
+  //     total: 0,
+  //     totalPages: 1
+  //   }
+  // },
+
   assets: {
-    data: [],
+  data: [],
+  total: 0,
+  loading: false,
+  error: null,
+  currentRequestId: null,
+  pagination: {
+    page: 1,
+    limit: 10,
     total: 0,
-    loading: false,
-    error: null,
-    pagination: {
-      page: 1,
-      limit: 10,
-      total: 0,
-      totalPages: 1
-    }
-  },
+    totalPages: 1
+  }
+},
 
   // Asset statistics for dashboard
   statistics: {
@@ -439,21 +453,67 @@ const assetSlice = createSlice({
   extraReducers: (builder) => {
     builder
       // Fetch Assets
-      .addCase(fetchAssets.pending, (state) => {
-        state.assets.loading = true
-        state.assets.error = null
-      })
-      .addCase(fetchAssets.fulfilled, (state, action) => {
-        state.assets.loading = false
-        const assetsArray = action.payload.data?.assets || action.payload.assets || []
-        state.assets.data = Array.isArray(assetsArray) ? assetsArray : []
-        state.assets.total = action.payload.data?.pagination?.total || action.payload.pagination?.total || 0
-        state.assets.pagination = action.payload.data?.pagination || action.payload.pagination || {}
-      })
-      .addCase(fetchAssets.rejected, (state, action) => {
-        state.assets.loading = false
-        state.assets.error = action.payload?.message || 'Failed to fetch assets'
-      })
+      // .addCase(fetchAssets.pending, (state) => {
+      //   state.assets.loading = true
+      //   state.assets.error = null
+      // })
+      // .addCase(fetchAssets.fulfilled, (state, action) => {
+      //   state.assets.loading = false
+      //   const assetsArray = action.payload.data?.assets || action.payload.assets || []
+      //   state.assets.data = Array.isArray(assetsArray) ? assetsArray : []
+      //   state.assets.total = action.payload.data?.pagination?.total || action.payload.pagination?.total || 0
+      //   state.assets.pagination = action.payload.data?.pagination || action.payload.pagination || {}
+      // })
+      // .addCase(fetchAssets.rejected, (state, action) => {
+      //   state.assets.loading = false
+      //   state.assets.error = action.payload?.message || 'Failed to fetch assets'
+      // })
+
+      
+          .addCase(fetchAssets.pending, (state, action) => {
+            state.assets.loading = true;
+            state.assets.error = null;
+            state.assets.currentRequestId = action.meta.requestId;
+          })
+          
+          .addCase(fetchAssets.fulfilled, (state, action) => {
+            if (state.assets.currentRequestId !== action.meta.requestId) {
+              return;
+            }
+          
+            state.assets.loading = false;
+            state.assets.currentRequestId = null;
+          
+            const assetsArray =
+              action.payload.data?.assets ||
+              action.payload.assets ||
+              [];
+          
+            state.assets.data = Array.isArray(assetsArray)
+              ? assetsArray
+              : [];
+          
+            const pagination =
+              action.payload.data?.pagination ||
+              action.payload.pagination;
+          
+            if (pagination) {
+              state.assets.pagination = pagination;
+              state.assets.total = pagination.total ?? 0;
+            }
+          })
+          
+          .addCase(fetchAssets.rejected, (state, action) => {
+            if (state.assets.currentRequestId !== action.meta.requestId) {
+              return;
+            }
+          
+            state.assets.loading = false;
+            state.assets.currentRequestId = null;
+            state.assets.error =
+              action.payload?.message || 'Failed to fetch assets';
+          })
+
 
       // Fetch Asset Statistics
       .addCase(fetchAssetStatistics.pending, (state) => {
