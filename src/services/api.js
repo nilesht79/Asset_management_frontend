@@ -15,14 +15,47 @@ const MAX_REFRESH_ATTEMPTS = 3
 let refreshQueue = []
 
 // Create axios instance
+// const api = axios.create({
+//   baseURL: import.meta.env.VITE_API_BASE_URL || '/api/v1',
+//   timeout: 30000, // 30 seconds
+//   withCredentials: true, // Enable sending cookies with requests
+//   headers: {
+//     'Content-Type': 'application/json',
+//   },
+// })
+
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || '/api/v1',
-  timeout: 30000, // 30 seconds
-  withCredentials: true, // Enable sending cookies with requests
+  timeout: 30000,
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   },
-})
+
+  paramsSerializer: {
+    serialize: (params) => {
+      const query = new URLSearchParams();
+
+      Object.entries(params).forEach(([key, value]) => {
+        if (value === null || value === undefined || value === '') {
+          return;
+        }
+
+        if (Array.isArray(value)) {
+          value.forEach((item) => {
+            if (item !== null && item !== undefined && item !== '') {
+              query.append(key, String(item));
+            }
+          });
+        } else {
+          query.append(key, String(value));
+        }
+      });
+
+      return query.toString();
+    }
+  }
+});
 
 // Request interceptor for debugging (cookies are sent automatically)
 api.interceptors.request.use(
