@@ -29,11 +29,18 @@ import {
   CloseCircleOutlined,
   FileTextOutlined
 } from '@ant-design/icons';
+// import {
+//   fetchRequisitionById,
+//   cancelRequisition,
+//   confirmDelivery,
+//   clearCurrentRequisition
+// } from '../store/slices/requisitionSlice';
 import {
   fetchRequisitionById,
   cancelRequisition,
   confirmDelivery,
-  clearCurrentRequisition
+  clearCurrentRequisition,
+  addRequisitionRemark
 } from '../store/slices/requisitionSlice';
 import RequisitionTimeline from '../components/requisitions/RequisitionTimeline';
 import { formatDateOnly, formatDateTime } from '../utils/dateUtils';
@@ -52,6 +59,10 @@ const RequisitionDetails = () => {
   const { user } = useSelector((state) => state.auth);
   const [cancelModalVisible, setCancelModalVisible] = useState(false);
   const [cancelLoading, setCancelLoading] = useState(false);
+
+  // Remark states
+const [remarkText, setRemarkText] = useState('');
+const [remarkLoading, setRemarkLoading] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -128,6 +139,47 @@ const RequisitionDetails = () => {
       setCancelLoading(false);
     }
   };
+
+  
+const handleRemarkSubmit = async () => {
+  const remark = remarkText.trim();
+
+  if (!remark) {
+    message.warning('Please enter a remark');
+    return;
+  }
+
+  if (remark.length > 2000) {
+    message.warning('Remark cannot exceed 2000 characters');
+    return;
+  }
+
+  try {
+    setRemarkLoading(true);
+
+    await dispatch(
+      addRequisitionRemark({
+        id: requisition.requisition_id,
+        comments: remark
+      })
+    ).unwrap();
+
+    message.success('Remark submitted successfully');
+
+    setRemarkText('');
+
+    // Refresh requisition and approval history
+    await dispatch(fetchRequisitionById(id)).unwrap();
+
+  } catch (error) {
+    message.error(
+      error?.message || 'Failed to submit remark'
+    );
+  } finally {
+    setRemarkLoading(false);
+  }
+};
+
 
   const handleConfirmDelivery = async () => {
     Modal.confirm({
@@ -318,7 +370,7 @@ const RequisitionDetails = () => {
           </Card>
 
           {/* Purpose & Justification */}
-          <Card title="Purpose & Justification" style={{ marginBottom: 16 }}>
+          {/* <Card title="Purpose & Justification" style={{ marginBottom: 16 }}>
             <div style={{ marginBottom: 16 }}>
               <Text strong>Purpose:</Text>
               <div style={{ marginTop: 8 }}>
@@ -332,7 +384,113 @@ const RequisitionDetails = () => {
                 <Text>{requisition.justification}</Text>
               </div>
             </div>
-          </Card>
+          </Card> */}
+
+          
+{/* Remarks */}
+<Card title="Remarks" style={{ marginBottom: 16 }}>
+
+  {(() => {
+    const remark = (requisition.approval_history || [])
+      .find(item => item.action === 'remark_added');
+
+    const allowedRoles = [
+      'admin',
+      'superadmin',
+      'coordinator',
+      'department_coordinator'
+    ];
+
+    const canAddRemark = allowedRoles.includes(
+      String(user?.role || '').toLowerCase()
+    );
+
+    if (remark) {
+      return (
+        <div>
+          <Tag color="success">Remark Submitted</Tag>
+
+          <div style={{
+            marginTop: 16,
+            padding: 16,
+            background: '#f6ffed',
+            border: '1px solid #b7eb8f',
+            borderRadius: 8
+          }}>
+            <Space
+              direction="vertical"
+              size={8}
+              style={{ width: '100%' }}
+            >
+              <Text strong>
+                {remark.approver_name || 'Unknown User'}
+              </Text>
+
+              <Text type="secondary">
+                {remark.approver_role}
+              </Text>
+
+              <Text style={{ whiteSpace: 'pre-wrap' }}>
+                {remark.comments}
+              </Text>
+
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                {remark.action_timestamp
+                  ? formatDateTime(remark.action_timestamp)
+                  : ''}
+              </Text>
+            </Space>
+          </div>
+        </div>
+      );
+    }
+
+    if (!canAddRemark) {
+      return (
+        <Empty
+          description="No remark submitted yet"
+          image={Empty.PRESENTED_IMAGE_SIMPLE}
+        />
+      );
+    }
+
+    return (
+      <div>
+        <Text type="secondary">
+          Add your remark for this requisition.
+        </Text>
+
+        <TextArea
+          rows={4}
+          maxLength={2000}
+          showCount
+          value={remarkText}
+          onChange={(e) => setRemarkText(e.target.value)}
+          placeholder="Enter your remark here..."
+          style={{ marginTop: 12 }}
+          disabled={remarkLoading}
+        />
+
+        <div style={{
+          display: 'flex',
+          justifyContent: 'flex-end',
+          marginTop: 16
+        }}>
+          <Button
+            type="primary"
+            loading={remarkLoading}
+            onClick={handleRemarkSubmit}
+            disabled={!remarkText.trim()}
+          >
+            Submit Remark
+          </Button>
+        </div>
+      </div>
+    );
+  })()}
+
+</Card>
+
 
           {/* Assigned Asset (if available) */}
           {requisition.assigned_asset_tag && (
