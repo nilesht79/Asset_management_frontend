@@ -362,8 +362,154 @@ const Sidebar = () => {
     }
 
     // Coordinator items - Asset allocation, movement, ticketing workflows
+    // if (['coordinator'].includes(user?.role)) {
+    //   baseItems.push(
+    //     {
+    //       key: 'assets',
+    //       icon: <DesktopOutlined />,
+    //       label: 'Asset Management',
+    //       children: [
+    //         {
+    //           key: '/assets/inventory',
+    //           label: 'Asset Inventory',
+    //         },
+    //         {
+    //           key: '/assets/movement',
+    //           label: 'Asset Movement',
+    //         },
+    //         {
+    //           key: '/standby/pool',
+    //           label: 'Standby Pool',
+    //           icon: <SwapOutlined />
+    //         },
+    //         {
+    //           key: '/standby/assignments',
+    //           label: 'Standby Assignments',
+    //         },
+    //         {
+    //           key: 'asset-requisitions',
+    //           icon: <ShoppingOutlined />,
+    //           label: 'Asset Requisitions',
+    //           children: [
+    //             {
+    //               key: '/assignments/asset-assignment',
+    //               icon: <SendOutlined />,
+    //               label: 'Asset Assignment',
+    //             },
+    //             {
+    //               key: '/deliveries/management',
+    //               icon: <DeliveredProcedureOutlined />,
+    //               label: 'Delivery Management',
+    //             },
+    //             {
+    //               key: '/requisitions/all-requisitions',
+    //               icon: <FileTextOutlined />,
+    //               label: 'All Requisitions',
+    //             }
+    //           ]
+    //         }
+    //       ],
+    //     },
+    //     {
+    //       key: 'consumables',
+    //       icon: <InboxOutlined />,
+    //       label: 'Consumables',
+    //       children: [
+    //         {
+    //           key: '/consumables/master',
+    //           label: 'Consumable Master',
+    //         },
+    //         {
+    //           key: '/consumables/inventory',
+    //           label: 'Inventory Management',
+    //         },
+    //         {
+    //           key: '/consumables/requests',
+    //           label: 'Requests',
+    //         },
+    //       ],
+    //     },
+    //     {
+    //       key: '/tickets',
+    //       icon: <CustomerServiceOutlined />,
+    //       label: 'Ticket Management',
+    //     },
+    //     // Inventory Reconciliation
+    //     {
+    //       key: '/reconciliation',
+    //       icon: <CheckCircleOutlined />,
+    //       label: 'Inventory Reconciliation',
+    //     },
+    //     // Software License Management
+    //     {
+    //       key: '/licenses',
+    //       icon: <SafetyCertificateOutlined />,
+    //       label: 'Software Licenses',
+    //     },
+    //     // Fault Analysis
+    //     {
+    //       key: '/fault-analysis',
+    //       icon: <WarningOutlined />,
+    //       label: 'Fault Analysis',
+    //     },
+    //     // Reports & Analytics for Coordinators
+    //     {
+    //       key: 'reports',
+    //       icon: <BarChartOutlined />,
+    //       label: 'Reports & Analytics',
+    //       children: [
+    //         {
+    //           key: '/reports/service-reports',
+    //           icon: <FileTextOutlined />,
+    //           label: 'Service Reports',
+    //         },
+    //         {
+    //           key: '/reports/spare-parts',
+    //           icon: <ToolOutlined />,
+    //           label: 'Spare Parts Consumption',
+    //         },
+    //         {
+    //           key: '/reports/sla-compliance',
+    //           icon: <ClockCircleOutlined />,
+    //           label: 'SLA Compliance Reports',
+    //         },
+    //         {
+    //           key: '/reports/ticket-trends',
+    //           icon: <BarChartOutlined />,
+    //           label: 'Ticket Trend Analysis',
+    //         },
+    //         {
+    //           key: '/reports/consumables-consumption',
+    //           icon: <InboxOutlined />,
+    //           label: 'Consumables Consumption',
+    //         },
+    //         {
+    //           key: '/reports/asset-job-reports',
+    //           icon: <DesktopOutlined />,
+    //           label: 'Asset Job Reports',
+    //         },
+    //       ],
+    //     },
+    //     // Gate Pass Management
+    //     {
+    //       key: '/gate-passes',
+    //       icon: <ExportOutlined />,
+    //       label: 'Gate Passes',
+    //     },
+    //     // SLA Settings
+    //     {
+    //       key: '/settings/sla',
+    //       icon: <ClockCircleOutlined />,
+    //       label: 'SLA Configuration',
+    //     }
+    //   )
+    // }
+
+    
+    // Coordinator items - Full operational menu
     if (['coordinator'].includes(user?.role)) {
       baseItems.push(
+        // Asset Management
         {
           key: 'assets',
           icon: <DesktopOutlined />,
@@ -379,37 +525,41 @@ const Sidebar = () => {
             },
             {
               key: '/standby/pool',
+              icon: <SwapOutlined />,
               label: 'Standby Pool',
-              icon: <SwapOutlined />
             },
             {
               key: '/standby/assignments',
               label: 'Standby Assignments',
             },
-            {
-              key: 'asset-requisitions',
-              icon: <ShoppingOutlined />,
-              label: 'Asset Requisitions',
-              children: [
-                {
-                  key: '/assignments/asset-assignment',
-                  icon: <SendOutlined />,
-                  label: 'Asset Assignment',
-                },
-                {
-                  key: '/deliveries/management',
-                  icon: <DeliveredProcedureOutlined />,
-                  label: 'Delivery Management',
-                },
-                {
-                  key: '/requisitions/all-requisitions',
-                  icon: <FileTextOutlined />,
-                  label: 'All Requisitions',
-                }
-              ]
-            }
           ],
         },
+
+        // Asset Requisitions
+        {
+          key: 'asset-requisitions',
+          icon: <ShoppingOutlined />,
+          label: 'Asset Requisitions',
+          children: [
+            {
+              key: '/assignments/asset-assignment',
+              icon: <SendOutlined />,
+              label: 'Asset Assignment',
+            },
+            {
+              key: '/deliveries/management',
+              icon: <DeliveredProcedureOutlined />,
+              label: 'Delivery Management',
+            },
+            {
+              key: '/requisitions/all-requisitions',
+              icon: <FileTextOutlined />,
+              label: 'All Requisitions',
+            },
+          ],
+        },
+
+        // Consumables
         {
           key: 'consumables',
           icon: <InboxOutlined />,
@@ -429,30 +579,36 @@ const Sidebar = () => {
             },
           ],
         },
+
+        // Ticket Management
         {
           key: '/tickets',
           icon: <CustomerServiceOutlined />,
           label: 'Ticket Management',
         },
+
         // Inventory Reconciliation
         {
           key: '/reconciliation',
           icon: <CheckCircleOutlined />,
           label: 'Inventory Reconciliation',
         },
-        // Software License Management
+
+        // Software Licenses
         {
           key: '/licenses',
           icon: <SafetyCertificateOutlined />,
           label: 'Software Licenses',
         },
+
         // Fault Analysis
         {
           key: '/fault-analysis',
           icon: <WarningOutlined />,
           label: 'Fault Analysis',
         },
-        // Reports & Analytics for Coordinators
+
+        // Reports & Analytics
         {
           key: 'reports',
           icon: <BarChartOutlined />,
@@ -490,13 +646,15 @@ const Sidebar = () => {
             },
           ],
         },
-        // Gate Pass Management
+
+        // Gate Passes
         {
           key: '/gate-passes',
           icon: <ExportOutlined />,
           label: 'Gate Passes',
         },
-        // SLA Settings
+
+        // SLA Configuration
         {
           key: '/settings/sla',
           icon: <ClockCircleOutlined />,
@@ -504,6 +662,7 @@ const Sidebar = () => {
         }
       )
     }
+
 
     // Department Head items - Department-scoped asset and ticket management + Employee features
     if (['department_head', 'department_coordinator'].includes(user?.role)) {
