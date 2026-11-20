@@ -969,42 +969,104 @@ const Sidebar = () => {
     return [pathname]
   }
 
+  // const getInitialOpenKeys = () => {
+  //   const pathname = location.pathname
+  //   const keys = []
+
+  //   if (pathname.startsWith('/users') || pathname.startsWith('/departments')) {
+  //     keys.push('users')
+  //   }
+  //   if (pathname.startsWith('/masters')) {
+  //     keys.push('masters')
+  //   }
+  //   if (pathname.startsWith('/assets')) {
+  //     keys.push('assets')
+  //   }
+  //   // Auto-open Asset Requisitions submenu for requisition-related routes
+  //   if (pathname.startsWith('/assignments/asset-assignment') ||
+  //       pathname.startsWith('/deliveries/management') ||
+  //       pathname.startsWith('/requisitions/all-requisitions')) {
+  //     keys.push('assets', 'asset-requisitions')
+  //   }
+  //   if (pathname.startsWith('/tickets')) {
+  //     keys.push('tickets')
+  //   }
+  //   if (pathname.startsWith('/reports')) {
+  //     keys.push('reports')
+  //   }
+  //   if (pathname.startsWith('/department')) {
+  //     keys.push('department')
+  //   }
+  //   if (pathname.startsWith('/settings')) {
+  //     keys.push('settings')
+  //   }
+  //   if (pathname.startsWith('/consumables')) {
+  //     keys.push('consumables')
+  //   }
+  //   if (pathname.startsWith('/fault-analysis') ||
+  //       pathname.startsWith('/admin/fault-types')) {
+  //     keys.push('fault-analysis')
+  //   }
+
+  //   return keys
+  // }
+
+
+  
   const getInitialOpenKeys = () => {
     const pathname = location.pathname
     const keys = []
 
-    if (pathname.startsWith('/users') || pathname.startsWith('/departments')) {
+    if (
+      pathname.startsWith('/users') ||
+      pathname.startsWith('/departments')
+    ) {
       keys.push('users')
     }
+
     if (pathname.startsWith('/masters')) {
       keys.push('masters')
     }
-    if (pathname.startsWith('/assets')) {
+
+    if (
+      pathname.startsWith('/assets') ||
+      pathname.startsWith('/standby')
+    ) {
       keys.push('assets')
     }
-    // Auto-open Asset Requisitions submenu for requisition-related routes
-    if (pathname.startsWith('/assignments/asset-assignment') ||
-        pathname.startsWith('/deliveries/management') ||
-        pathname.startsWith('/requisitions/all-requisitions')) {
-      keys.push('assets', 'asset-requisitions')
+
+    if (
+      pathname.startsWith('/assignments/asset-assignment') ||
+      pathname.startsWith('/deliveries/management') ||
+      pathname.startsWith('/requisitions/all-requisitions')
+    ) {
+      keys.push('asset-requisitions')
     }
+
     if (pathname.startsWith('/tickets')) {
       keys.push('tickets')
     }
+
     if (pathname.startsWith('/reports')) {
       keys.push('reports')
     }
+
     if (pathname.startsWith('/department')) {
       keys.push('department')
     }
+
     if (pathname.startsWith('/settings')) {
       keys.push('settings')
     }
+
     if (pathname.startsWith('/consumables')) {
       keys.push('consumables')
     }
-    if (pathname.startsWith('/fault-analysis') ||
-        pathname.startsWith('/admin/fault-types')) {
+
+    if (
+      pathname.startsWith('/fault-analysis') ||
+      pathname.startsWith('/admin/fault-types')
+    ) {
       keys.push('fault-analysis')
     }
 
