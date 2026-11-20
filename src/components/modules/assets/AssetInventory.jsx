@@ -2445,26 +2445,49 @@ const handleTableChange = (pagination) => {
       </>
     )}
 
-    {isEngineer ? (
-      <Search
-        placeholder="Search Serial Number, Make, Model, Employee Code or Name"
-        allowClear
-        enterButton="Search"
-        size="middle"
-        value={engineerSearch}
-        onChange={(e) => setEngineerSearch(e.target.value)}
-        onSearch={(value) => handleSearch(value.trim())}
-        style={{ width: 420, maxWidth: '100%' }}
-      />
-    ) : (
-      <Button
-        icon={<FilterOutlined />}
-        onClick={showFilterDrawer}
-        size="small"
-      >
-        Filters
-      </Button>
-    )}
+   
+{isCoordinator ? (
+  <>
+    {/* Coordinator: Filters */}
+    <Button
+      icon={<FilterOutlined />}
+      onClick={showFilterDrawer}
+      size="small"
+    >
+      Filters
+    </Button>
+
+    {/* Coordinator: Export */}
+    <Button
+      icon={<ExportOutlined />}
+      onClick={handleCoordinatorExport}
+      size="small"
+      loading={coordinatorExportLoading}
+    >
+      Export
+    </Button>
+  </>
+) : isEngineer ? (
+  <Search
+    placeholder="Search Serial Number, Make, Model, Employee Code or Name"
+    allowClear
+    enterButton="Search"
+    size="middle"
+    value={engineerSearch}
+    onChange={(e) => setEngineerSearch(e.target.value)}
+    onSearch={(value) => handleSearch(value.trim())}
+    style={{ width: 420, maxWidth: '100%' }}
+  />
+) : (
+  <Button
+    icon={<FilterOutlined />}
+    onClick={showFilterDrawer}
+    size="small"
+  >
+    Filters
+  </Button>
+)}
+
 
     {/* Global Search - Admin and Super Admin Only */}
     {canUseGlobalAssetSearch && (
