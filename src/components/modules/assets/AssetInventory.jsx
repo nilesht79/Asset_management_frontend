@@ -2468,6 +2468,17 @@ const handleTableChange = (pagination) => {
       Export
     </Button>
 
+     <Search
+    placeholder="Search Serial Number, Make, Model, Employee Code or Name"
+    allowClear
+    enterButton="Search"
+    size="middle"
+    value={engineerSearch}
+    onChange={(e) => setEngineerSearch(e.target.value)}
+    onSearch={(value) => handleSearch(value.trim())}
+    style={{ width: 420, maxWidth: '100%' }}
+  />
+
   </>
 ) : isEngineer ? (
   <Search
