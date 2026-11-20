@@ -2458,14 +2458,16 @@ const handleTableChange = (pagination) => {
     </Button>
 
     {/* Coordinator: Export */}
+    
+
     <Button
       icon={<ExportOutlined />}
-      onClick={handleCoordinatorExport}
+      onClick={() => handleExport(false)}
       size="small"
-      loading={coordinatorExportLoading}
     >
       Export
     </Button>
+
   </>
 ) : isEngineer ? (
   <Search
