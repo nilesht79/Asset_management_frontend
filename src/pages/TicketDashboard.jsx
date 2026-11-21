@@ -84,16 +84,31 @@ const TicketDashboard = () => {
     pageSize: 10,
     total: 0
   });
-  const [filters, setFilters] = useState({
-    search: '',
-    status: '',
-    priority: '',
-    category: '',
-    department_id: '',
-    location_id: '',
-    assigned_to_engineer_id: '',
-    is_guest: undefined
-  });
+  // const [filters, setFilters] = useState({
+  //   search: '',
+  //   status: '',
+  //   priority: '',
+  //   category: '',
+  //   department_id: '',
+  //   location_id: '',
+  //   assigned_to_engineer_id: '',
+  //   is_guest: undefined
+  // });
+
+  
+const [filters, setFilters] = useState({
+  search: '',
+  status: '',
+  priority: '',
+  category: '',
+  department_id: '',
+  location_id: '',
+  assigned_to_engineer_id: '',
+  is_guest: undefined,
+  start_date: '',
+  end_date: ''
+});
+
 
   // Modal and Drawer states
   const [createModalVisible, setCreateModalVisible] = useState(false);
@@ -370,20 +385,55 @@ const handleTableChange = (paginationInfo, tableFilters) => {
 
   // console.log("CARD CLICKED", type);
 
-  const handleStatsCardClick = (type) => {
+//   const handleStatsCardClick = (type) => {
 
-    setSelectedCard(type);
+//     setSelectedCard(type);
 
-    setFilters(prev => ({
-        ...prev,
-        status: type === 'all' ? '' : type
-    }));
+//     setFilters(prev => ({
+//         ...prev,
+//         status: type === 'all' ? '' : type
+//     }));
 
-    setPagination(prev => ({
-        ...prev,
-        current: 1
-    }));
+//     setPagination(prev => ({
+//         ...prev,
+//         current: 1
+//     }));
+// };
+
+  
+const handleStatsCardClick = (type) => {
+  setSelectedCard(type);
+
+  const today = dayjs().format('YYYY-MM-DD');
+
+  setFilters(prev => {
+    const updatedFilters = {
+      ...prev,
+      status: '',
+      start_date: '',
+      end_date: ''
+    };
+
+    if (type === 'today') {
+      updatedFilters.start_date = today;
+      updatedFilters.end_date = today;
+    } else if (type === 'closed_today') {
+      updatedFilters.status = 'closed';
+      updatedFilters.start_date = today;
+      updatedFilters.end_date = today;
+    } else if (type !== 'all') {
+      updatedFilters.status = type;
+    }
+
+    return updatedFilters;
+  });
+
+  setPagination(prev => ({
+    ...prev,
+    current: 1
+  }));
 };
+
 
   const handleApplyFilters = (newFilters) => {
     setFilters(newFilters);
