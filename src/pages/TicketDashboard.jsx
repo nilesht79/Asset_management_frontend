@@ -776,10 +776,16 @@ const handleStatsCardClick = (type) => {
       ]
     },
     {
-    title: 'Asset Subcategory',
-    dataIndex: 'asset_subcategory',
-    key: 'asset_subcategory',
-  },
+  title: 'Asset Subcategory',
+  dataIndex: 'asset_subcategory',
+  key: 'asset_subcategory',
+  width: 170,
+  ellipsis: true,
+  onHeaderCell: () => ({
+    style: { whiteSpace: 'nowrap' }
+  }),
+  render: (value) => value || '-'
+},
     {
   title: 'Serial Number',
   dataIndex: 'asset_serial_number',
@@ -854,7 +860,7 @@ const handleStatsCardClick = (type) => {
     {
       title: 'Actions',
       key: 'actions',
-      width: 80,
+      width: 110,
       fixed: 'right',
       render: (_, record) => (
         <Dropdown
@@ -1147,13 +1153,32 @@ const handleStatsCardClick = (type) => {
           sticky
       /> */}
 
-        <Table
+        {/* <Table
             columns={columns}
             dataSource={tickets}
             rowKey="ticket_id"
             loading={loading}
             onChange={handleTableChange}
             scroll={{ x: 'max-content' }}
+            sticky
+            pagination={{
+              current: pagination.current,
+              pageSize: pagination.pageSize,
+              total: pagination.total,
+              showSizeChanger: true,
+              showQuickJumper: true,
+              showTotal: (total, range) =>
+                `Showing ${range[0]} to ${range[1]} of ${total} entries`
+            }}
+          /> */}
+
+        <Table
+            columns={columns}
+            dataSource={tickets}
+            rowKey="ticket_id"
+            loading={loading}
+            onChange={handleTableChange}
+            scroll={{ x: 1800 }}
             sticky
             pagination={{
               current: pagination.current,
