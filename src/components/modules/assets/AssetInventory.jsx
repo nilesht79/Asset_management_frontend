@@ -206,6 +206,8 @@ const AssetInventory = () => {
   const [assignForm] = Form.useForm()
   const [viewDetailsModalVisible, setViewDetailsModalVisible] = useState(false)
   const [viewingAsset, setViewingAsset] = useState(null)
+  const [activityHistory, setActivityHistory] = useState([]);
+  const [activityLoading, setActivityLoading] = useState(false);
   const [bulkAddModalVisible, setBulkAddModalVisible] = useState(false)
   const [legacyImportModalVisible, setLegacyImportModalVisible] = useState(false)
   const [filterDrawerVisible, setFilterDrawerVisible] = useState(false)
@@ -658,10 +660,48 @@ const AssetInventory = () => {
     })
   }
 
-  const showViewDetailsModal = (asset) => {
-    setViewingAsset(asset)
-    setViewDetailsModalVisible(true)
+  const fetchAssetActivityHistory = async (assetId) => {
+  if (!assetId) return;
+
+  setActivityLoading(true);
+
+  try {
+    const response = await assetService.getAssetActivityHistory(assetId);
+
+    const activities = response.data?.data || [];
+
+    setActivityHistory(
+      Array.isArray(activities) ? activities : []
+    );
+
+  } catch (error) {
+    console.error(
+      'Failed to fetch asset activity history:',
+      error
+    );
+
+    setActivityHistory([]);
+
+    message.error('Failed to load asset activity history');
+
+  } finally {
+    setActivityLoading(false);
   }
+};
+
+  // const showViewDetailsModal = (asset) => {
+  //   setViewingAsset(asset)
+  //   setViewDetailsModalVisible(true)
+  // }
+
+  const showViewDetailsModal = (asset) => {
+  setViewingAsset(asset);
+  setViewDetailsModalVisible(true);
+
+  setActivityHistory([]);
+
+  fetchAssetActivityHistory(asset.id);
+};
 
   const showAssignModal = (asset) => {
     setAssigningAsset(asset)
@@ -3838,6 +3878,176 @@ const handleTableChange = (pagination) => {
           </div>
                 )
               },
+
+              {
+  key: 'activity-history',
+  label: (
+    <span>
+      <HistoryOutlined />
+      Activity History
+    </span>
+  ),
+  children: (
+    <div className="p-3">
+
+      {activityLoading ? (
+        <div className="text-center p-6">
+          Loading activity history...
+        </div>
+      ) : activityHistory.length === 0 ? (
+        <Alert
+          message="No Activity History"
+          description="No activity has been recorded for this asset yet."
+          type="info"
+          showIcon
+        />
+      ) : (
+        <div className="space-y-3">
+
+          {[...activityHistory].reverse().map((activity, index) => (
+            <div
+              key={`${activity.date || 'activity'}-${index}`}
+              className="border rounded-lg p-4"
+            >
+
+              <div className="flex flex-wrap justify-between gap-2">
+
+                <Space>
+                  <HistoryOutlined />
+
+                  <Text strong>
+                    {activity.action === 'ASSET_CREATED'
+                      ? 'Asset Created'
+                      : activity.action === 'ASSET_UPDATED'
+                        ? 'Asset Updated'
+                        : activity.action}
+                  </Text>
+
+                  <Tag
+                    color={
+                      activity.action === 'ASSET_CREATED'
+                        ? 'green'
+                        : 'blue'
+                    }
+                  >
+                    {activity.action === 'ASSET_CREATED'
+                      ? 'Created'
+                      : 'Updated'}
+                  </Tag>
+                </Space>
+
+                <Text type="secondary">
+                  {activity.date
+                    ? dayjs(activity.date).format('DD-MMM-YYYY hh:mm A')
+                    : 'Date unavailable'}
+                </Text>
+
+              </div>
+
+              <Divider style={{ margin: '12px 0' }} />
+
+              <Row gutter={[16, 8]}>
+
+                <Col xs={24} sm={8}>
+                  <Text type="secondary">Performed By</Text>
+                  <div>
+                    <Text strong>
+                      {activity.user_name || 'Unknown User'}
+                    </Text>
+                  </div>
+                </Col>
+
+                <Col xs={24} sm={8}>
+                  <Text type="secondary">Employee ID</Text>
+                  <div>
+                    <Text strong>
+                      {activity.employee_id || 'Not Available'}
+                    </Text>
+                  </div>
+                </Col>
+
+                <Col xs={24} sm={8}>
+                  <Text type="secondary">User Role</Text>
+                  <div>
+                    <Tag color="purple">
+                      {activity.user_role || 'Unknown'}
+                    </Tag>
+                  </div>
+                </Col>
+
+              </Row>
+
+              {activity.changes &&
+                Object.entries(activity.changes).length > 0 && (
+
+                  <div className="mt-4">
+
+                    <Text strong>Changed Fields</Text>
+
+                    <div className="mt-2">
+
+                      {Object.entries(activity.changes).map(
+                        ([field, values]) => (
+
+                          <div
+                            key={field}
+                            className="grid grid-cols-1 sm:grid-cols-3 gap-2 border-t py-3"
+                          >
+
+                            <div>
+                              <Text strong>
+                                {field
+                                  .replace(/_/g, ' ')
+                                  .replace(/\b\w/g, char => char.toUpperCase())}
+                              </Text>
+                            </div>
+
+                            <div>
+                              <Text type="secondary">
+                                Previous Value
+                              </Text>
+
+                              <div className="break-words">
+                                {values?.old === null ||
+                                values?.old === undefined ||
+                                values?.old === ''
+                                  ? 'N/A'
+                                  : String(values.old)}
+                              </div>
+                            </div>
+
+                            <div>
+                              <Text type="secondary">
+                                New Value
+                              </Text>
+
+                              <div className="break-words">
+                                {values?.new === null ||
+                                values?.new === undefined ||
+                                values?.new === ''
+                                  ? 'N/A'
+                                  : String(values.new)}
+                              </div>
+                            </div>
+
+                          </div>
+                        )
+                      )}
+
+                    </div>
+
+                  </div>
+                )}
+
+            </div>
+          ))}
+
+        </div>
+      )}
+
+    </div>
+  )
+},
               {
                 key: 'repair-history',
                 label: (
