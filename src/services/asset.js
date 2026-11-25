@@ -1,6 +1,7 @@
 import api, { apiUtils } from './api'
 
 const assetService = {
+  
   // Get all assets with pagination and filtering
   getAssets: (params = {}) => {
     const queryString = apiUtils.buildQueryString(params)
@@ -12,6 +13,10 @@ const assetService = {
     const queryString = apiUtils.buildQueryString(params)
     return api.get(`/assets/my-assets${queryString ? `?${queryString}` : ''}`)
   },
+
+  getAssetActivityHistory: (assetId) => {
+  return api.get(`/assets/${assetId}/activity-history`);
+},
 
   // Get assets for a specific user (for coordinators to create requests on behalf)
   getUserAssets: (userId) => {
