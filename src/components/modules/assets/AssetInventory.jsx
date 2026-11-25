@@ -4037,10 +4037,16 @@ const handleTableChange = (pagination) => {
 
                               <div className="break-words">
                                 {values?.old === null ||
-                                values?.old === undefined ||
-                                values?.old === ''
+                                 values?.old === undefined ||
+                                 values?.old === ''
                                   ? 'N/A'
-                                  : String(values.old)}
+                                  : field === 'assigned_to' && typeof values.old === 'object'
+                                    ? `${values.old.name || 'Unknown User'}${
+                                        values.old.employee_id
+                                          ? ` (${values.old.employee_id})`
+                                          : ''
+                                      }`
+                                    : String(values.old)}
                               </div>
                             </div>
 
@@ -4051,10 +4057,16 @@ const handleTableChange = (pagination) => {
 
                               <div className="break-words">
                                 {values?.new === null ||
-                                values?.new === undefined ||
-                                values?.new === ''
+                                 values?.new === undefined ||
+                                 values?.new === ''
                                   ? 'N/A'
-                                  : String(values.new)}
+                                  : field === 'assigned_to' && typeof values.new === 'object'
+                                    ? `${values.new.name || 'Unknown User'}${
+                                        values.new.employee_id
+                                          ? ` (${values.new.employee_id})`
+                                          : ''
+                                      }`
+                                    : String(values.new)}
                               </div>
                             </div>
 
