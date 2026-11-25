@@ -3915,15 +3915,24 @@ const handleTableChange = (pagination) => {
                 <Space>
                   <HistoryOutlined />
 
-                  <Text strong>
+                  {/* <Text strong>
                     {activity.action === 'ASSET_CREATED'
                       ? 'Asset Created'
                       : activity.action === 'ASSET_UPDATED'
                         ? 'Asset Updated'
                         : activity.action}
-                  </Text>
+                  </Text> */}
 
-                  <Tag
+                  <Text strong>
+                  {{
+                    ASSET_CREATED: 'Asset Created',
+                    ASSET_UPDATED: 'Asset Updated',
+                    ASSET_ASSIGNED: 'Asset Assigned',
+                    ASSET_UNASSIGNED: 'Asset Unassigned'
+                  }[activity.action] || activity.action}
+                </Text>
+
+                  {/* <Tag
                     color={
                       activity.action === 'ASSET_CREATED'
                         ? 'green'
@@ -3933,7 +3942,26 @@ const handleTableChange = (pagination) => {
                     {activity.action === 'ASSET_CREATED'
                       ? 'Created'
                       : 'Updated'}
-                  </Tag>
+                  </Tag> */}
+
+                  <Tag
+  color={
+    activity.action === 'ASSET_CREATED'
+      ? 'green'
+      : activity.action === 'ASSET_ASSIGNED'
+        ? 'blue'
+        : activity.action === 'ASSET_UNASSIGNED'
+          ? 'orange'
+          : 'geekblue'
+  }
+>
+  {{
+    ASSET_CREATED: 'Created',
+    ASSET_UPDATED: 'Updated',
+    ASSET_ASSIGNED: 'Assigned',
+    ASSET_UNASSIGNED: 'Unassigned'
+  }[activity.action] || 'Activity'}
+</Tag>
                 </Space>
 
                 <Text type="secondary">
