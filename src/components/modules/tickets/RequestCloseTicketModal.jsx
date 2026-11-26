@@ -1,6 +1,5 @@
-// import React, { useState, useEffect } from 'react';
-import React, { useState, useEffect, useRef } from 'react';
 
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Modal,
   Form,
@@ -171,71 +170,6 @@ const RequestCloseTicketModal = ({ visible, ticket, onClose, onSuccess }) => {
     return selectedParts.reduce((sum, p) => sum + (p.quantity * (p.unit_cost || 0)), 0);
   };
 
-  // const handleSubmit = async (values) => {
-  //   if (!ticket) return;
-
-  //   // Validate parts selection for repair
-  //   if (isRepair && selectedParts.length > 0) {
-  //     const invalidParts = selectedParts.filter(p => !p.asset_id);
-  //     if (invalidParts.length > 0) {
-  //       message.error('Please select all spare parts or remove empty entries');
-  //       return;
-  //     }
-  //   }
-
-  //   setLoading(true);
-  //   try {
-  //     let serviceReportId = null;
-
-  //     // Create draft service report for repair/replace tickets
-  //     if (requiresServiceReport) {
-  //       const reportData = {
-  //         ticket_id: ticket.ticket_id,
-  //         service_type: serviceType,
-  //         asset_id: values.asset_id,
-  //         replacement_asset_id: isReplace ? values.replacement_asset_id : null,
-  //         fault_type_id: isRepair ? values.fault_type_id : null,
-  //         diagnosis: values.diagnosis,
-  //         work_performed: values.work_performed,
-  //         condition_before: isRepair ? values.condition_before : null,
-  //         condition_after: isRepair ? values.condition_after : null,
-  //         total_parts_cost: calculateTotalPartsCost(),
-  //         labor_cost: values.labor_cost || 0,
-  //         engineer_notes: values.engineer_notes,
-  //         parts_used: selectedParts.filter(p => p.asset_id).map(p => ({
-  //           asset_id: p.asset_id,
-  //           quantity: p.quantity,
-  //           unit_cost: p.unit_cost,
-  //           notes: p.notes
-  //         }))
-  //       };
-  //       console.log('Draft service report payload:', reportData);
-  //       console.log('Draft parts being submitted:', reportData.parts_used);
-  //       const reportResponse = await serviceReportService.createDraftReport(reportData);
-  //       serviceReportId = reportResponse.data?.data?.report_id;
-  //     }
-
-  //     // Submit close request with service_report_id
-  //     await ticketService.requestTicketClose(
-  //       ticket.ticket_id,
-  //       values.request_notes,
-  //       serviceReportId
-  //     );
-
-  //     form.resetFields();
-  //     setSelectedParts([]);
-  //     message.success('Close request submitted successfully');
-  //     onSuccess();
-  //   } catch (error) {
-  //     console.error('Failed to request ticket close:', error);
-  //     message.error(
-  //       error.response?.data?.message || 'Failed to submit close request'
-  //     );
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
   const handleSubmit = async (values) => {
   if (!ticket || submittingRef.current) return;
 
@@ -317,10 +251,6 @@ const RequestCloseTicketModal = ({ visible, ticket, onClose, onSuccess }) => {
     }
 
     return;
-
-  } finally {
-    // Keep the guard active until the success callback completes.
-  }
 
   // Handle successful submission separately from the API request
   try {
