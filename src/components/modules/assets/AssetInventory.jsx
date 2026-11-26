@@ -4031,7 +4031,7 @@ const handleTableChange = (pagination) => {
                                       product_id: 'Product'
                                     }[field] || field
                                       .replace(/_/g, ' ')
-                                      .replace(/\b\w/g, char => char.toUpperCase()))}
+                                      .replace(/\b\w/g, char => char.toUpperCase()))}  
                               </Text>
                             </div>
 
