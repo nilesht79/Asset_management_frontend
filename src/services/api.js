@@ -93,10 +93,28 @@ api.interceptors.response.use(
     }
 
     // Handle network errors
-    if (!error.response) {
-      toast.error('Network error. Please check your internet connection.')
-      return Promise.reject(error)
-    }
+    // if (!error.response) {
+    //   toast.error('Network error. Please check your internet connection.')
+    //   return Promise.reject(error)
+    // }
+
+    // Handle network errors and request timeouts
+if (!error.response) {
+  if (
+    error.code === 'ECONNABORTED' ||
+    error.code === 'ETIMEDOUT'
+  ) {
+    toast.error(
+      'Request timed out. Please check the ticket status before retrying.'
+    );
+  } else if (error.code !== 'ERR_CANCELED') {
+    toast.error(
+      'Unable to connect to the server. Please check your network connection.'
+    );
+  }
+
+  return Promise.reject(error);
+}
 
     const { status, data } = error.response
 
